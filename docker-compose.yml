@@ -1,0 +1,83 @@
+services:
+  postgres:
+    image: postgis/postgis:15-3.3
+    container_name: dispatch_db
+    environment:
+      POSTGRES_DB: dispatch_db
+      POSTGRES_USER: dispatch_user
+      POSTGRES_PASSWORD: dispatch_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d
+      - ./Dataset:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dispatch_user -d dispatch_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Python ETL Service
+  etl:
+    build: .
+    container_name: dispatch_etl
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./Dataset:/app/data
+      - ./logs:/app/logs
+      - ./src:/app/src
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=dispatch_db
+      - DB_USER=dispatch_user
+      - DB_PASSWORD=dispatch_password
+      - DOCKER_MODE=true
+    command: python src/app/run_etl.py
+    restart: "no"
+
+  # GraphQL API (Port 3000)
+  graphql:
+    build: ./backend
+    container_name: dispatch_graphql
+    depends_on:
+      postgres:
+        condition: service_healthy
+      etl:
+        condition: service_completed_successfully
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=dispatch_db
+      - DB_USER=dispatch_user
+      - DB_PASSWORD=dispatch_password
+      - NEXT_PUBLIC_API_URL=http://localhost:3000/api/graphql
+      - NEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ1IjoiY291cHN0ZXI3NCIsImEiOiJja2xwdjRwaWYwc2Q2Mm9sYmprbzhueng2In0.p-FbkbBhJWBKW-evWZfmgw
+    command: npm run dev
+    restart: unless-stopped
+
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: dispatch_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: arashm@luxmodus.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
