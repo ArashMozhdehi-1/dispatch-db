@@ -416,6 +416,7 @@ def load_roads():
         processed_roads = 0
         total_segments = 0
         skipped_roads = 0
+        # Process each road independently
         
         # Process ALL roads, not just first 20 like notebook
         for _, road in roads_df.iterrows():
@@ -428,6 +429,8 @@ def load_roads():
                 if start_loc_id not in location_lookup or end_loc_id not in location_lookup:
                     skipped_roads += 1
                     continue
+                
+                # Process each road independently - no opposite direction logic
                 
                 start_loc = location_lookup[start_loc_id]
                 end_loc = location_lookup[end_loc_id]
@@ -468,27 +471,24 @@ def load_roads():
                     p1 = p0
                     p2 = p3
                 
-                # Generate Bézier curves for both directions (bidirectional roads)
+                # Generate Bézier curve for this road direction
                 forward_curve = generate_bezier_curve(p0, p1, p2, p3, 50)
-                reverse_curve = generate_bezier_curve(p3, p2, p1, p0, 50)
                 
-                # Create segments for both directions
+                # Create segments for this road (forward direction)
                 road_distance = float(road['FieldDist'])
                 time_empty = float(road['FieldTimeempty'])
                 time_loaded = float(road['FieldTimeloaded'])
                 is_closed = bool(road['FieldClosed'])
                 
-                # Forward segments
+                # Forward segments for this road
                 forward_segments = create_lane_segments_from_curve(
                     road_id, forward_curve, 'forward', road_distance, 
                     time_empty, time_loaded, is_closed
                 )
                 
-                # Reverse segments
-                reverse_segments = create_lane_segments_from_curve(
-                    road_id, reverse_curve, 'reverse', road_distance,
-                    time_empty, time_loaded, is_closed
-                )
+                # Each road gets only one direction - no opposite direction processing
+                reverse_segments = []
+                print(f"✅ Processed road: {road_id} (forward only)")
                 
                 # Insert all segments into database
                 for segment in forward_segments + reverse_segments:

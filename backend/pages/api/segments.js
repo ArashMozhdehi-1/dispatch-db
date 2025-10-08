@@ -20,11 +20,7 @@ export default async function handler(req, res) {
       SELECT 
         ls.lane_id,
         ls.road_id,
-        CASE 
-          WHEN ls.lane_id LIKE '%_forward' THEN 'forward'
-          WHEN ls.lane_id LIKE '%_reverse' THEN 'reverse'
-          ELSE 'unknown'
-        END as direction,
+        ls.direction,
         ls.length_m,
         ls.time_empty_seconds,
         ls.time_loaded_seconds,
