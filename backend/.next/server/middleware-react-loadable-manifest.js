@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{\"components/MapComponent.js -> leaflet\":{\"id\":\"components/MapComponent.js -> leaflet\",\"files\":[\"static/chunks/node_modules_leaflet_dist_leaflet-src_js.js\"]},\"pages/index.js -> ../components/MapComponent\":{\"id\":\"pages/index.js -> ../components/MapComponent\",\"files\":[\"static/chunks/components_MapComponent_js.js\"]}}"
+self.__REACT_LOADABLE_MANIFEST="{\"pages/index.js -> ../components/MapboxComponent\":{\"id\":\"pages/index.js -> ../components/MapboxComponent\",\"files\":[\"static/chunks/components_MapboxComponent_js.js\"]}}"
