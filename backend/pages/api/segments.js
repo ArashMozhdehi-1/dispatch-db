@@ -10,7 +10,6 @@ export default async function handler(req, res) {
     
     console.log('🔍 Fetching lane segments with limit:', limit);
     
-    // First, let's check how many total segments we have
     const countResult = await query(`
       SELECT COUNT(*) as total_count FROM lane_segments
     `);
@@ -31,10 +30,10 @@ export default async function handler(req, res) {
         ST_Y(ST_EndPoint(ls.geometry)) as end_latitude,
         ST_X(ST_EndPoint(ls.geometry)) as end_longitude
       FROM lane_segments ls
-      WHERE ST_Y(ST_StartPoint(ls.geometry)) BETWEEN -60 AND -20  -- Filter out bad coordinates
-        AND ST_X(ST_StartPoint(ls.geometry)) BETWEEN 140 AND 155  -- Filter out bad coordinates
-        AND ST_Y(ST_EndPoint(ls.geometry)) BETWEEN -60 AND -20    -- Filter out bad coordinates
-        AND ST_X(ST_EndPoint(ls.geometry)) BETWEEN 140 AND 155    -- Filter out bad coordinates
+      WHERE ST_Y(ST_StartPoint(ls.geometry)) BETWEEN -60 AND -20
+        AND ST_X(ST_StartPoint(ls.geometry)) BETWEEN 140 AND 155
+        AND ST_Y(ST_EndPoint(ls.geometry)) BETWEEN -60 AND -20
+        AND ST_X(ST_EndPoint(ls.geometry)) BETWEEN 140 AND 155
       ORDER BY ls.road_id, ls.lane_id
       LIMIT $1
     `, [limit]);

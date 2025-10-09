@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
 
-// Dynamically import the MapboxComponent to avoid SSR issues
 const MapboxComponent = dynamic(() => import('../components/MapboxComponent'), {
   ssr: false,
   loading: () => (
