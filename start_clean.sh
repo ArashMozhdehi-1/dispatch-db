@@ -53,10 +53,11 @@ docker-compose down --remove-orphans
 
 echo ""
 echo "Starting all services with Docker Compose..."
-echo "  - PostgreSQL Database"
+echo "  - PostgreSQL Database with PostGIS"
 echo "  - Python ETL Process"
 echo "  - Node.js/Next.js App (Port 3000)"
-echo "  - Database Admin"
+echo "  - GeoServer (Port 8081)"
+echo "  - Database Admin (Port 8080)"
 echo ""
 
 if ! docker-compose up --build -d; then
@@ -73,6 +74,8 @@ echo ""
 echo "All services are now running:"
 echo "  - Website & API: http://localhost:3000"
 echo "  - GraphQL API: http://localhost:3000/api/graphql"
+echo "  - API Documentation: http://localhost:3000/api-docs"
+echo "  - GeoServer: http://localhost:8081/geoserver"
 echo "  - Database Admin: http://localhost:8080"
 echo ""
 
@@ -82,6 +85,30 @@ if curl -s http://localhost:3000 > /dev/null; then
     echo "SUCCESS: Website is accessible at http://localhost:3000"
 else
     echo "WARNING: Website may not be ready yet, check container logs"
+fi
+
+# Test GeoServer
+echo "Testing GeoServer connectivity..."
+if curl -s http://localhost:8081/geoserver > /dev/null; then
+    echo "SUCCESS: GeoServer is accessible at http://localhost:8081/geoserver"
+else
+    echo "WARNING: GeoServer may not be ready yet, check container logs"
+fi
+
+# Initialize GeoServer if it's ready
+echo "Initializing GeoServer configuration..."
+if curl -s http://localhost:8081/geoserver/rest/about/version.json > /dev/null; then
+    echo "GeoServer is ready, initializing workspace and layers..."
+    if [ -f "./geoserver-init.sh" ]; then
+        chmod +x ./geoserver-init.sh
+        ./geoserver-init.sh
+    else
+        echo "GeoServer initialization script not found, manual setup required"
+        echo "Visit http://localhost:8081/geoserver (admin/geoserver) to configure"
+    fi
+else
+    echo "GeoServer not ready yet, will need manual initialization"
+    echo "Visit http://localhost:8081/geoserver (admin/geoserver) when ready"
 fi
 
 echo ""
@@ -96,6 +123,32 @@ echo ""
 echo "Container Status:"
 docker-compose ps
 
+echo ""
+echo "==========================================="
+echo "DISPATCH DATABASE - READY TO USE!"
+echo "==========================================="
+echo ""
+echo "🌐 Web Interface:"
+echo "  - Main Map: http://localhost:3000"
+echo "  - API Docs: http://localhost:3000/api-docs"
+echo "  - Layer Config: http://localhost:3000/layer-config"
+echo ""
+echo "🗺️ GeoServer:"
+echo "  - Admin Panel: http://localhost:8081/geoserver"
+echo "  - Username: admin"
+echo "  - Password: geoserver"
+echo ""
+echo "🗄️ Database:"
+echo "  - Admin Panel: http://localhost:8080"
+echo "  - Email: arashm@luxmodus.com"
+echo "  - Password: admin123"
+echo ""
+echo "📚 Features Available:"
+echo "  ✅ Dynamic Layer Management"
+echo "  ✅ Mapbox + GeoServer Toggle"
+echo "  ✅ Interactive API Documentation"
+echo "  ✅ Real-time Layer Configuration"
+echo "  ✅ PostGIS Spatial Database"
 echo ""
 echo "Press any key to continue..."
 read -n 1

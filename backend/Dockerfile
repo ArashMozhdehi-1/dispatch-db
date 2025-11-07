@@ -6,6 +6,9 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including dev dependencies for development)
+# This will install olcs and cesium automatically from package.json
+# These packages are needed for TypeScript types and build-time support
+# The actual runtime libraries are loaded via CDN in the browser
 RUN npm install
 
 # Copy source code

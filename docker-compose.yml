@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: dispatch_password
       POSTGRES_HOST_AUTH_METHOD: trust
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./sql:/docker-entrypoint-initdb.d
@@ -18,7 +18,8 @@ services:
       test: ["CMD-SHELL", "pg_isready -U dispatch_user -d dispatch_db"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
 
   # Python ETL Service
   etl:
@@ -66,7 +67,6 @@ services:
     command: npm run dev
     restart: unless-stopped
 
-
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: dispatch_pgadmin
@@ -79,5 +79,31 @@ services:
       - postgres
     restart: unless-stopped
 
+  geoserver:
+    image: kartoza/geoserver:2.21.0
+    container_name: dispatch_geoserver
+    environment:
+      GEOSERVER_ADMIN_USER: admin
+      GEOSERVER_ADMIN_PASSWORD: geoserver
+      GEOSERVER_ADMIN_EMAIL: admin@example.com
+      GEOWEBCACHE_CACHE_DIR: /opt/geoserver/data_dir/gwc
+      GEOSERVER_DATA_DIR: /opt/geoserver/data_dir
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: dispatch_db
+      POSTGRES_USER: dispatch_user
+      POSTGRES_PASSWORD: dispatch_password
+      POSTGRES_SCHEMA: public
+    ports:
+      - "8081:8080"
+    volumes:
+      - geoserver_data:/opt/geoserver/data_dir
+      - ./geoserver_data:/opt/geoserver/data_dir
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   postgres_data:
+  geoserver_data:

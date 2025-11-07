@@ -2,13 +2,27 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy source code
+COPY src/ ./src/
+COPY Dataset/ ./Dataset/
 
-RUN mkdir -p logs && chmod 755 logs && \
-    touch logs/errors.log logs/performance.log logs/audit.log && \
-    chmod 666 logs/*.log
+# Create logs directory
+RUN mkdir -p logs
 
-CMD ["python", "start_app.py"]
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV DOCKER_MODE=true
+
+# Default command (can be overridden in docker-compose.yml)
+CMD ["python", "src/app/run_etl.py"]
