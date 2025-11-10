@@ -1,0 +1,46 @@
+# # Ignore large directories and files
+# node_modules/
+# .git/
+# .gitignore
+# *.log
+# *.tmp
+# *.temp
+
+# # Ignore development files
+# .vscode/
+# .idea/
+# *.swp
+# *.swo
+# *~
+
+# # Ignore OS files
+# .DS_Store
+# Thumbs.db
+
+# # Ignore large data directories
+# geoserver_data/
+# temp_hillshade_processing/
+# logs/
+
+# # Ignore build artifacts
+# *.pyc
+# __pycache__/
+# .pytest_cache/
+# .coverage
+
+# # Ignore Docker files
+# docker-compose*.yml
+# Dockerfile*
+# .dockerignore
+
+# # Ignore documentation
+# *.md
+# README*
+
+# # Ignore test files
+# test_*
+# *_test.py
+
+# # Ignore backup files
+# *.bak
+# *.backup

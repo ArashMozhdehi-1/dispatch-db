@@ -1,0 +1,89 @@
+{
+  "environment": "development",
+  "app": {
+    "name": "Frontrunner V3",
+    "version": "1.0.0",
+    "port": 3001,
+    "apiBaseUrl": "http://localhost:3001/api",
+    "nodeEnv": "development"
+  },
+  "databases": {
+    "mysql": {
+      "host": "mysql",
+      "port": 3306,
+      "database": "kmtsdb",
+      "user": "kmtsuser",
+      "password": "kmtspass",
+      "charset": "utf8mb4",
+      "poolSize": 10,
+      "maxRetries": 60,
+      "retryDelay": 1000
+    },
+    "postgres": {
+      "host": "postgres",
+      "port": 5432,
+      "database": "infrastructure_db",
+      "user": "infra_user",
+      "password": "infra_password",
+      "poolSize": 10,
+      "maxRetries": 60,
+      "retryDelay": 1000
+    }
+  },
+  "geoserver": {
+    "url": "http://geoserver:8080/geoserver",
+    "publicUrl": "http://localhost:8082/geoserver",
+    "user": "admin",
+    "password": "geoserver",
+    "workspace": "frontrunner",
+    "email": "admin@frontrunner.local",
+    "dataDir": "/opt/geoserver/data_dir",
+    "javaOpts": "-Xms512m -Xmx2048m -XX:MaxPermSize=512m",
+    "healthCheck": {
+      "interval": 30,
+      "timeout": 10,
+      "retries": 5,
+      "startPeriod": 90
+    }
+  },
+  "etl": {
+    "batchSize": 1000,
+    "coordinateBatchSize": 10000,
+    "maxWorkers": 4,
+    "chunkSize": 100,
+    "enableParallelProcessing": true,
+    "maxRetries": 5,
+    "retryBackoffBase": 2
+  },
+  "spatial": {
+    "bounds": {
+      "minLatitude": -60,
+      "maxLatitude": -20,
+      "minLongitude": 100,
+      "maxLongitude": 160
+    },
+    "sampleSize": 50000,
+    "coordinateSystem": "EPSG:4326"
+  },
+  "api": {
+    "timeout": 30000,
+    "maxFeatures": 50000,
+    "retryAttempts": 3,
+    "retryDelay": 1000
+  },
+  "mapbox": {
+    "token": "pk.eyJ1IjoiY291cHN0ZXI3NCIsImEiOiJja2xwdjRwaWYwc2Q2Mm9sYmprbzhueng2In0.p-FbkbBhJWBKW-evWZfmgw"
+  },
+  "security": {
+    "aesUuidKey": "a8ba99bd-6871-4344-a227-4c2807ef5fbc"
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "enableConsole": true,
+    "enableFile": false
+  }
+}
+
+
+

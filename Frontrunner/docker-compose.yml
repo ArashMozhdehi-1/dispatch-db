@@ -1,0 +1,297 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: frontrunner_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: kmtsdb
+      MYSQL_USER: kmtsuser
+      MYSQL_PASSWORD: kmtspass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backup.sql:/docker-entrypoint-initdb.d/backup.sql:ro
+    networks:
+      - frontrunner_network
+    command: 
+      - "--default-authentication-plugin=mysql_native_password"
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
+      - "--max_allowed_packet=512M"
+      - "--innodb_buffer_pool_size=512M"
+      - "--innodb_redo_log_capacity=512M"
+      - "--sql_mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  postgres:
+    image: postgis/postgis:15-3.3
+    container_name: frontrunner_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: infrastructure_db
+      POSTGRES_USER: infra_user
+      POSTGRES_PASSWORD: infra_password
+    ports:
+      - "5433:5432"  # Exposed to host: localhost:5433
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+    networks:
+      - frontrunner_network
+    command: 
+      - "postgres"
+      - "-c"
+      - "listen_addresses=*"  # Allow external connections
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U infra_user -d infrastructure_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  geometry_etl:
+    build:
+      context: .
+      dockerfile: Dockerfile.etl
+    container_name: frontrunner_geometry_etl
+    restart: "no"
+    command: >
+      sh -c "
+        echo '🚀 Starting data migration...' &&
+        echo 'Step 1: General data transfer from MySQL to PostgreSQL...' &&
+        python /app/etl/data_transfer.py || echo '⚠️ General migration completed with warnings (some tables may not exist)' &&
+        echo '' &&
+        echo 'Step 2: Extracting intersections and creating polygons...' &&
+        python /app/etl/extract_intersections.py &&
+        echo '✅ Migration complete!'
+      "
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: kmtsdb
+      MYSQL_USER: kmtsuser
+      MYSQL_PASSWORD: kmtspass
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: infrastructure_db
+      POSTGRES_USER: infra_user
+      POSTGRES_PASSWORD: infra_password
+      BATCH_SIZE: 1000
+    volumes:
+      - ./backups:/app/backups
+      - ./backups/frontrunnerv3_dbschema.sql:/app/frontrunnerv3_dbschema.sql:ro
+      - ./backups/backup.sql:/app/backup.sql:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - frontrunner_network
+
+  data_consolidator:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: frontrunner_data_consolidator
+    restart: "no"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: infrastructure_db
+      DB_USER: infra_user
+      DB_PASSWORD: infra_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+      geometry_etl:
+        condition: service_completed_successfully
+    networks:
+      - frontrunner_network
+    command: >
+      sh -c "
+        echo '⏳ Waiting for backend API to be ready...' &&
+        for i in 1 2 3 4 5 6 7 8 9 10; do
+          if node -e \"
+            const http = require('http');
+            const req = http.get('http://backend:3000/api/consolidated-locations', {timeout: 5000}, (res) => {
+              console.log('✅ Backend is ready!');
+              process.exit(0);
+            });
+            req.on('error', () => process.exit(1));
+            req.on('timeout', () => { req.destroy(); process.exit(1); });
+          \"; then
+            echo '🚀 Backend ready! Triggering intersection import...' &&
+            node -e \"
+              const http = require('http');
+              const options = {
+                hostname: 'backend',
+                port: 3000,
+                path: '/api/import-intersections',
+                method: 'GET',
+                timeout: 300000
+              };
+              const req = http.request(options, (res) => {
+                let data = '';
+                res.on('data', (chunk) => { data += chunk; });
+                res.on('end', () => {
+                  console.log('✅ Import completed with status:', res.statusCode);
+                  if (data.length > 0) console.log(data.substring(0, 500));
+                  process.exit(res.statusCode === 200 || res.statusCode === 201 ? 0 : 1);
+                });
+              });
+              req.on('error', (e) => {
+                console.error('❌ Import error:', e.message);
+                process.exit(1);
+              });
+              req.on('timeout', () => {
+                console.error('❌ Import timeout');
+                req.destroy();
+                process.exit(1);
+              });
+              req.end();
+            \"
+            exit 0
+          fi
+          echo '⏳ Backend not ready yet, waiting...' &&
+          sleep 5
+        done &&
+        echo '⚠️ Backend did not become ready in time, skipping import'
+      "
+
+  geoserver:
+    image: kartoza/geoserver:2.23.0
+    container_name: frontrunner_geoserver
+    restart: unless-stopped
+    environment:
+      GEOSERVER_ADMIN_USER: admin
+      GEOSERVER_ADMIN_PASSWORD: geoserver
+      GEOSERVER_ADMIN_EMAIL: admin@frontrunner.local
+      GEOWEBCACHE_CACHE_DIR: /opt/geoserver/data_dir/gwc
+      GEOSERVER_DATA_DIR: /opt/geoserver/data_dir
+      # Java memory settings
+      JAVA_OPTS: "-Xms512m -Xmx2048m -XX:MaxPermSize=512m"
+    ports:
+      - "8082:8080"
+    volumes:
+      - geoserver_data:/opt/geoserver/data_dir
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - frontrunner_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/geoserver/rest/about/version.json || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  geoserver_init:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: frontrunner_geoserver_init
+    restart: "no"
+    environment:
+      # GeoServer
+      GEOSERVER_URL: http://geoserver:8080/geoserver
+      GEOSERVER_USER: admin
+      GEOSERVER_PASSWORD: geoserver
+      GEOSERVER_WORKSPACE: frontrunner
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: infrastructure_db
+      POSTGRES_USER: infra_user
+      POSTGRES_PASSWORD: infra_password
+    volumes:
+      - ./scripts:/app/scripts
+    depends_on:
+      geoserver:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      geometry_etl:
+        condition: service_completed_successfully
+    networks:
+      - frontrunner_network
+    command: >
+      sh -c "
+        echo '⏳ Waiting for GeoServer to be ready...' &&
+        sleep 10 &&
+        for i in 1 2 3 4 5 6 7 8 9 10; do
+          if node -e \"
+            const http = require('http');
+            const req = http.get('http://geoserver:8080/geoserver/rest/about/version.json', {timeout: 5000}, (res) => {
+              console.log('✅ GeoServer is ready!');
+              process.exit(0);
+            });
+            req.on('error', () => process.exit(1));
+            req.on('timeout', () => { req.destroy(); process.exit(1); });
+          \"; then
+            echo '🚀 Configuring GeoServer workspace and layers...' &&
+            node /app/scripts/init-geoserver.js
+            exit 0
+          fi
+          echo '⏳ GeoServer not ready yet, waiting...' &&
+          sleep 5
+        done &&
+        echo '⚠️ GeoServer did not become ready in time'
+      "
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: frontrunner_backend
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: infrastructure_db
+      DB_USER: infra_user
+      DB_PASSWORD: infra_password
+      GEOSERVER_URL: http://geoserver:8080/geoserver
+      GEOSERVER_USER: admin
+      GEOSERVER_PASSWORD: geoserver
+      GEOSERVER_WORKSPACE: frontrunner
+      # API
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api/graphql
+      NEXT_PUBLIC_MAPBOX_TOKEN: pk.eyJ1IjoiY291cHN0ZXI3NCIsImEiOiJja2xwdjRwaWYwc2Q2Mm9sYmprbzhueng2In0.p-FbkbBhJWBKW-evWZfmgw
+      NEXT_PUBLIC_GEOSERVER_URL: http://localhost:8082/geoserver
+      NODE_ENV: development
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./components:/app/components
+      - ./pages:/app/pages
+      - ./lib:/app/lib
+      - ./scripts:/app/scripts
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      postgres:
+        condition: service_healthy
+      geoserver:
+        condition: service_healthy
+      geoserver_init:
+        condition: service_completed_successfully
+    networks:
+      - frontrunner_network
+    command: npm run dev
+
+volumes:
+  postgres_data:
+  mysql_data:
+  geoserver_data:
+
+networks:
+  frontrunner_network:
+    driver: bridge
+

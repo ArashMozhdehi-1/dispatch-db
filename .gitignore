@@ -1,3 +1,11 @@
 backend/public/*
 backend/node_modules/*
 backend/.next/*
+geoserver_data/
+.mypy_cache/
+.ipynb_checkpoints/
+.vscode/
+# Exclude large backup files
+Frontrunner/backups/*.sql
+*.sql.backup
+*.backup

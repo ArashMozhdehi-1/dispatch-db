@@ -1,0 +1,21 @@
+{
+  "name": "frontrunner-infrastructure-viewer",
+  "version": "1.0.0",
+  "description": "FrontRunner Mine Infrastructure Viewer",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "pg": "^8.11.0",
+    "mysql2": "^3.6.0",
+    "dotenv": "^16.3.0",
+    "mapbox-gl": "^3.0.0"
+  }
+}
+
+

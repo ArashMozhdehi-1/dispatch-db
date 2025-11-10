@@ -1,0 +1,360 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Layer Manifest",
+  "description": "Standardized specification for dynamic layer registration in the Dispatch Database platform",
+  "type": "object",
+  "required": [
+    "manifestVersion",
+    "layerId",
+    "workspace",
+    "dataSource",
+    "metadata",
+    "geometry",
+    "services",
+    "accessControl"
+  ],
+  "properties": {
+    "manifestVersion": {
+      "type": "string",
+      "description": "Version of the manifest specification",
+      "enum": ["1.0.0"]
+    },
+    "layerId": {
+      "type": "string",
+      "description": "Unique identifier for the layer within the platform",
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "minLength": 3,
+      "maxLength": 50
+    },
+    "workspace": {
+      "type": "string",
+      "description": "GeoServer workspace name",
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "minLength": 3,
+      "maxLength": 20
+    },
+    "dataSource": {
+      "type": "object",
+      "description": "Data source configuration",
+      "required": ["type", "connection"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["postgis", "geotiff", "shapefile", "wfs", "wms"],
+          "description": "Type of data source"
+        },
+        "connection": {
+          "type": "object",
+          "description": "Connection parameters specific to data source type",
+          "properties": {
+            "host": { "type": "string" },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "database": { "type": "string" },
+            "schema": { "type": "string" },
+            "table": { "type": "string" },
+            "username": { "type": "string" },
+            "password": { "type": "string" },
+            "url": { "type": "string", "format": "uri" },
+            "filePath": { "type": "string" }
+          }
+        },
+        "query": {
+          "type": "string",
+          "description": "Optional SQL query or filter for data source"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Layer metadata and documentation",
+      "required": ["title", "description"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Human-readable layer title",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed layer description",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "keywords": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Keywords for layer discovery"
+        },
+        "category": {
+          "type": "string",
+          "description": "Layer category for organization",
+          "enum": ["infrastructure", "environmental", "operational", "safety", "maintenance", "planning"]
+        },
+        "version": {
+          "type": "string",
+          "description": "Layer version",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        },
+        "contact": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "email": { "type": "string", "format": "email" },
+            "organization": { "type": "string" }
+          }
+        }
+      }
+    },
+    "geometry": {
+      "type": "object",
+      "description": "Geometry configuration",
+      "required": ["type", "crs"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["Point", "LineString", "Polygon", "MultiPoint", "MultiLineString", "MultiPolygon"],
+          "description": "PostGIS geometry type"
+        },
+        "crs": {
+          "type": "object",
+          "description": "Coordinate reference system",
+          "required": ["code", "name"],
+          "properties": {
+            "code": {
+              "type": "string",
+              "pattern": "^EPSG:\\d+$",
+              "description": "EPSG code (e.g., EPSG:4326)"
+            },
+            "name": {
+              "type": "string",
+              "description": "Human-readable CRS name"
+            }
+          }
+        },
+        "bounds": {
+          "type": "object",
+          "description": "Layer bounding box",
+          "properties": {
+            "minX": { "type": "number" },
+            "minY": { "type": "number" },
+            "maxX": { "type": "number" },
+            "maxY": { "type": "number" }
+          }
+        }
+      }
+    },
+    "services": {
+      "type": "object",
+      "description": "Service configuration",
+      "properties": {
+        "wms": {
+          "type": "object",
+          "description": "WMS service configuration",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "formats": {
+              "type": "array",
+              "items": { "type": "string" },
+              "default": ["image/png", "image/jpeg"]
+            },
+            "transparency": { "type": "boolean", "default": true }
+          }
+        },
+        "wfs": {
+          "type": "object",
+          "description": "WFS service configuration",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "formats": {
+              "type": "array",
+              "items": { "type": "string" },
+              "default": ["application/json", "application/gml+xml"]
+            },
+            "maxFeatures": { "type": "integer", "default": 1000 }
+          }
+        },
+        "wcs": {
+          "type": "object",
+          "description": "WCS service configuration (for raster data)",
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "formats": {
+              "type": "array",
+              "items": { "type": "string" },
+              "default": ["GeoTIFF", "NetCDF"]
+            }
+          }
+        }
+      }
+    },
+    "styling": {
+      "type": "object",
+      "description": "Layer styling configuration",
+      "properties": {
+        "defaultStyle": {
+          "type": "object",
+          "description": "Default style configuration",
+          "properties": {
+            "name": { "type": "string" },
+            "type": {
+              "type": "string",
+              "enum": ["sld", "mbs", "css"]
+            },
+            "definition": { "type": "string" }
+          }
+        },
+        "alternateStyles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "title": { "type": "string" },
+              "type": { "type": "string" },
+              "definition": { "type": "string" }
+            }
+          }
+        },
+        "dynamicStyling": {
+          "type": "object",
+          "description": "Dynamic styling based on attributes",
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "rules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "condition": { "type": "string" },
+                  "style": { "type": "object" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "accessControl": {
+      "type": "object",
+      "description": "Access control and permissions",
+      "required": ["visibility", "permissions"],
+      "properties": {
+        "visibility": {
+          "type": "string",
+          "enum": ["public", "restricted", "private"],
+          "description": "Layer visibility level"
+        },
+        "permissions": {
+          "type": "object",
+          "properties": {
+            "read": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Roles/users with read access"
+            },
+            "write": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Roles/users with write access"
+            },
+            "admin": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Roles/users with admin access"
+            }
+          }
+        },
+        "dataClassification": {
+          "type": "string",
+          "enum": ["public", "internal", "confidential", "restricted"],
+          "description": "Data classification level"
+        }
+      }
+    },
+    "caching": {
+      "type": "object",
+      "description": "Caching configuration",
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "strategy": {
+          "type": "string",
+          "enum": ["tile", "feature", "none"],
+          "default": "tile"
+        },
+        "tileSize": { "type": "integer", "default": 256 },
+        "zoomLevels": {
+          "type": "object",
+          "properties": {
+            "min": { "type": "integer", "default": 0 },
+            "max": { "type": "integer", "default": 18 }
+          }
+        },
+        "expiration": {
+          "type": "integer",
+          "description": "Cache expiration time in seconds",
+          "default": 3600
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "description": "Data validation rules",
+      "properties": {
+        "schema": {
+          "type": "object",
+          "description": "Attribute schema validation",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "required": { "type": "boolean" },
+              "constraints": { "type": "object" }
+            }
+          }
+        },
+        "geometry": {
+          "type": "object",
+          "properties": {
+            "validityCheck": { "type": "boolean", "default": true },
+            "simplification": { "type": "number", "default": 0.001 }
+          }
+        }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "description": "Layer lifecycle management",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["draft", "review", "approved", "published", "deprecated", "archived"],
+          "default": "draft"
+        },
+        "approvalWorkflow": {
+          "type": "object",
+          "properties": {
+            "required": { "type": "boolean", "default": true },
+            "approvers": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "retention": {
+          "type": "object",
+          "properties": {
+            "policy": { "type": "string" },
+            "duration": { "type": "integer" },
+            "unit": { "type": "string", "enum": ["days", "months", "years"] }
+          }
+        }
+      }
+    }
+  }
+}

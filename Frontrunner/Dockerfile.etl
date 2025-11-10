@@ -1,0 +1,30 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    default-mysql-client \
+    default-libmysqlclient-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages
+COPY etl/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy SQL files from backups directory
+COPY backups/backup.sql /app/backups/backup.sql
+COPY backups/frontrunnerv3_dbschema.sql /app/backups/frontrunnerv3_dbschema.sql
+
+# Copy migration scripts
+COPY etl/ /app/etl/
+
+# Create directories
+RUN mkdir -p /app/backups /app/csv_export
+
+# Run migration
+CMD ["python", "/app/etl/migrate.py"]
+
