@@ -12,7 +12,7 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./backup.sql:/docker-entrypoint-initdb.d/backup.sql:ro
+      - ./backups/backup.sql:/docker-entrypoint-initdb.d/backup.sql:ro
     networks:
       - frontrunner_network
     command: 
@@ -55,6 +55,35 @@ services:
       timeout: 5s
       retries: 5
 
+  mysql_decrypt:
+    build:
+      context: .
+      dockerfile: Dockerfile.etl
+    container_name: frontrunner_mysql_decrypt
+    restart: "no"
+    command: >
+      sh -c "
+        echo '🔓 Step 1: Decrypting encrypted columns in MySQL...' &&
+        echo 'Waiting for MySQL to finish loading backup.sql...' &&
+        sleep 30 &&
+        python /app/etl/decrypt_and_translate_coordinates.py &&
+        echo '' &&
+        echo '🔍 Verifying decryption...' &&
+        python /app/etl/verify_decryption.py &&
+        echo '✅ Decryption and coordinate translation complete!'
+      "
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: kmtsdb
+      MYSQL_USER: root
+      MYSQL_PASSWORD: rootpassword
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - frontrunner_network
+
   geometry_etl:
     build:
       context: .
@@ -64,11 +93,14 @@ services:
     command: >
       sh -c "
         echo '🚀 Starting data migration...' &&
-        echo 'Step 1: General data transfer from MySQL to PostgreSQL...' &&
-        python /app/etl/data_transfer.py || echo '⚠️ General migration completed with warnings (some tables may not exist)' &&
+        echo 'Step 1: Transferring 4 main tables with decrypted data...' &&
+        python /app/etl/transfer_main_tables.py &&
         echo '' &&
-        echo 'Step 2: Extracting intersections and creating polygons...' &&
-        python /app/etl/extract_intersections.py &&
+        echo 'Step 2: Extracting consolidated locations (pit, parking, crusher, fuel)...' &&
+        python /app/etl/extract_consolidated_locations.py &&
+        echo '' &&
+        echo 'Step 3: Extracting intersections and creating polygons...' &&
+        python /app/etl/extract_intersections_fixed.py &&
         echo '✅ Migration complete!'
       "
     environment:

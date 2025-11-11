@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import logging
+import math
 import mysql.connector
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -249,56 +250,173 @@ def create_intersection_polygons(grouped_intersections):
     cursor = conn.cursor()
     
     added_count = 0
+    logger.info(f"=== CREATING POLYGONS FOR {len(grouped_intersections)} INTERSECTIONS ===")
     
     for intersection_name, intersection_data in grouped_intersections.items():
         try:
             coordinates = intersection_data['coordinates']
             
-            # Calculate center point
-            lats = [c['latitude'] for c in coordinates]
-            lons = [c['longitude'] for c in coordinates]
+            # Debug specific intersections
+            if intersection_name == 'I20' or intersection_name == 'INT_49':
+                logger.info(f"DEBUG {intersection_name}: Processing {len(coordinates)} coordinates")
+            
+            # Get coordinate IDs
             coord_ids = [str(c['coordinate_id']) for c in coordinates]
             
-            center_lat = sum(lats) / len(lats)
-            center_lon = sum(lons) / len(lons)
+            # Calculate center from LOCAL coordinates and transform to lat/lon using UTM
+            # UTM Zone 50S parameters for Yandi mining area
+            LAT_OFFSET = -22.74
+            LNG_OFFSET = 119.25
+            NORTHING_ORIGIN = 7337000  # meters
+            EASTING_ORIGIN = 676000    # meters
+            
+            # Get local mine coordinates (in millimeters) for area calculation
+            local_coords = [(c['coord_x'], c['coord_y']) for c in coordinates if c['coord_x'] is not None and c['coord_y'] is not None]
+            
+            # Calculate center lat/lon from local coordinates using UTM transformation
+            if len(local_coords) > 0:
+                # Calculate center in millimeters
+                center_x_mm = sum([c[0] for c in local_coords]) / len(local_coords)
+                center_y_mm = sum([c[1] for c in local_coords]) / len(local_coords)
+                
+                # Convert mm to meters (UTM coordinates)
+                easting = center_x_mm / 1000.0
+                northing = center_y_mm / 1000.0
+                
+                # UTM Zone 50S to WGS84 conversion
+                center_lat = LAT_OFFSET + (northing - NORTHING_ORIGIN) / 111000.0
+                center_lon = LNG_OFFSET + (easting - EASTING_ORIGIN) / (111000.0 * abs(math.cos(math.radians(LAT_OFFSET))))
+            else:
+                # Fallback to existing lat/lon if no local coordinates
+                lats = [c['latitude'] for c in coordinates]
+                lons = [c['longitude'] for c in coordinates]
+                center_lat = sum(lats) / len(lats)
+                center_lon = sum(lons) / len(lons)
+            
+            # Debug: log local coordinates status for specific intersections
+            if intersection_name == 'I20' or intersection_name == 'INT_49':
+                logger.info(f"DEBUG {intersection_name}: {len(local_coords)}/{len(coordinates)} points have local coords")
+                if len(local_coords) > 0:
+                    logger.info(f"DEBUG {intersection_name}: Center UTM (m): E={easting:.2f}, N={northing:.2f}")
+                    logger.info(f"DEBUG {intersection_name}: Calculated lat/lon: {center_lat:.8f}, {center_lon:.8f}")
+                else:
+                    logger.info(f"DEBUG {intersection_name}: Sample coord keys: {list(coordinates[0].keys())}")
             
             if len(coordinates) == 1:
-                # Single point - create small circular buffer for intersection
+                # Single point - create small circular buffer for intersection (15 meter radius)
                 cursor.execute("""
+                    WITH buffered AS (
+                        SELECT ST_Buffer(ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, 15)::geometry as geom
+                    )
                     INSERT INTO consolidated_intersections (
                         intersection_name, total_points, center_latitude, center_longitude,
                         center_point, intersection_polygon, intersection_boundary, area_sqm,
                         all_coordinate_ids, intersection_type
-                    ) VALUES (%s, %s, %s, %s, 
-                             ST_SetSRID(ST_MakePoint(%s, %s), 4326),
-                             ST_Buffer(ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, 15)::geometry,
-                             ST_ExteriorRing(ST_Buffer(ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, 15)::geometry),
-                             ST_Area(ST_Buffer(ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, 15)),
-                             %s, %s)
+                    ) 
+                    SELECT %s, %s, %s, %s,
+                           ST_SetSRID(ST_MakePoint(%s, %s), 4326),
+                           geom,
+                           ST_ExteriorRing(geom),
+                           PI() * 15 * 15,
+                           %s, %s
+                    FROM buffered
                 """, (
+                    center_lon, center_lat,
                     intersection_name, len(coordinates), center_lat, center_lon,
-                    center_lon, center_lat, center_lon, center_lat, 
-                    center_lon, center_lat, center_lon, center_lat,
+                    center_lon, center_lat,
                     coord_ids, intersection_data['intersection_type']
                 ))
-            else:
-                # Multiple points - create convex hull
+            elif len(local_coords) >= 3:
+                # Multiple points with local coordinates - use local coords for area calculation
+                # Convert from millimeters to meters
+                local_points_meters = [(x / 1000.0, y / 1000.0) for x, y in local_coords]
+                
+                # Debug: Check coordinate range
+                if intersection_name in ['I20', 'INT_49']:
+                    x_coords = [p[0] for p in local_points_meters]
+                    y_coords = [p[1] for p in local_points_meters]
+                    logger.info(f"{intersection_name} CALC: After /1000 conversion:")
+                    logger.info(f"{intersection_name} CALC: X in meters (first 5): {x_coords[:5]}")
+                    logger.info(f"{intersection_name} CALC: Y in meters (first 5): {y_coords[:5]}")
+                    logger.info(f"{intersection_name} CALC: X range: {min(x_coords):.2f} to {max(x_coords):.2f} meters (diff: {max(x_coords)-min(x_coords):.2f}m)")
+                    logger.info(f"{intersection_name} CALC: Y range: {min(y_coords):.2f} to {max(y_coords):.2f} meters (diff: {max(y_coords)-min(y_coords):.2f}m)")
+                
+                # Calculate area using Shoelace formula in Python (more reliable)
+                def calculate_polygon_area(points):
+                    """Calculate area of polygon using Shoelace formula"""
+                    n = len(points)
+                    if n < 3:
+                        return 0
+                    area = 0.0
+                    for i in range(n):
+                        j = (i + 1) % n
+                        area += points[i][0] * points[j][1]
+                        area -= points[j][0] * points[i][1]
+                    return abs(area) / 2.0
+                
+                # Sort points by angle to form proper polygon
+                cx = sum(p[0] for p in local_points_meters) / len(local_points_meters)
+                cy = sum(p[1] for p in local_points_meters) / len(local_points_meters)
+                
+                def angle_from_center(p):
+                    return math.atan2(p[1] - cy, p[0] - cx)
+                
+                sorted_points = sorted(local_points_meters, key=angle_from_center)
+                area_sqm = calculate_polygon_area(sorted_points)
+                
+                # Debug: Show final area calculation
+                if intersection_name in ['I20', 'INT_49']:
+                    logger.info(f"{intersection_name} CALC: Calculated area using Shoelace formula: {area_sqm:.2f} sqm")
+                    logger.info(f"{intersection_name} CALC: That's approximately {area_sqm/10000:.4f} hectares or {(area_sqm**0.5):.1f}m x {(area_sqm**0.5):.1f}m if square")
+                
+                # Use geographic coordinates for the polygon geometry
                 points_wkt = ', '.join([f"{lon} {lat}" for lon, lat in zip(lons, lats)])
                 
                 cursor.execute("""
+                    WITH geo_geom AS (
+                        SELECT ST_ConvexHull(ST_GeomFromText('MULTIPOINT(' || %s || ')', 4326)) as geo_hull
+                    )
                     INSERT INTO consolidated_intersections (
                         intersection_name, total_points, center_latitude, center_longitude,
                         center_point, intersection_polygon, intersection_boundary, area_sqm,
                         all_coordinate_ids, intersection_type
-                    ) VALUES (%s, %s, %s, %s, 
-                             ST_Centroid(ST_GeomFromText('MULTIPOINT(' || %s || ')', 4326)),
-                             ST_ConvexHull(ST_GeomFromText('MULTIPOINT(' || %s || ')', 4326)),
-                             ST_ExteriorRing(ST_ConvexHull(ST_GeomFromText('MULTIPOINT(' || %s || ')', 4326))),
-                             ST_Area(ST_ConvexHull(ST_GeomFromText('MULTIPOINT(' || %s || ')', 4326))::geography),
-                             %s, %s)
+                    ) 
+                    SELECT %s, %s, %s, %s,
+                           ST_Centroid(geo_hull),
+                           geo_hull,
+                           ST_ExteriorRing(geo_hull),
+                           %s,
+                           %s, %s
+                    FROM geo_geom
                 """, (
+                    points_wkt,
                     intersection_name, len(coordinates), center_lat, center_lon,
-                    points_wkt, points_wkt, points_wkt, points_wkt,
+                    area_sqm,
+                    coord_ids, intersection_data['intersection_type']
+                ))
+            else:
+                # Fallback to geographic coordinates
+                points_wkt = ', '.join([f"{lon} {lat}" for lon, lat in zip(lons, lats)])
+                
+                cursor.execute("""
+                    WITH geom AS (
+                        SELECT ST_ConvexHull(ST_GeomFromText('MULTIPOINT(' || %s || ')', 4326)) as hull
+                    )
+                    INSERT INTO consolidated_intersections (
+                        intersection_name, total_points, center_latitude, center_longitude,
+                        center_point, intersection_polygon, intersection_boundary, area_sqm,
+                        all_coordinate_ids, intersection_type
+                    ) 
+                    SELECT %s, %s, %s, %s,
+                           ST_Centroid(hull),
+                           hull,
+                           ST_ExteriorRing(hull),
+                           ST_Area(hull::geography),
+                           %s, %s
+                    FROM geom
+                """, (
+                    points_wkt,
+                    intersection_name, len(coordinates), center_lat, center_lon,
                     coord_ids, intersection_data['intersection_type']
                 ))
             
@@ -341,7 +459,7 @@ def show_intersection_results():
     
     # Show some examples
     cursor.execute("""
-        SELECT intersection_name, total_points, round(area_sqm::numeric, 0) as area_sqm
+        SELECT intersection_name, total_points, round(area_sqm::numeric, 2) as area_sqm
         FROM consolidated_intersections 
         ORDER BY total_points DESC
         LIMIT 10

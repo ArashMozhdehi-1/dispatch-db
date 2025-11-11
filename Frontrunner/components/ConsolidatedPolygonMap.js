@@ -507,8 +507,10 @@ const ConsolidatedPolygonMap = () => {
             widget._creditContainer.innerHTML = '';
           }
         } catch (e) {}
-        const allLinks = mapContainer.current.querySelectorAll('a[href*="cesium.com"]');
-        allLinks.forEach(link => link.style.display = 'none');
+        if (mapContainer.current) {
+          const allLinks = mapContainer.current.querySelectorAll('a[href*="cesium.com"]');
+          allLinks.forEach(link => link.style.display = 'none');
+        }
         
         const style = document.createElement('style');
         style.textContent = `
@@ -1635,48 +1637,109 @@ const ConsolidatedPolygonMap = () => {
                         borderRadius: '2px',
                         marginRight: '8px'
                       }}></div>
-                      <span>Intersections ({intersectionsData.consolidated_intersections.length})</span>
+                      <span style={{ color: 'white', fontWeight: '500' }}>Intersections ({intersectionsData.consolidated_intersections.length})</span>
                     </label>
                   </div>
-                  
-                  {surveyPointsData && (
-                    <div style={{ marginBottom: '6px' }}>
-                      <label style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        cursor: 'pointer',
-                        color: '#bdc3c7',
-                        fontSize: '12px'
-                      }}>
-                        <input
-                          type="checkbox"
-                          checked={showSurveyPolylines}
-                          onChange={(e) => {
-                            setShowSurveyPolylines(e.target.checked);
+                </div>
+              </div>
+            )}
+            
+            {surveyPointsData && surveyPointsData.coordinates && surveyPointsData.coordinates.length > 0 && (
+              <div style={{ borderLeft: '3px solid #3498db', margin: '8px 0' }}>
+                <div 
+                  id="survey-points-header"
+                  style={{
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}
+                  onClick={() => toggleSection('survey-points-content', 'survey-points-arrow')}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      backgroundColor: '#3498db',
+                      borderRadius: '3px',
+                      marginRight: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                    </div>
+                    <span style={{ color: '#3498db', fontWeight: '600', fontSize: '13px' }}>Survey Points</span>
+                    <div style={{
+                      backgroundColor: '#3498db',
+                      color: 'white',
+                      borderRadius: '10px',
+                      padding: '2px 8px',
+                      marginLeft: '8px',
+                      fontSize: '10px'
+                    }}>
+                      {surveyPointsData.coordinates.length}
+                    </div>
+                  </div>
+                  <div 
+                    id="survey-points-arrow"
+                    style={{ color: '#3498db', fontSize: '14px' }}
+                  >
+                    ▼
+                  </div>
+                </div>
+                <div 
+                  id="survey-points-content"
+                  style={{ padding: '8px 12px 8px 32px' }}
+                >
+                  <div style={{ marginBottom: '6px' }}>
+                    <label style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      cursor: 'pointer',
+                      color: '#bdc3c7',
+                      fontSize: '12px'
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={showSurveyPolylines}
+                        onChange={(e) => {
+                          setShowSurveyPolylines(e.target.checked);
+                          console.log('[Consolidated Map] 📍 Toggling survey points:', e.target.checked);
+                          if (cesiumViewerRef.current && entitiesRef.current.length > 0) {
+                            let toggledCount = 0;
                             entitiesRef.current.forEach(entity => {
-                              if (entity.properties && entity.properties.category === 'survey_point') {
+                              if (entity && entity.properties && entity.properties.category === 'survey_point') {
                                 entity.show = e.target.checked;
+                                toggledCount++;
                               }
                             });
-                            if (cesiumViewerRef.current?.scene) {
+                            console.log(`[Consolidated Map] 📍 Toggled ${toggledCount} survey point entities`);
+                            if (cesiumViewerRef.current.scene) {
                               cesiumViewerRef.current.scene.requestRender();
                             }
-                          }}
-                          style={{
-                            marginRight: '8px',
-                            cursor: 'pointer'
-                          }}
-                        />
-                        <div style={{
-                          width: '12px',
-                          height: '2px',
-                          backgroundColor: '#808080',
-                          marginRight: '8px'
-                        }}></div>
-                        <span>Survey Roads ({surveyPointsData.total_points} pts)</span>
-                      </label>
-                    </div>
-                  )}
+                          }
+                        }}
+                        style={{
+                          marginRight: '8px',
+                          cursor: 'pointer',
+                          accentColor: '#3498db'
+                        }}
+                      />
+                      <div style={{
+                        width: '8px',
+                        height: '8px',
+                        backgroundColor: 'white',
+                        borderRadius: '50%',
+                        marginRight: '10px',
+                        border: '1px solid #3498db'
+                      }}></div>
+                      <span style={{ color: 'white', fontWeight: '500' }}>
+                        Survey Points ({surveyPointsData.coordinates.length})
+                      </span>
+                    </label>
+                  </div>
                 </div>
               </div>
             )}

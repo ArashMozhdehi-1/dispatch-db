@@ -153,7 +153,7 @@ def clean_existing_database():
 
 def import_schema():
     """Import schema from SQL file"""
-    schema_file = '/app/frontrunnerv3_dbschema.sql'
+    schema_file = '/app/backups/frontrunnerv3_dbschema.sql'
     
     if not os.path.exists(schema_file):
         logger.error(f"Schema file not found: {schema_file}")
@@ -393,6 +393,84 @@ def transfer_table_data(table_name):
         logger.error(f"Failed to transfer {table_name}: {e}")
         return False
 
+def add_decrypted_columns_to_postgres():
+    """Add decrypted coordinate columns to PostgreSQL tables that have them in MySQL"""
+    logger.info("Adding decrypted coordinate columns to PostgreSQL...")
+    
+    # Tables that may have encrypted coordinates
+    coordinate_tables = ['coordinate', 'dump_node', 'travel']
+    
+    try:
+        with get_mysql_connection() as mysql_conn:
+            with get_postgres_connection() as pg_conn:
+                mysql_cursor = mysql_conn.cursor()
+                pg_cursor = pg_conn.cursor()
+                
+                for table_name in coordinate_tables:
+                    if not table_exists_mysql(table_name) or not table_exists_postgres(table_name):
+                        continue
+                    
+                    # Check which decrypted columns exist in MySQL
+                    mysql_cursor.execute(f"""
+                        SELECT column_name
+                        FROM information_schema.columns
+                        WHERE table_schema = DATABASE()
+                        AND table_name = %s
+                        AND (column_name LIKE 'coord_%' 
+                            OR column_name LIKE 'dest_%'
+                            OR column_name IN ('latitude', 'longitude', 'altitude'))
+                    """, (table_name,))
+                    
+                    mysql_decrypted_cols = [row[0] for row in mysql_cursor.fetchall()]
+                    
+                    if not mysql_decrypted_cols:
+                        continue
+                    
+                    logger.info(f"Adding decrypted columns to {table_name}...")
+                    
+                    # Add missing columns to PostgreSQL
+                    for col_name in mysql_decrypted_cols:
+                        try:
+                            # Check if column exists in PostgreSQL
+                            pg_cursor.execute("""
+                                SELECT COUNT(*) 
+                                FROM information_schema.columns 
+                                WHERE table_schema = 'public' 
+                                AND table_name = %s 
+                                AND column_name = %s
+                            """, (table_name, col_name))
+                            
+                            exists = pg_cursor.fetchone()[0] > 0
+                            
+                            if not exists:
+                                # Determine column type based on name
+                                if col_name in ['latitude', 'longitude', 'altitude']:
+                                    col_type = 'DOUBLE PRECISION'
+                                elif col_name.startswith(('coord_', 'dest_')):
+                                    col_type = 'DOUBLE PRECISION'
+                                else:
+                                    col_type = 'DOUBLE PRECISION'
+                                
+                                pg_cursor.execute(f"""
+                                    ALTER TABLE "{table_name}" 
+                                    ADD COLUMN "{col_name}" {col_type}
+                                """)
+                                logger.debug(f"  Added column {col_name} to {table_name}")
+                        except Exception as e:
+                            logger.warning(f"  Failed to add column {col_name} to {table_name}: {e}")
+                    
+                    pg_conn.commit()
+                    logger.info(f"✓ {table_name}: Added {len(mysql_decrypted_cols)} decrypted columns")
+                
+                pg_cursor.close()
+                mysql_cursor.close()
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to add decrypted columns: {e}")
+        return False
+
 def verify_data_transfer():
     """Verify data transfer by comparing row counts"""
     logger.info("Verifying data transfer...")
@@ -474,15 +552,20 @@ def main():
         logger.error("Schema import failed")
         sys.exit(1)
     
+    # Add decrypted columns to PostgreSQL (they were added to MySQL by decrypt script)
+    logger.info("Step 3: Adding decrypted coordinate columns to PostgreSQL...")
+    if not add_decrypted_columns_to_postgres():
+        logger.warning("Failed to add some decrypted columns, continuing anyway...")
+    
     # Get table list from MySQL
-    logger.info("Step 3: Getting table list from MySQL...")
+    logger.info("Step 4: Getting table list from MySQL...")
     mysql_tables = get_table_list()
     if not mysql_tables:
         logger.error("No tables found in MySQL")
         sys.exit(1)
     
     # Filter to only tables that exist in both databases
-    logger.info("Step 4: Filtering tables that exist in both databases...")
+    logger.info("Step 5: Filtering tables that exist in both databases...")
     valid_tables = []
     for table_name in mysql_tables:
         if table_exists_mysql(table_name) and table_exists_postgres(table_name):
@@ -497,7 +580,7 @@ def main():
         sys.exit(1)
     
     # Transfer data
-    logger.info(f"Step 5: Transferring data from {len(valid_tables)} tables...")
+    logger.info(f"Step 6: Transferring data from {len(valid_tables)} tables...")
     successful_tables = 0
     failed_tables = 0
     
@@ -509,7 +592,7 @@ def main():
             failed_tables += 1
     
     # Verify transfer
-    logger.info("Step 6: Verifying data transfer...")
+    logger.info("Step 7: Verifying data transfer...")
     verification_passed = verify_data_transfer()
     
     # Summary
@@ -531,68 +614,4 @@ def main():
         sys.exit(1)
 
 if __name__ == "__main__":
-        sys.exit(1)
-    
-    # Import schema
-    logger.info("Step 2: Importing schema...")
-    if not import_schema():
-        logger.error("Schema import failed")
-        sys.exit(1)
-    
-    # Get table list from MySQL
-    logger.info("Step 3: Getting table list from MySQL...")
-    mysql_tables = get_table_list()
-    if not mysql_tables:
-        logger.error("No tables found in MySQL")
-        sys.exit(1)
-    
-    # Filter to only tables that exist in both databases
-    logger.info("Step 4: Filtering tables that exist in both databases...")
-    valid_tables = []
-    for table_name in mysql_tables:
-        if table_exists_mysql(table_name) and table_exists_postgres(table_name):
-            valid_tables.append(table_name)
-        else:
-            logger.debug(f"Skipping {table_name} - not in both databases")
-    
-    logger.info(f"Found {len(valid_tables)} tables to transfer (out of {len(mysql_tables)} in MySQL)")
-    
-    if not valid_tables:
-        logger.warning("No tables exist in both databases. Check schema import.")
-        sys.exit(1)
-    
-    # Transfer data
-    logger.info(f"Step 5: Transferring data from {len(valid_tables)} tables...")
-    successful_tables = 0
-    failed_tables = 0
-    
-    for i, table_name in enumerate(valid_tables, 1):
-        logger.info(f"[{i}/{len(valid_tables)}] Processing {table_name}...")
-        if transfer_table_data(table_name):
-            successful_tables += 1
-        else:
-            failed_tables += 1
-    
-    # Verify transfer
-    logger.info("Step 6: Verifying data transfer...")
-    verification_passed = verify_data_transfer()
-    
-    # Summary
-    end_time = time.time()
-    elapsed_seconds = end_time - start_time
-    elapsed_minutes = elapsed_seconds / 60
-    
-    logger.info("=" * 60)
-    logger.info("MIGRATION COMPLETE!")
-    logger.info("=" * 60)
-    logger.info(f"Tables processed: {len(valid_tables)}")
-    logger.info(f"Successful: {successful_tables}")
-    logger.info(f"Failed: {failed_tables}")
-    logger.info(f"Total time: {elapsed_minutes:.1f} minutes")
-    logger.info(f"Verification: {'PASSED' if verification_passed else 'FAILED'}")
-    logger.info("=" * 60)
-    
-    if failed_tables > 0 or not verification_passed:
-        sys.exit(1)
-
-if __name__ == "__main__":
+    main()
