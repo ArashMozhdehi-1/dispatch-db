@@ -10,5 +10,5 @@ Frontrunner/backups/*.sql
 *.sql.backup
 *.backup
 Frontrunner/backup.sql
-Frontrunner/backups/*.sql
+Frontrunner/backups/*
 sql_backups/*
