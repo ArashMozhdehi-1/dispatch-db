@@ -15,12 +15,22 @@ const ConsolidatedPolygonMap = () => {
   const [surveyPathsData, setSurveyPathsData] = useState(null);
   const [coursesData, setCoursesData] = useState(null);
   const [roadMarkingsData, setRoadMarkingsData] = useState(null);
+  // Dispatch data
+  const [locations, setLocations] = useState([]);
+  const [segments, setSegments] = useState([]);
+  const [trolleySegments, setTrolleySegments] = useState([]);
+  const [wateringStations, setWateringStations] = useState([]);
+  const [speedMonitoring, setSpeedMonitoring] = useState([]);
+  const [dispatchIntersections, setDispatchIntersections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [visibleCategories, setVisibleCategories] = useState(new Set());
   const [showSurveyPaths, setShowSurveyPaths] = useState(true);
   const [showCourses, setShowCourses] = useState(true);
+  const [showSegments, setShowSegments] = useState(true);
+  const [showTrolleySegments, setShowTrolleySegments] = useState(true);
   const [baseLayer, setBaseLayer] = useState('night');
   const [viewMode, setViewMode] = useState('3D');
+  const [compassRotation, setCompassRotation] = useState(0);
   const getConsolidatedCategory = (category) => {
     if (!category) return 'default';
     const categoryStr = String(category);
@@ -154,10 +164,10 @@ const ConsolidatedPolygonMap = () => {
 
   useEffect(() => {
     if (mapLoaded && surveyPathsData && cesiumViewerRef.current) {
-      console.log('[Consolidated Map] 🛤️ useEffect triggered - Adding survey paths to map...');
-      console.log('[Consolidated Map] 🛤️ mapLoaded:', mapLoaded);
-      console.log('[Consolidated Map] 🛤️ surveyPathsData:', surveyPathsData);
-      console.log('[Consolidated Map] 🛤️ cesiumViewerRef.current:', !!cesiumViewerRef.current);
+      console.log('[Consolidated Map]  useEffect triggered - Adding survey paths to map...');
+      console.log('[Consolidated Map]  mapLoaded:', mapLoaded);
+      console.log('[Consolidated Map]  surveyPathsData:', surveyPathsData);
+      console.log('[Consolidated Map]  cesiumViewerRef.current:', !!cesiumViewerRef.current);
       addSurveyPathsToCesium(cesiumViewerRef.current);
     } else {
       console.log('[Consolidated Map] ⏳ Waiting for survey paths conditions:', {
@@ -170,10 +180,10 @@ const ConsolidatedPolygonMap = () => {
 
   useEffect(() => {
     if (mapLoaded && coursesData && cesiumViewerRef.current) {
-      console.log('[Consolidated Map] 🛤️ useEffect triggered - Adding courses to map...');
-      console.log('[Consolidated Map] 🛤️ mapLoaded:', mapLoaded);
-      console.log('[Consolidated Map] 🛤️ coursesData:', coursesData);
-      console.log('[Consolidated Map] 🛤️ cesiumViewerRef.current:', !!cesiumViewerRef.current);
+      console.log('[Consolidated Map]  useEffect triggered - Adding courses to map...');
+      console.log('[Consolidated Map]  mapLoaded:', mapLoaded);
+      console.log('[Consolidated Map]  coursesData:', coursesData);
+      console.log('[Consolidated Map]  cesiumViewerRef.current:', !!cesiumViewerRef.current);
       addCoursesToCesium(cesiumViewerRef.current);
     } else {
       console.log('[Consolidated Map] ⏳ Waiting for courses conditions:', {
@@ -183,6 +193,76 @@ const ConsolidatedPolygonMap = () => {
       });
     }
   }, [coursesData, mapLoaded]);
+
+  // Add dispatch segments
+  useEffect(() => {
+    if (mapLoaded && segments.length > 0 && cesiumViewerRef.current && showSegments) {
+      console.log('[Consolidated Map] 🛣️ Adding dispatch segments to map...', {
+        segmentCount: segments.length,
+        mapLoaded,
+        showSegments,
+        hasViewer: !!cesiumViewerRef.current
+      });
+      addSegmentsToCesium(cesiumViewerRef.current);
+    } else {
+      console.log('[Consolidated Map] ⏳ Waiting for segments conditions:', {
+        mapLoaded,
+        segmentCount: segments.length,
+        showSegments,
+        hasViewer: !!cesiumViewerRef.current
+      });
+    }
+  }, [segments, mapLoaded, showSegments]);
+
+  // Add dispatch trolley segments
+  useEffect(() => {
+    if (mapLoaded && trolleySegments.length > 0 && cesiumViewerRef.current && showTrolleySegments) {
+      console.log('[Consolidated Map] 🚋 Adding dispatch trolley segments to map...');
+      addTrolleySegmentsToCesium(cesiumViewerRef.current);
+    }
+  }, [trolleySegments, mapLoaded, showTrolleySegments]);
+
+  // Add dispatch locations
+  useEffect(() => {
+    if (mapLoaded && locations.length > 0 && cesiumViewerRef.current) {
+      console.log('[Consolidated Map] 📍 Adding dispatch locations to map...', {
+        locationCount: locations.length,
+        mapLoaded,
+        hasViewer: !!cesiumViewerRef.current
+      });
+      addDispatchLocationsToCesium(cesiumViewerRef.current);
+    } else {
+      console.log('[Consolidated Map] ⏳ Waiting for locations conditions:', {
+        mapLoaded,
+        locationCount: locations.length,
+        hasViewer: !!cesiumViewerRef.current
+      });
+    }
+  }, [locations, mapLoaded]);
+
+  // Add watering stations
+  useEffect(() => {
+    if (mapLoaded && wateringStations.length > 0 && cesiumViewerRef.current) {
+      console.log('[Consolidated Map] 💧 Adding watering stations to map...');
+      addWateringStationsToCesium(cesiumViewerRef.current);
+    }
+  }, [wateringStations, mapLoaded]);
+
+  // Add speed monitoring
+  useEffect(() => {
+    if (mapLoaded && speedMonitoring.length > 0 && cesiumViewerRef.current) {
+      console.log('[Consolidated Map] 🚦 Adding speed monitoring to map...');
+      addSpeedMonitoringToCesium(cesiumViewerRef.current);
+    }
+  }, [speedMonitoring, mapLoaded]);
+
+  // Add dispatch intersections
+  useEffect(() => {
+    if (mapLoaded && dispatchIntersections.length > 0 && cesiumViewerRef.current) {
+      console.log('[Consolidated Map] 🛑 Adding dispatch intersections to map...');
+      addDispatchIntersectionsToCesium(cesiumViewerRef.current);
+    }
+  }, [dispatchIntersections, mapLoaded]);
 
   useEffect(() => {
     if ((consolidatedData?.consolidated_locations || intersectionsData?.consolidated_intersections) && visibleCategories.size === 0) {
@@ -205,20 +285,20 @@ const ConsolidatedPolygonMap = () => {
       
       if (intersectionsData?.consolidated_intersections && intersectionsData.consolidated_intersections.length > 0) {
         uniqueCategories.add('intersection');
-        console.log('[Consolidated Map] ✅ Added intersection category with', intersectionsData.consolidated_intersections.length, 'intersections');
+        console.log('[Consolidated Map]  Added intersection category with', intersectionsData.consolidated_intersections.length, 'intersections');
       }
       
       setVisibleCategories(uniqueCategories);
-      console.log('[Consolidated Map] 📊 All categories initialized:', Array.from(uniqueCategories));
+      console.log('[Consolidated Map]  All categories initialized:', Array.from(uniqueCategories));
     }
   }, [consolidatedData, intersectionsData]);
 
   useEffect(() => {
     if (cesiumViewerRef.current && entitiesRef.current.length > 0) {
-      console.log('[Consolidated Map] 🔄 Updating entity visibility');
-      console.log('[Consolidated Map] 📊 visibleCategories:', Array.from(visibleCategories));
-      console.log('[Consolidated Map] 🛤️ showCourses:', showCourses);
-      console.log('[Consolidated Map] 🛤️ showSurveyPaths:', showSurveyPaths);
+      console.log('[Consolidated Map]  Updating entity visibility');
+      console.log('[Consolidated Map]  visibleCategories:', Array.from(visibleCategories));
+      console.log('[Consolidated Map]  showCourses:', showCourses);
+      console.log('[Consolidated Map]  showSurveyPaths:', showSurveyPaths);
       let intersectionCount = 0;
       let visibleIntersectionCount = 0;
       let locationCount = 0;
@@ -367,15 +447,240 @@ const ConsolidatedPolygonMap = () => {
         console.error('❌ Could not fetch road markings:', roadMarkingsResponse.status, errorText);
       }
       
+      // Fetch dispatch data via GraphQL
+      console.log('🚛 Fetching dispatch data via GraphQL...');
+      const [locationsResponse, segmentsResponse, trolleyResponse, wateringResponse, speedResponse, dispatchIntersectionsResponse] = await Promise.all([
+        fetch('/api/graphql', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `
+              query {
+                locations {
+                  location_id
+                  location_name
+                  latitude
+                  longitude
+                  unit_type
+                  location_category
+                }
+              }
+            `
+          })
+        }),
+        fetch('/api/graphql', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `
+              query {
+                segments {
+                  lane_id
+                  road_id
+                  geometry
+                  is_closed
+                  direction
+                  length_m
+                }
+              }
+            `
+          })
+        }),
+        fetch('/api/graphql', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `
+              query {
+                trolleySegments {
+                  lane_id
+                  lane_name
+                  direction
+                  length_m
+                  trolley_voltage
+                  trolley_current_limit
+                  trolley_wire_height
+                  start_latitude
+                  start_longitude
+                  end_latitude
+                  end_longitude
+                }
+              }
+            `
+          })
+        }),
+        fetch('/api/graphql', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `
+              query {
+                wateringStations {
+                  station_id
+                  station_name
+                  station_code
+                  station_type
+                  capacity_liters
+                  current_level_percent
+                  status
+                  latitude
+                  longitude
+                }
+              }
+            `
+          })
+        }),
+        fetch('/api/graphql', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `
+              query {
+                speedMonitoring {
+                  monitoring_id
+                  lane_id
+                  measure
+                  speed_kmh
+                  violation_type
+                  operational_mode
+                  latitude
+                  longitude
+                }
+              }
+            `
+          })
+        }),
+        fetch('/api/graphql', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `
+              query {
+                intersections {
+                  intersection_id
+                  intersection_name
+                  intersection_type
+                  geometry
+                  safety_buffer_m
+                  r_min_m
+                  created_at
+                }
+              }
+            `
+          })
+        })
+      ]);
+
+      // Parse responses with error handling
+      const parseResponse = async (response, name) => {
+        try {
+          const text = await response.text();
+          if (!text || text.trim().length === 0) {
+            console.warn(`[Consolidated Map] Empty response for ${name}`);
+            return { data: {} };
+          }
+          try {
+            return JSON.parse(text);
+          } catch (e) {
+            console.error(`[Consolidated Map] Failed to parse JSON for ${name}:`, text.substring(0, 200));
+            return { data: {}, errors: [{ message: `Invalid JSON response: ${e.message}` }] };
+          }
+        } catch (e) {
+          console.error(`[Consolidated Map] Error reading response for ${name}:`, e);
+          return { data: {}, errors: [{ message: e.message }] };
+        }
+      };
+
+      const [locationsData, segmentsData, trolleyData, wateringData, speedData, dispatchIntersectionsData] = await Promise.all([
+        parseResponse(locationsResponse, 'locations'),
+        parseResponse(segmentsResponse, 'segments'),
+        parseResponse(trolleyResponse, 'trolleySegments'),
+        parseResponse(wateringResponse, 'wateringStations'),
+        parseResponse(speedResponse, 'speedMonitoring'),
+        parseResponse(dispatchIntersectionsResponse, 'intersections')
+      ]);
+
+      // Log any GraphQL errors
+      if (locationsData.errors) console.error('[Consolidated Map] Locations GraphQL errors:', locationsData.errors);
+      if (segmentsData.errors) console.error('[Consolidated Map] Segments GraphQL errors:', segmentsData.errors);
+      if (trolleyData.errors) console.error('[Consolidated Map] Trolley GraphQL errors:', trolleyData.errors);
+      if (wateringData.errors) console.error('[Consolidated Map] Watering GraphQL errors:', wateringData.errors);
+      if (speedData.errors) console.error('[Consolidated Map] Speed GraphQL errors:', speedData.errors);
+      if (dispatchIntersectionsData.errors) console.error('[Consolidated Map] Intersections GraphQL errors:', dispatchIntersectionsData.errors);
+
+      const dispatchLocations = locationsData.data?.locations || [];
+      const dispatchSegments = segmentsData.data?.segments || [];
+      const dispatchTrolleySegments = trolleyData.data?.trolleySegments || [];
+      const dispatchWateringStations = wateringData.data?.wateringStations || [];
+      const dispatchSpeedMonitoring = speedData.data?.speedMonitoring || [];
+      const dispatchIntersectionsList = dispatchIntersectionsData.data?.intersections || [];
+
+      setLocations(dispatchLocations);
+      setSegments(dispatchSegments);
+      setTrolleySegments(dispatchTrolleySegments);
+      setWateringStations(dispatchWateringStations);
+      setSpeedMonitoring(dispatchSpeedMonitoring);
+      setDispatchIntersections(dispatchIntersectionsList);
+
+      console.log('✅ Loaded dispatch data via GraphQL:', {
+        locations: dispatchLocations.length,
+        segments: dispatchSegments.length,
+        trolleySegments: dispatchTrolleySegments.length,
+        wateringStations: dispatchWateringStations.length,
+        speedMonitoring: dispatchSpeedMonitoring.length,
+        intersections: dispatchIntersectionsList.length
+      });
+
+      // If map is already loaded, add dispatch data immediately
+      if (mapLoaded && cesiumViewerRef.current) {
+        console.log('[Consolidated Map] 🚛 Map already loaded, adding dispatch data immediately...');
+        setTimeout(() => {
+          if (dispatchLocations.length > 0) {
+            console.log('[Consolidated Map] 📍 Adding dispatch locations immediately...');
+            addDispatchLocationsToCesium(cesiumViewerRef.current);
+          }
+          if (dispatchSegments.length > 0 && showSegments) {
+            console.log('[Consolidated Map] 🛣️ Adding dispatch segments immediately...');
+            addSegmentsToCesium(cesiumViewerRef.current);
+          }
+          if (dispatchTrolleySegments.length > 0 && showTrolleySegments) {
+            console.log('[Consolidated Map] 🚋 Adding dispatch trolley segments immediately...');
+            addTrolleySegmentsToCesium(cesiumViewerRef.current);
+          }
+          if (dispatchWateringStations.length > 0) {
+            console.log('[Consolidated Map] 💧 Adding watering stations immediately...');
+            addWateringStationsToCesium(cesiumViewerRef.current);
+          }
+          if (dispatchSpeedMonitoring.length > 0) {
+            console.log('[Consolidated Map] 🚦 Adding speed monitoring immediately...');
+            addSpeedMonitoringToCesium(cesiumViewerRef.current);
+          }
+          if (dispatchIntersectionsList.length > 0) {
+            console.log('[Consolidated Map] 🛑 Adding dispatch intersections immediately...');
+            addDispatchIntersectionsToCesium(cesiumViewerRef.current);
+          }
+        }, 500);
+      }
+      
       if (!result.consolidated_locations || result.consolidated_locations.length === 0) {
         console.warn('⚠️ No consolidated locations found in response');
-        setMapError('No locations data available');
-        return;
+        if (dispatchLocations.length === 0) {
+          setMapError('No locations data available');
+          return;
+        }
       }
       
     } catch (error) {
       console.error('Error fetching consolidated data:', error);
-      setMapError(error.message);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      // Don't set map error if we have consolidated data - just log the dispatch data error
+      if (!consolidatedData) {
+        setMapError(error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -549,6 +854,35 @@ const ConsolidatedPolygonMap = () => {
       cesiumViewer.imageryLayers.addImageryProvider(initialProvider);
       
       cesiumViewer.scene.globe.depthTestAgainstTerrain = false;
+      
+      // Restore default Cesium camera controls
+      // Left-click drag: rotate camera (default Cesium behavior)
+      // Right-click drag: zoom
+      // Middle-click drag: pan
+      // Scroll: zoom
+      const scene = cesiumViewer.scene;
+      
+      // Keep default controls - left-click drag rotates (original behavior)
+      // No need to override, Cesium defaults work fine
+      
+      // Just add smooth camera movements
+      scene.screenSpaceCameraController.inertiaSpin = 0.9;
+      scene.screenSpaceCameraController.inertiaTranslate = 0.9;
+      scene.screenSpaceCameraController.inertiaZoom = 0.8;
+      
+      // Update compass rose when camera changes
+      const updateCompass = () => {
+        if (cesiumViewer.camera) {
+          const heading = cesiumViewer.camera.heading;
+          // Convert from radians to degrees and negate (compass rotates opposite to camera)
+          const rotation = -heading * (180 / Math.PI);
+          setCompassRotation(rotation);
+        }
+      };
+
+      // Listen for camera changes
+      cesiumViewer.camera.changed.addEventListener(updateCompass);
+      updateCompass(); // Initial update
       
       cesiumViewer.scene.requestRender();
 
@@ -831,20 +1165,39 @@ const ConsolidatedPolygonMap = () => {
           return;
         }
         
-        // ULTRA HD survey path - 3 METERS WIDE - MAXIMUM QUALITY
-        const surveyWidthMeters = 3.0; // Fixed 3 meter width
-        const surveyAsphalt = window.Cesium.Color.fromCssColorString('#2C2C2C'); // Dark asphalt
+        // Optimized HD asphalt road - 6 meters wide with white boundary and yellow dashed center line
+        const roadWidthMeters = 6.0; // 6 meter wide roads
+        const roadColor = window.Cesium.Color.fromCssColorString('#2C2C2C'); // Dark gray asphalt
+        const boundaryColor = window.Cesium.Color.fromCssColorString('#FFFFFF'); // White boundary
+        const centerLineColor = window.Cesium.Color.fromCssColorString('#FFD700'); // Yellow dashes
+        const boundaryWidth = 0.2; // 20cm white boundary
         
-        // ULTRA HD asphalt road surface - MAXIMUM DETAIL
+        // White boundary (slightly wider corridor)
+        const roadBoundary = cesiumViewer.entities.add({
+          corridor: {
+            positions: positions,
+            width: roadWidthMeters + (boundaryWidth * 2),
+            material: new window.Cesium.ColorMaterialProperty(boundaryColor.withAlpha(1.0)),
+            height: 0.25,
+            extrudedHeight: 0.55,
+            cornerType: window.Cesium.CornerType.ROUNDED,
+            granularity: 0.01
+          },
+          name: `Survey Path ${path.path_oid} - Boundary`,
+          show: showSurveyPaths
+        });
+        entitiesRef.current.push(roadBoundary);
+        
+        // Optimized asphalt road surface - reduced granularity for performance
         const surveySurface = cesiumViewer.entities.add({
           corridor: {
             positions: positions,
-            width: surveyWidthMeters,
-            material: new window.Cesium.ColorMaterialProperty(surveyAsphalt.withAlpha(1.0)),
-            height: 0.1,
-            extrudedHeight: 0.3, // More 3D depth for better visibility
+            width: roadWidthMeters,
+            material: new window.Cesium.ColorMaterialProperty(roadColor.withAlpha(1.0)),
+            height: 0.2,
+            extrudedHeight: 0.5,
             cornerType: window.Cesium.CornerType.ROUNDED,
-            granularity: 0.000001 // ULTRA HD - 10x more detail than before
+            granularity: 0.01 // Reduced for performance
           },
           name: `Survey Path ${path.path_oid}`,
           properties: {
@@ -853,19 +1206,85 @@ const ConsolidatedPolygonMap = () => {
             path_oid: path.path_oid,
             total_points: path.total_points,
             length_m: path.path_length_m,
-            width_m: surveyWidthMeters,
+            width_m: roadWidthMeters,
             is_valid: path.is_valid,
-            color: surveyAsphalt.toCssColorString()
+            color: roadColor.toCssColorString()
           },
           show: showSurveyPaths
         });
         entitiesRef.current.push(surveySurface);
         
-        // Lane markings will be added separately from clipped geometries
-        // (Skip adding center line here - will be added from roadMarkingsData)
+        // Yellow dashed center line above the road
+        const centerLineWidth = 0.3; // 30cm center line
+        const dashLength = 10.0; // 10 meter dashes (longer for performance)
+        const gapLength = 5.0; // 5 meter gaps
+        
+        // Create simplified dashed center line
+        let totalDistance = 0;
+        const distances = [0];
+        for (let i = 1; i < positions.length; i++) {
+          const dist = window.Cesium.Cartesian3.distance(positions[i-1], positions[i]);
+          totalDistance += dist;
+          distances.push(totalDistance);
+        }
+        
+        let currentDistance = 0;
+        let isDash = true;
+        let segmentStart = 0;
+        
+        for (let i = 1; i < positions.length; i++) {
+          const segmentDist = distances[i] - distances[i-1];
+          currentDistance += segmentDist;
+          
+          const targetLength = isDash ? dashLength : gapLength;
+          
+          if (currentDistance >= targetLength) {
+            if (isDash) {
+              const dashPositions = positions.slice(segmentStart, i + 1);
+              if (dashPositions.length >= 2) {
+                const centerLine = cesiumViewer.entities.add({
+                  polyline: {
+                    positions: dashPositions,
+                    width: centerLineWidth,
+                    material: centerLineColor,
+                    clampToGround: true,
+                    height: 0.6, // Above the road surface
+                    zIndex: 10 // Ensure it's on top
+                  },
+                  name: `Survey Path ${path.path_oid} - Center Line Dash`,
+                  show: showSurveyPaths
+                });
+                entitiesRef.current.push(centerLine);
+              }
+            }
+            segmentStart = i;
+            currentDistance = 0;
+            isDash = !isDash;
+          }
+        }
+        
+        // Add final dash if we ended on a dash
+        if (isDash && segmentStart < positions.length - 1) {
+          const dashPositions = positions.slice(segmentStart);
+          if (dashPositions.length >= 2) {
+            const centerLine = cesiumViewer.entities.add({
+              polyline: {
+                positions: dashPositions,
+                width: centerLineWidth,
+                material: centerLineColor,
+                clampToGround: true,
+                height: 0.6, // Above the road surface
+                zIndex: 10
+              },
+              name: `Survey Path ${path.path_oid} - Center Line Dash`,
+              show: showSurveyPaths
+            });
+            entitiesRef.current.push(centerLine);
+          }
+        }
         
         // Edge lines will be added separately frommed near intersections
-        const surveyOffsetDistance = surveyWidthMeters / 2 - 0.2;
+        const surveyOffsetDistance = roadWidthMeters / 2 - 0.2;
         const surveyTrimmedEdge = trimPositionsNearIntersections(positions);
         const surveyLeftEdge = [];
         const surveyRightEdge = [];
@@ -953,6 +1372,11 @@ const ConsolidatedPolygonMap = () => {
         }
         
         addedCount++;
+        
+        // Batch render every 50 survey paths for better performance
+        if (addedCount % 50 === 0 && cesiumViewer.scene) {
+          cesiumViewer.scene.requestRender();
+        }
         
         if (index < 5) {
           console.log(`[Consolidated Map] ✅ Added survey path ${index}: ${path.path_oid}`);
@@ -1077,18 +1501,405 @@ const ConsolidatedPolygonMap = () => {
     return positions.slice(trimCount, positions.length - trimCount);
   };
 
+  // Add dispatch segments to Cesium
+  const addSegmentsToCesium = (cesiumViewer) => {
+    if (!cesiumViewer || !segments || segments.length === 0) {
+      console.log('[Consolidated Map] ⏭️ Skipping segments - no data or viewer');
+      return;
+    }
+
+    console.log(`[Consolidated Map] 🛣️ Processing ${segments.length} dispatch segments...`);
+
+    // Remove existing dispatch segments from Cesium viewer
+    const segmentsToRemove = entitiesRef.current.filter(entity => 
+      entity.properties && entity.properties.category === 'dispatch_segment'
+    );
+    segmentsToRemove.forEach(entity => {
+      try {
+        cesiumViewer.entities.remove(entity);
+      } catch (e) {
+        console.warn('[Consolidated Map] Error removing segment entity:', e);
+      }
+    });
+    entitiesRef.current = entitiesRef.current.filter(entity => 
+      entity.properties && entity.properties.category !== 'dispatch_segment'
+    );
+
+    segments.forEach((segment, index) => {
+      try {
+        let geometry;
+        try {
+          geometry = typeof segment.geometry === 'string' 
+            ? JSON.parse(segment.geometry) 
+            : segment.geometry;
+        } catch (e) {
+          return;
+        }
+
+        if (!geometry || !geometry.coordinates || geometry.coordinates.length < 2) return;
+
+        const positions = geometry.coordinates.map(coord => 
+          window.Cesium.Cartesian3.fromDegrees(coord[0], coord[1])
+        );
+
+        const color = segment.is_closed ? '#FF6B6B' : '#FFD700';
+        
+        const entity = cesiumViewer.entities.add({
+          polyline: {
+            positions: positions,
+            width: 3,
+            material: new window.Cesium.PolylineGlowMaterialProperty({
+              glowPower: 0.2,
+              color: window.Cesium.Color.fromCssColorString(color)
+            }),
+            clampToGround: true
+          },
+          name: `Road ${segment.road_id}`,
+          properties: {
+            lane_id: segment.lane_id,
+            road_id: segment.road_id,
+            direction: segment.direction,
+            is_closed: segment.is_closed,
+            length_m: segment.length_m,
+            category: 'dispatch_segment'
+          },
+          show: showSegments
+        });
+
+        entitiesRef.current.push(entity);
+      } catch (err) {
+        console.error(`[Consolidated Map] Error adding segment ${index}:`, err);
+      }
+    });
+
+    console.log(`[Consolidated Map] ✅ Added ${segments.length} dispatch segments, total entities: ${entitiesRef.current.length}`);
+    if (cesiumViewer.scene) {
+      cesiumViewer.scene.requestRender();
+    }
+  };
+
+  // Add dispatch trolley segments to Cesium
+  const addTrolleySegmentsToCesium = (cesiumViewer) => {
+    if (!cesiumViewer || !trolleySegments || trolleySegments.length === 0) return;
+
+    // Remove existing trolley segments
+    entitiesRef.current = entitiesRef.current.filter(entity => 
+      entity.properties && entity.properties.category !== 'trolley_segment'
+    );
+
+    trolleySegments.forEach((trolley, index) => {
+      try {
+        const positions = [
+          window.Cesium.Cartesian3.fromDegrees(trolley.start_longitude, trolley.start_latitude),
+          window.Cesium.Cartesian3.fromDegrees(trolley.end_longitude, trolley.end_latitude)
+        ];
+
+        const entity = cesiumViewer.entities.add({
+          polyline: {
+            positions: positions,
+            width: 4,
+            material: new window.Cesium.PolylineGlowMaterialProperty({
+              glowPower: 0.3,
+              color: window.Cesium.Color.fromCssColorString('#00FF00')
+            }),
+            clampToGround: true
+          },
+          name: trolley.lane_name || `Trolley ${trolley.lane_id}`,
+          properties: {
+            lane_id: trolley.lane_id,
+            lane_name: trolley.lane_name,
+            direction: trolley.direction,
+            voltage: trolley.trolley_voltage,
+            category: 'trolley_segment'
+          },
+          show: showTrolleySegments
+        });
+
+        entitiesRef.current.push(entity);
+      } catch (err) {
+        console.error(`[Consolidated Map] Error adding trolley segment ${index}:`, err);
+      }
+    });
+
+    console.log(`[Consolidated Map] ✅ Added ${trolleySegments.length} trolley segments`);
+    if (cesiumViewer.scene) {
+      cesiumViewer.scene.requestRender();
+    }
+  };
+
+  // Add dispatch locations to Cesium
+  const addDispatchLocationsToCesium = (cesiumViewer) => {
+    if (!cesiumViewer || !locations || locations.length === 0) {
+      console.log('[Consolidated Map] ⏭️ Skipping dispatch locations - no data or viewer');
+      return;
+    }
+
+    console.log(`[Consolidated Map] 📍 Processing ${locations.length} dispatch locations...`);
+
+    // Remove existing dispatch locations from Cesium viewer
+    const locationsToRemove = entitiesRef.current.filter(entity => 
+      entity.properties && (entity.properties.category === 'dispatch_location' || entity.properties.dispatch_category === 'dispatch_location')
+    );
+    locationsToRemove.forEach(entity => {
+      try {
+        cesiumViewer.entities.remove(entity);
+      } catch (e) {
+        console.warn('[Consolidated Map] Error removing location entity:', e);
+      }
+    });
+    entitiesRef.current = entitiesRef.current.filter(entity => 
+      entity.properties && entity.properties.category !== 'dispatch_location' && entity.properties.dispatch_category !== 'dispatch_location'
+    );
+
+    const colorMap = {
+      'Call Point': '#FF6B6B',
+      'Dump': '#4ECDC4',
+      'Blast': '#45B7D1',
+      'Stockpile': '#96CEB4',
+      'Workshop': '#FFEAA7',
+      'Shiftchange': '#DDA0DD',
+      'Region': '#98D8C8',
+      'Crusher': '#F7DC6F',
+      'Pit': '#BB8FCE'
+    };
+
+    locations.forEach((location, index) => {
+      try {
+        const color = colorMap[location.unit_type] || '#95A5A6';
+        const size = 0.00025;
+
+        const positions = [
+          window.Cesium.Cartesian3.fromDegrees(location.longitude - size, location.latitude - size),
+          window.Cesium.Cartesian3.fromDegrees(location.longitude + size, location.latitude - size),
+          window.Cesium.Cartesian3.fromDegrees(location.longitude + size, location.latitude + size),
+          window.Cesium.Cartesian3.fromDegrees(location.longitude - size, location.latitude + size)
+        ];
+
+        const entity = cesiumViewer.entities.add({
+          polygon: {
+            hierarchy: positions,
+            material: window.Cesium.Color.fromCssColorString(color).withAlpha(0.7),
+            outline: true,
+            outlineColor: window.Cesium.Color.fromCssColorString(color),
+            height: 0,
+            extrudedHeight: 60,
+            heightReference: window.Cesium.HeightReference.CLAMP_TO_GROUND
+          },
+          name: location.location_name || `Location ${location.location_id}`,
+          properties: {
+            location_id: location.location_id,
+            name: location.location_name,
+            type: location.unit_type,
+            category: location.location_category,
+            dispatch_category: 'dispatch_location'
+          },
+          show: true
+        });
+
+        entitiesRef.current.push(entity);
+      } catch (err) {
+        console.error(`[Consolidated Map] Error adding location ${index}:`, err);
+      }
+    });
+
+    console.log(`[Consolidated Map] ✅ Added ${locations.length} dispatch locations, total entities: ${entitiesRef.current.length}`);
+    if (cesiumViewer.scene) {
+      cesiumViewer.scene.requestRender();
+    }
+  };
+
+  // Add watering stations to Cesium
+  const addWateringStationsToCesium = (cesiumViewer) => {
+    if (!cesiumViewer || !wateringStations || wateringStations.length === 0) return;
+
+    // Remove existing watering stations
+    entitiesRef.current = entitiesRef.current.filter(entity => 
+      entity.properties && entity.properties.category !== 'watering_station'
+    );
+
+    wateringStations.forEach((station, index) => {
+      try {
+        const entity = cesiumViewer.entities.add({
+          position: window.Cesium.Cartesian3.fromDegrees(station.longitude, station.latitude),
+          billboard: {
+            image: 'data:image/svg+xml;base64,' + btoa(`
+              <svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="16" cy="16" r="12" fill="#4ECDC4" stroke="#fff" stroke-width="2"/>
+                <text x="16" y="20" font-size="16" fill="#fff" text-anchor="middle">💧</text>
+              </svg>
+            `),
+            scale: 1.0,
+            verticalOrigin: window.Cesium.VerticalOrigin.BOTTOM
+          },
+          name: station.station_name || `Station ${station.station_id}`,
+          properties: {
+            station_id: station.station_id,
+            name: station.station_name,
+            code: station.station_code,
+            type: station.station_type,
+            capacity: station.capacity_liters,
+            level: station.current_level_percent,
+            status: station.status,
+            category: 'watering_station'
+          },
+          show: true
+        });
+
+        entitiesRef.current.push(entity);
+      } catch (err) {
+        console.error(`[Consolidated Map] Error adding watering station ${index}:`, err);
+      }
+    });
+
+    console.log(`[Consolidated Map] ✅ Added ${wateringStations.length} watering stations`);
+    if (cesiumViewer.scene) {
+      cesiumViewer.scene.requestRender();
+    }
+  };
+
+  // Add speed monitoring to Cesium
+  const addSpeedMonitoringToCesium = (cesiumViewer) => {
+    if (!cesiumViewer || !speedMonitoring || speedMonitoring.length === 0) return;
+
+    // Remove existing speed monitoring
+    entitiesRef.current = entitiesRef.current.filter(entity => 
+      entity.properties && entity.properties.category !== 'speed_monitoring'
+    );
+
+    speedMonitoring.forEach((monitor, index) => {
+      try {
+        const color = monitor.violation_type ? '#FF0000' : '#00FF00';
+        
+        const entity = cesiumViewer.entities.add({
+          position: window.Cesium.Cartesian3.fromDegrees(monitor.longitude, monitor.latitude),
+          billboard: {
+            image: 'data:image/svg+xml;base64,' + btoa(`
+              <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" fill="${color}" stroke="#fff" stroke-width="2"/>
+                <text x="12" y="16" font-size="12" fill="#fff" text-anchor="middle">🚦</text>
+              </svg>
+            `),
+            scale: 1.0,
+            verticalOrigin: window.Cesium.VerticalOrigin.BOTTOM
+          },
+          name: `Speed Monitor ${monitor.monitoring_id}`,
+          properties: {
+            monitoring_id: monitor.monitoring_id,
+            lane_id: monitor.lane_id,
+            speed: monitor.speed_kmh,
+            violation: monitor.violation_type,
+            mode: monitor.operational_mode,
+            category: 'speed_monitoring'
+          },
+          show: true
+        });
+
+        entitiesRef.current.push(entity);
+      } catch (err) {
+        console.error(`[Consolidated Map] Error adding speed monitor ${index}:`, err);
+      }
+    });
+
+    console.log(`[Consolidated Map] ✅ Added ${speedMonitoring.length} speed monitoring points`);
+    if (cesiumViewer.scene) {
+      cesiumViewer.scene.requestRender();
+    }
+  };
+
+  // Add dispatch intersections to Cesium
+  const addDispatchIntersectionsToCesium = (cesiumViewer) => {
+    if (!cesiumViewer || !dispatchIntersections || dispatchIntersections.length === 0) return;
+
+    // Remove existing dispatch intersections
+    entitiesRef.current = entitiesRef.current.filter(entity => 
+      entity.properties && entity.properties.category !== 'dispatch_intersection'
+    );
+
+    dispatchIntersections.forEach((intersection, index) => {
+      try {
+        let geometry;
+        try {
+          geometry = typeof intersection.geometry === 'string' 
+            ? JSON.parse(intersection.geometry) 
+            : intersection.geometry;
+        } catch (e) {
+          return;
+        }
+
+        if (!geometry || !geometry.coordinates) return;
+
+        let positions;
+        if (geometry.type === 'Polygon') {
+          positions = geometry.coordinates[0].map(coord => 
+            window.Cesium.Cartesian3.fromDegrees(coord[0], coord[1])
+          );
+        } else if (geometry.type === 'Point') {
+          // Create a small circle for point intersections
+          const center = window.Cesium.Cartesian3.fromDegrees(geometry.coordinates[0], geometry.coordinates[1]);
+          const radius = intersection.safety_buffer_m || 10;
+          positions = [];
+          for (let i = 0; i < 32; i++) {
+            const angle = (i / 32) * Math.PI * 2;
+            const lat = intersection.latitude || geometry.coordinates[1];
+            const lon = intersection.longitude || geometry.coordinates[0];
+            const offsetLat = (radius / 111320) * Math.cos(angle);
+            const offsetLon = (radius / (111320 * Math.cos(lat * Math.PI / 180))) * Math.sin(angle);
+            positions.push(window.Cesium.Cartesian3.fromDegrees(lon + offsetLon, lat + offsetLat));
+          }
+        } else {
+          return;
+        }
+
+        const entity = cesiumViewer.entities.add({
+          polygon: {
+            hierarchy: positions,
+            material: window.Cesium.Color.RED.withAlpha(0.3),
+            outline: true,
+            outlineColor: window.Cesium.Color.RED,
+            height: 0,
+            extrudedHeight: 0,
+            heightReference: window.Cesium.HeightReference.CLAMP_TO_GROUND
+          },
+          name: intersection.intersection_name || `Intersection ${intersection.intersection_id}`,
+          properties: {
+            intersection_id: intersection.intersection_id,
+            name: intersection.intersection_name,
+            type: intersection.intersection_type,
+            safety_buffer: intersection.safety_buffer_m,
+            r_min: intersection.r_min_m,
+            category: 'dispatch_intersection'
+          },
+          show: true
+        });
+
+        entitiesRef.current.push(entity);
+      } catch (err) {
+        console.error(`[Consolidated Map] Error adding dispatch intersection ${index}:`, err);
+      }
+    });
+
+    console.log(`[Consolidated Map] ✅ Added ${dispatchIntersections.length} dispatch intersections`);
+    if (cesiumViewer.scene) {
+      cesiumViewer.scene.requestRender();
+    }
+  };
+
   const addCoursesToCesium = (cesiumViewer) => {
     if (!coursesData?.courses) {
       console.warn('[Consolidated Map] No courses data available');
       return;
     }
     
-    console.log(`[Consolidated Map] 🛤️ Adding ${coursesData.courses.length} courses to Cesium`);
+    // Show ALL courses - no filter
+    const filteredCourses = coursesData.courses;
+    
+    console.log(`[Consolidated Map] 🛤️ Adding ALL courses: ${filteredCourses.length} total (no filter)`);
+    console.log(`[Consolidated Map] 🛤️ Adding ${filteredCourses.length} courses to Cesium`);
     
     let addedCount = 0;
     let errorCount = 0;
     
-    coursesData.courses.forEach((course, index) => {
+    filteredCourses.forEach((course, index) => {
       try {
         let geometry = course.linestring;
         if (!geometry) {
@@ -1132,20 +1943,39 @@ const ConsolidatedPolygonMap = () => {
           return;
         }
         
-        // ULTRA HD road with asphalt - ALL ROADS 3 METERS WIDE - MAXIMUM QUALITY
-        const roadWidthMeters = 3.0; // Fixed 3 meter width for all roads
-        const roadColor = window.Cesium.Color.fromCssColorString('#2C2C2C'); // Dark asphalt
+        // Optimized HD asphalt road - 6 meters wide with white boundaries and yellow dashed center line
+        const roadWidthMeters = 6.0; // 6 meter wide roads
+        const roadColor = window.Cesium.Color.fromCssColorString('#2C2C2C'); // Dark gray asphalt
+        const centerLineColor = window.Cesium.Color.fromCssColorString('#FFD700'); // Yellow dashes
+        const boundaryColor = window.Cesium.Color.WHITE; // White boundaries
         
-        // ULTRA HD asphalt road surface - MAXIMUM DETAIL
+        // White boundary - slightly wider than road
+        const boundaryWidth = roadWidthMeters + 0.2; // Road + 20cm boundary
+        const roadBoundary = cesiumViewer.entities.add({
+          corridor: {
+            positions: positions,
+            width: boundaryWidth,
+            material: new window.Cesium.ColorMaterialProperty(boundaryColor.withAlpha(1.0)),
+            height: 0.25,
+            extrudedHeight: 0.55,
+            cornerType: window.Cesium.CornerType.ROUNDED,
+            granularity: 0.01
+          },
+          name: `${course.course_name || `Course ${course.cid}`} - Boundary`,
+          show: showCourses
+        });
+        entitiesRef.current.push(roadBoundary);
+        
+        // Optimized asphalt road surface - reduced granularity for performance
         const roadSurface = cesiumViewer.entities.add({
           corridor: {
             positions: positions,
             width: roadWidthMeters,
             material: new window.Cesium.ColorMaterialProperty(roadColor.withAlpha(1.0)),
-            height: 0.1,
-            extrudedHeight: 0.3, // More 3D depth for better visibility
+            height: 0.2,
+            extrudedHeight: 0.5,
             cornerType: window.Cesium.CornerType.ROUNDED,
-            granularity: 0.000001 // ULTRA HD - 10x more detail than before
+            granularity: 0.01 // Reduced for performance
           },
           name: course.course_name || `Course ${course.cid}`,
           properties: {
@@ -1161,11 +1991,74 @@ const ConsolidatedPolygonMap = () => {
         });
         entitiesRef.current.push(roadSurface);
         
-        // Lane markings will be added separately from clipped geometries
-        // (Skip adding center line here - will be added from roadMarkingsData)
+        // Yellow dashed center line above the road
+        const centerLineWidth = 0.3; // 30cm center line
+        const dashLength = 10.0; // 10 meter dashes (longer for performance)
+        const gapLength = 5.0; // 5 meter gaps
         
-        // Edge lines will be added separately from clipped geometries
-        // (Skip adding edge lines here - will be added from roadMarkingsData)
+        // Create simplified dashed center line
+        let totalDistance = 0;
+        const distances = [0];
+        for (let i = 1; i < positions.length; i++) {
+          const dist = window.Cesium.Cartesian3.distance(positions[i-1], positions[i]);
+          totalDistance += dist;
+          distances.push(totalDistance);
+        }
+        
+        let currentDistance = 0;
+        let isDash = true;
+        let segmentStart = 0;
+        
+        for (let i = 1; i < positions.length; i++) {
+          const segmentDist = distances[i] - distances[i-1];
+          currentDistance += segmentDist;
+          
+          const targetLength = isDash ? dashLength : gapLength;
+          
+          if (currentDistance >= targetLength) {
+            if (isDash) {
+              const dashPositions = positions.slice(segmentStart, i + 1);
+              if (dashPositions.length >= 2) {
+                const centerLine = cesiumViewer.entities.add({
+                  polyline: {
+                    positions: dashPositions,
+                    width: centerLineWidth,
+                    material: centerLineColor,
+                    clampToGround: true,
+                    height: 0.6, // Above the road surface
+                    zIndex: 10 // Ensure it's on top
+                  },
+                  name: `${course.course_name || `Course ${course.cid}`} - Center Line Dash`,
+                  show: showCourses
+                });
+                entitiesRef.current.push(centerLine);
+              }
+            }
+            segmentStart = i;
+            currentDistance = 0;
+            isDash = !isDash;
+          }
+        }
+        
+        // Add final dash if we ended on a dash
+        if (isDash && segmentStart < positions.length - 1) {
+          const dashPositions = positions.slice(segmentStart);
+          if (dashPositions.length >= 2) {
+            const centerLine = cesiumViewer.entities.add({
+              polyline: {
+                positions: dashPositions,
+                width: centerLineWidth,
+                material: centerLineColor,
+                clampToGround: true,
+                height: 0.6, // Above the road surface
+                zIndex: 10 // Ensure it's on top
+              },
+              name: `${course.course_name || `Course ${course.cid}`} - Center Line Dash`,
+              show: showCourses
+            });
+            entitiesRef.current.push(centerLine);
+          }
+        }
         
         addedCount++;
         
@@ -2100,6 +2993,38 @@ const ConsolidatedPolygonMap = () => {
 
           </div>
         </div>
+      )}
+
+      {/* Compass Rose - Top Right, Rotatable, No Background, On Top of Map */}
+      {mapLoaded && (
+        <img
+          src="/compass-rose.png"
+          alt="Compass Rose"
+          onError={(e) => {
+            console.error('[Consolidated Map] Compass image failed to load:', e);
+            e.target.style.display = 'none';
+          }}
+          onLoad={() => {
+            console.log('[Consolidated Map] Compass image loaded successfully');
+          }}
+          style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            width: '100px',
+            height: '100px',
+            zIndex: 99999,
+            pointerEvents: 'none',
+            backgroundColor: 'transparent',
+            border: 'none',
+            outline: 'none',
+            transform: `rotate(${compassRotation}deg)`,
+            transition: 'transform 0.1s ease-out',
+            filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5))',
+            mixBlendMode: 'normal',
+            objectFit: 'contain'
+          }}
+        />
       )}
 
       <style>{`
