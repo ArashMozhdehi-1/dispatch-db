@@ -2440,30 +2440,34 @@ export default function MapboxComponent() {
       console.log('❌ No segments data to add');
     }
 
-    if (locationsData.length > 0) {
-      const locationsGeoJSON = {
-        type: 'FeatureCollection',
-        features: locationsData.map(location => ({
-          type: 'Feature',
-          properties: {
-            id: location.location_id,
-            name: location.location_name,
-            type: location.unit_type,
-            category: location.location_category
-          },
-          geometry: {
-            type: 'Polygon',
-            coordinates: [[
-              [location.longitude - 0.00025, location.latitude - 0.00025],
-              [location.longitude + 0.00025, location.latitude - 0.00025],
-              [location.longitude + 0.00025, location.latitude + 0.00025],
-              [location.longitude - 0.00025, location.latitude + 0.00025],
-              [location.longitude - 0.00025, location.latitude - 0.00025]
-            ]]
-          }
-        }))
-      };
+    // Store locations data for later - will add locations layer AFTER all road layers
+    const locationsGeoJSON = locationsData.length > 0 ? {
+      type: 'FeatureCollection',
+      features: locationsData.map(location => ({
+        type: 'Feature',
+        properties: {
+          id: location.location_id,
+          name: location.location_name,
+          type: location.unit_type,
+          category: location.location_category
+        },
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[
+            [location.longitude - 0.00025, location.latitude - 0.00025],
+            [location.longitude + 0.00025, location.latitude - 0.00025],
+            [location.longitude + 0.00025, location.latitude + 0.00025],
+            [location.longitude - 0.00025, location.latitude + 0.00025],
+            [location.longitude - 0.00025, location.latitude - 0.00025]
+          ]]
+        }
+      }))
+    } : null;
 
+    findRoadConnections(segmentsData);
+    
+    // Add locations layer LAST so it renders on top of all road layers
+    if (locationsGeoJSON) {
       map.current.addSource('locations', {
         type: 'geojson',
         data: locationsGeoJSON
@@ -2494,10 +2498,8 @@ export default function MapboxComponent() {
         }
       });
       
-      console.log('✅ Locations layer added on top of roads');
+      console.log('✅ Locations layer added on top of all road layers');
     }
-
-    findRoadConnections(segmentsData);
     
     // Find geometric intersections for multiple intersection areas
     console.log('🔍 Analyzing intersection areas...');
