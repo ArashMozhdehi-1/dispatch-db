@@ -106,6 +106,9 @@ services:
         echo '' &&
         echo 'Step 4: Extracting courses/roads and creating road network...' &&
         python /app/etl/extract_courses.py &&
+        echo '' &&
+        echo 'Step 5: Extracting survey paths...' &&
+        python /app/etl/extract_survey_paths.py &&
         echo '✅ Migration complete!'
       "
     environment:

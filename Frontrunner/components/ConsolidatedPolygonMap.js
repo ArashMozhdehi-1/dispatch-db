@@ -11,11 +11,11 @@ const ConsolidatedPolygonMap = () => {
   const [isClient, setIsClient] = useState(false);
   const [consolidatedData, setConsolidatedData] = useState(null);
   const [intersectionsData, setIntersectionsData] = useState(null);
-  const [surveyPointsData, setSurveyPointsData] = useState(null);
+  const [surveyPathsData, setSurveyPathsData] = useState(null);
   const [coursesData, setCoursesData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [visibleCategories, setVisibleCategories] = useState(new Set());
-  const [showSurveyPolylines, setShowSurveyPolylines] = useState(true);
+  const [showSurveyPaths, setShowSurveyPaths] = useState(true);
   const [showCourses, setShowCourses] = useState(true);
   const [baseLayer, setBaseLayer] = useState('night');
   const [viewMode, setViewMode] = useState('3D');
@@ -151,20 +151,20 @@ const ConsolidatedPolygonMap = () => {
   }, [intersectionsData, mapLoaded]);
 
   useEffect(() => {
-    if (mapLoaded && surveyPointsData && cesiumViewerRef.current) {
-      console.log('[Consolidated Map] 📍 useEffect triggered - Adding survey points to map...');
-      console.log('[Consolidated Map] 📍 mapLoaded:', mapLoaded);
-      console.log('[Consolidated Map] 📍 surveyPointsData:', surveyPointsData);
-      console.log('[Consolidated Map] 📍 cesiumViewerRef.current:', !!cesiumViewerRef.current);
-      addSurveyPointsToCesium(cesiumViewerRef.current);
+    if (mapLoaded && surveyPathsData && cesiumViewerRef.current) {
+      console.log('[Consolidated Map] 🛤️ useEffect triggered - Adding survey paths to map...');
+      console.log('[Consolidated Map] 🛤️ mapLoaded:', mapLoaded);
+      console.log('[Consolidated Map] 🛤️ surveyPathsData:', surveyPathsData);
+      console.log('[Consolidated Map] 🛤️ cesiumViewerRef.current:', !!cesiumViewerRef.current);
+      addSurveyPathsToCesium(cesiumViewerRef.current);
     } else {
-      console.log('[Consolidated Map] ⏳ Waiting for conditions:', {
+      console.log('[Consolidated Map] ⏳ Waiting for survey paths conditions:', {
         mapLoaded,
-        hasSurveyData: !!surveyPointsData,
+        hasSurveyPathsData: !!surveyPathsData,
         hasViewer: !!cesiumViewerRef.current
       });
     }
-  }, [surveyPointsData, mapLoaded]);
+  }, [surveyPathsData, mapLoaded]);
 
   useEffect(() => {
     if (mapLoaded && coursesData && cesiumViewerRef.current) {
@@ -216,13 +216,15 @@ const ConsolidatedPolygonMap = () => {
       console.log('[Consolidated Map] 🔄 Updating entity visibility');
       console.log('[Consolidated Map] 📊 visibleCategories:', Array.from(visibleCategories));
       console.log('[Consolidated Map] 🛤️ showCourses:', showCourses);
-      console.log('[Consolidated Map] 📍 showSurveyPolylines:', showSurveyPolylines);
+      console.log('[Consolidated Map] 🛤️ showSurveyPaths:', showSurveyPaths);
       let intersectionCount = 0;
       let visibleIntersectionCount = 0;
       let locationCount = 0;
       let visibleLocationCount = 0;
       let courseCount = 0;
       let visibleCourseCount = 0;
+      let surveyPathCount = 0;
+      let visibleSurveyPathCount = 0;
       
       entitiesRef.current.forEach((entity, entityIndex) => {
         if (entity && entity.properties) {
@@ -242,8 +244,10 @@ const ConsolidatedPolygonMap = () => {
             return;
           }
           
-          if (category === 'survey_point') {
-            entity.show = showSurveyPolylines;
+          if (category === 'survey_path') {
+            surveyPathCount++;
+            entity.show = showSurveyPaths;
+            if (showSurveyPaths) visibleSurveyPathCount++;
             return;
           }
           
@@ -278,13 +282,13 @@ const ConsolidatedPolygonMap = () => {
         }
       });
       
-      console.log(`[Consolidated Map] 📊 Visibility: ${visibleIntersectionCount}/${intersectionCount} intersections, ${visibleLocationCount}/${locationCount} locations, ${visibleCourseCount}/${courseCount} courses visible`);
+      console.log(`[Consolidated Map] 📊 Visibility: ${visibleIntersectionCount}/${intersectionCount} intersections, ${visibleLocationCount}/${locationCount} locations, ${visibleCourseCount}/${courseCount} courses, ${visibleSurveyPathCount}/${surveyPathCount} survey paths visible`);
       
       if (cesiumViewerRef.current.scene) {
         cesiumViewerRef.current.scene.requestRender();
       }
     }
-  }, [visibleCategories, showCourses, showSurveyPolylines]);
+  }, [visibleCategories, showCourses, showSurveyPaths]);
 
   const fetchData = async () => {
     try {
@@ -321,29 +325,18 @@ const ConsolidatedPolygonMap = () => {
         console.error('❌ Could not fetch intersections:', intersectionsResponse.status, await intersectionsResponse.text());
       }
       
-      const surveyResponse = await fetch('/api/grouped-locations');
-      console.log('📍 Survey points API response status:', surveyResponse.status);
-      if (surveyResponse.ok) {
-        const surveyResult = await surveyResponse.json();
-        console.log('📍 Survey points API result:', JSON.stringify(surveyResult, null, 2));
-        const surveyGroup = surveyResult.groups?.find(g => g.group_name === 'General Survey Points');
-        if (surveyGroup) {
-          console.log('📍 Found survey group:', surveyGroup);
-          const maxPoints = 50000;
-          if (surveyGroup.coordinates && surveyGroup.coordinates.length > maxPoints) {
-            console.log(`📍 Limiting survey points from ${surveyGroup.coordinates.length} to ${maxPoints}`);
-            surveyGroup.coordinates = surveyGroup.coordinates.slice(0, maxPoints);
-            surveyGroup.total_points = maxPoints;
-          }
-          console.log(`📍 Loaded ${surveyGroup.coordinates.length} survey points from GeoServer`);
-          console.log('📍 Survey points sample:', surveyGroup.coordinates.slice(0, 3));
-          setSurveyPointsData(surveyGroup);
-        } else {
-          console.warn('⚠️ No survey group found in response. Groups:', surveyResult.groups);
+      const surveyPathsResponse = await fetch('/api/survey-paths');
+      console.log('🛤️ Survey paths API response status:', surveyPathsResponse.status);
+      if (surveyPathsResponse.ok) {
+        const surveyPathsResult = await surveyPathsResponse.json();
+        console.log(`🛤️ Loaded ${surveyPathsResult.total_paths} survey paths`);
+        if (surveyPathsResult.paths && surveyPathsResult.paths.length > 0) {
+          console.log('🛤️ Sample survey path:', surveyPathsResult.paths[0]);
         }
+        setSurveyPathsData(surveyPathsResult);
       } else {
-        const errorText = await surveyResponse.text();
-        console.error('❌ Could not fetch survey points:', surveyResponse.status, errorText);
+        const errorText = await surveyPathsResponse.text();
+        console.error('❌ Could not fetch survey paths:', surveyPathsResponse.status, errorText);
       }
       
       const coursesResponse = await fetch('/api/courses');
@@ -671,86 +664,101 @@ const ConsolidatedPolygonMap = () => {
     }
   };
 
-  const addSurveyPointsToCesium = (cesiumViewer) => {
-    console.log('[Consolidated Map] 🔧 addSurveyPointsToCesium called');
-    console.log('[Consolidated Map] 📊 surveyPointsData:', surveyPointsData);
-    console.log('[Consolidated Map] 📊 showSurveyPolylines:', showSurveyPolylines);
-    
-    if (!surveyPointsData || !surveyPointsData.coordinates) {
-      console.warn('[Consolidated Map] ❌ No survey points data available');
+  const addSurveyPathsToCesium = (cesiumViewer) => {
+    if (!surveyPathsData?.paths) {
+      console.warn('[Consolidated Map] No survey paths data available');
       return;
     }
     
-    if (!surveyPointsData.coordinates || surveyPointsData.coordinates.length === 0) {
-      console.warn('[Consolidated Map] ❌ Survey points array is empty');
-      return;
-    }
-    
-    console.log(`[Consolidated Map] 📍 Adding ${surveyPointsData.coordinates.length} survey points`);
-    console.log('[Consolidated Map] 📍 First point sample:', surveyPointsData.coordinates[0]);
+    console.log(`[Consolidated Map] 🛤️ Adding ${surveyPathsData.paths.length} survey paths to Cesium`);
     
     let addedCount = 0;
     let errorCount = 0;
     
-    surveyPointsData.coordinates.forEach((point, index) => {
+    surveyPathsData.paths.forEach((path, index) => {
       try {
-        if (!point.longitude || !point.latitude || isNaN(point.longitude) || isNaN(point.latitude)) {
-          console.warn(`[Consolidated Map] ⚠️ Invalid coordinates for point ${index}:`, point);
+        let geometry = path.linestring;
+        if (!geometry) {
+          console.warn(`[Consolidated Map] No linestring for survey path ${index}: ${path.path_oid}`);
           errorCount++;
           return;
         }
         
-        // Use z/altitude value if available, if it's 0 use 3 meters instead (same as locations)
-        // Divide z values by factor to convert units (e.g., 1000 for mm to m, 100 for cm to m)
-        const Z_FACTOR = 1000; // Adjust this factor as needed
-        const pointAltitude = point.altitude || point.mine_coords?.z || null;
-        const hasAltitude = pointAltitude !== null && pointAltitude !== undefined && !isNaN(pointAltitude);
+        if (typeof geometry === 'string') {
+          try {
+            geometry = JSON.parse(geometry);
+          } catch (e) {
+            console.warn(`[Consolidated Map] Failed to parse linestring for survey path ${index}:`, e);
+            errorCount++;
+            return;
+          }
+        }
         
-        // If altitude exists and is not 0, divide by factor and use it; otherwise use 3 meters
-        const pointHeight = (hasAltitude && pointAltitude !== 0) ? (pointAltitude / Z_FACTOR) : 3;
+        if (!geometry || !geometry.coordinates || geometry.coordinates.length === 0) {
+          console.warn(`[Consolidated Map] Invalid geometry for survey path ${index}:`, geometry);
+          errorCount++;
+          return;
+        }
         
-        // Set position with height - RELATIVE_TO_GROUND will add this above terrain
-        const position = window.Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, pointHeight);
+        const positions = [];
+        if (geometry.type === 'LineString' && geometry.coordinates) {
+          geometry.coordinates.forEach(coord => {
+            if (coord && Array.isArray(coord) && coord.length >= 2 && !isNaN(coord[0]) && !isNaN(coord[1])) {
+              const lon = parseFloat(coord[0]);
+              const lat = parseFloat(coord[1]);
+              if (!isNaN(lon) && !isNaN(lat) && lon >= -180 && lon <= 180 && lat >= -90 && lat <= 90) {
+                positions.push(window.Cesium.Cartesian3.fromDegrees(lon, lat, 2));
+              }
+            }
+          });
+        }
         
-        const pointEntity = cesiumViewer.entities.add({
-          position: position,
-          point: {
-            pixelSize: 3,
-            color: window.Cesium.Color.WHITE.withAlpha(1.0),
-            outlineColor: window.Cesium.Color.WHITE.withAlpha(0.5),
-            outlineWidth: 1,
-            heightReference: window.Cesium.HeightReference.RELATIVE_TO_GROUND,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY
+        if (positions.length < 2) {
+          console.warn(`[Consolidated Map] Not enough valid positions for survey path ${index}: ${path.path_oid}`);
+          errorCount++;
+          return;
+        }
+        
+        // Green color for survey paths (as-built roads)
+        const surveyPathColor = window.Cesium.Color.LIME;
+        
+        const entity = cesiumViewer.entities.add({
+          polyline: {
+            positions: positions,
+            width: 3,
+            material: surveyPathColor.withAlpha(0.8),
+            clampToGround: true
           },
-          name: `Survey Point: ${point.location_name || point.coordinate_id}`,
+          name: `Survey Path ${path.path_oid}`,
           properties: {
-            category: 'survey_point',
-            coordinate_id: point.coordinate_id,
-            location_name: point.location_name,
-            latitude: point.latitude,
-            longitude: point.longitude
+            name: `Survey Path ${path.path_oid}`,
+            category: 'survey_path',
+            path_oid: path.path_oid,
+            total_points: path.total_points,
+            length_m: path.path_length_m,
+            is_valid: path.is_valid,
+            color: surveyPathColor.toCssColorString()
           },
-          show: showSurveyPolylines
+          show: showSurveyPaths
         });
         
-        entitiesRef.current.push(pointEntity);
+        entitiesRef.current.push(entity);
         addedCount++;
         
         if (index < 5) {
-          console.log(`[Consolidated Map] ✅ Added point ${index}: lat=${point.latitude}, lon=${point.longitude}`);
+          console.log(`[Consolidated Map] ✅ Added survey path ${index}: ${path.path_oid}`);
         }
+        
       } catch (err) {
         errorCount++;
-        console.error(`[Consolidated Map] ❌ Error adding survey point ${index}:`, err, point);
+        console.error(`[Consolidated Map] Error adding survey path ${index}:`, err);
       }
     });
     
-    console.log(`[Consolidated Map] ✅ Added ${addedCount} survey points (${errorCount} errors)`);
-    console.log(`[Consolidated Map] 📊 Points visibility: ${showSurveyPolylines ? 'VISIBLE' : 'HIDDEN'}`);
+    console.log(`[Consolidated Map] ✅ Added ${addedCount} survey paths (${errorCount} errors), total entities now: ${entitiesRef.current.length}`);
     
     if (cesiumViewer.scene) {
       cesiumViewer.scene.requestRender();
-      console.log('[Consolidated Map] 🔄 Scene render requested');
     }
   };
 
@@ -1827,109 +1835,41 @@ const ConsolidatedPolygonMap = () => {
                       </label>
                     </div>
                   )}
+                  
+                  {surveyPathsData && surveyPathsData.paths && surveyPathsData.paths.length > 0 && (
+                    <div style={{ marginBottom: '6px' }}>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        color: '#bdc3c7',
+                        fontSize: '12px'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={showSurveyPaths}
+                          onChange={(e) => setShowSurveyPaths(e.target.checked)}
+                          style={{
+                            marginRight: '8px',
+                            cursor: 'pointer'
+                          }}
+                        />
+                        <div style={{
+                          width: '12px',
+                          height: '12px',
+                          backgroundColor: '#00FF00',
+                          borderRadius: '2px',
+                          marginRight: '8px'
+                        }}></div>
+                        <span style={{ color: 'white', fontWeight: '500' }}>Survey Paths ({surveyPathsData.paths.length})</span>
+                      </label>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
             
-            {surveyPointsData && surveyPointsData.coordinates && surveyPointsData.coordinates.length > 0 && (
-              <div style={{ borderLeft: '3px solid #3498db', margin: '8px 0' }}>
-                <div 
-                  id="survey-points-header"
-                  style={{
-                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between'
-                  }}
-                  onClick={() => toggleSection('survey-points-content', 'survey-points-arrow')}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div style={{
-                      width: '16px',
-                      height: '16px',
-                      backgroundColor: '#3498db',
-                      borderRadius: '3px',
-                      marginRight: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                    </div>
-                    <span style={{ color: '#3498db', fontWeight: '600', fontSize: '13px' }}>Survey Points</span>
-                    <div style={{
-                      backgroundColor: '#3498db',
-                      color: 'white',
-                      borderRadius: '10px',
-                      padding: '2px 8px',
-                      marginLeft: '8px',
-                      fontSize: '10px'
-                    }}>
-                      {surveyPointsData.coordinates.length}
-                    </div>
-                  </div>
-                  <div 
-                    id="survey-points-arrow"
-                    style={{ color: '#3498db', fontSize: '14px' }}
-                  >
-                    ▼
-                  </div>
-                </div>
-                <div 
-                  id="survey-points-content"
-                  style={{ padding: '8px 12px 8px 32px' }}
-                >
-                  <div style={{ marginBottom: '6px' }}>
-                    <label style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      cursor: 'pointer',
-                      color: '#bdc3c7',
-                      fontSize: '12px'
-                    }}>
-                      <input
-                        type="checkbox"
-                        checked={showSurveyPolylines}
-                        onChange={(e) => {
-                          setShowSurveyPolylines(e.target.checked);
-                          console.log('[Consolidated Map] 📍 Toggling survey points:', e.target.checked);
-                          if (cesiumViewerRef.current && entitiesRef.current.length > 0) {
-                            let toggledCount = 0;
-                            entitiesRef.current.forEach(entity => {
-                              if (entity && entity.properties && entity.properties.category === 'survey_point') {
-                                entity.show = e.target.checked;
-                                toggledCount++;
-                              }
-                            });
-                            console.log(`[Consolidated Map] 📍 Toggled ${toggledCount} survey point entities`);
-                            if (cesiumViewerRef.current.scene) {
-                              cesiumViewerRef.current.scene.requestRender();
-                            }
-                          }
-                        }}
-                        style={{
-                          marginRight: '8px',
-                          cursor: 'pointer',
-                          accentColor: '#3498db'
-                        }}
-                      />
-                      <div style={{
-                        width: '8px',
-                        height: '8px',
-                        backgroundColor: 'white',
-                        borderRadius: '50%',
-                        marginRight: '10px',
-                        border: '1px solid #3498db'
-                      }}></div>
-                      <span style={{ color: 'white', fontWeight: '500' }}>
-                        Survey Points ({surveyPointsData.coordinates.length})
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            )}
+
           </div>
         </div>
       )}
