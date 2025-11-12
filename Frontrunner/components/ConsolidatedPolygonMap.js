@@ -5,6 +5,7 @@ const ConsolidatedPolygonMap = () => {
   const cesiumViewerRef = useRef(null);
   const entitiesRef = useRef([]);
   const currentTooltip = useRef(null);
+  const currentPopup = useRef(null);
   const hoveredEntityRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState(null);
@@ -13,6 +14,7 @@ const ConsolidatedPolygonMap = () => {
   const [intersectionsData, setIntersectionsData] = useState(null);
   const [surveyPathsData, setSurveyPathsData] = useState(null);
   const [coursesData, setCoursesData] = useState(null);
+  const [roadMarkingsData, setRoadMarkingsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [visibleCategories, setVisibleCategories] = useState(new Set());
   const [showSurveyPaths, setShowSurveyPaths] = useState(true);
@@ -353,6 +355,18 @@ const ConsolidatedPolygonMap = () => {
         console.error('❌ Could not fetch courses:', coursesResponse.status, errorText);
       }
       
+      // Fetch geospatially-clipped road markings (excludes intersection zones)
+      const roadMarkingsResponse = await fetch('/api/road-markings');
+      console.log('🎨 Road markings API response status:', roadMarkingsResponse.status);
+      if (roadMarkingsResponse.ok) {
+        const roadMarkingsResult = await roadMarkingsResponse.json();
+        console.log(`🎨 Loaded ${roadMarkingsResult.total_markings} clipped road markings`);
+        setRoadMarkingsData(roadMarkingsResult);
+      } else {
+        const errorText = await roadMarkingsResponse.text();
+        console.error('❌ Could not fetch road markings:', roadMarkingsResponse.status, errorText);
+      }
+      
       if (!result.consolidated_locations || result.consolidated_locations.length === 0) {
         console.warn('⚠️ No consolidated locations found in response');
         setMapError('No locations data available');
@@ -590,6 +604,104 @@ const ConsolidatedPolygonMap = () => {
         
         const tooltipHandler = cesiumViewer.cesiumWidget.screenSpaceEventHandler;
         
+        // Add click handler for roads
+        tooltipHandler.setInputAction((movement) => {
+          if (!cesiumViewer || !cesiumViewer.scene) return;
+          const pickedObject = cesiumViewer.scene.pick(movement.position);
+          
+          if (window.Cesium.defined(pickedObject) && pickedObject.id && pickedObject.id.properties) {
+            const entity = pickedObject.id;
+            const category = entity.properties.category?.getValue ? entity.properties.category.getValue() : entity.properties.category;
+            
+            // Check if it's a road (course or survey_path)
+            if (category === 'course' || category === 'survey_path') {
+              // Highlight the road
+              if (entity.corridor) {
+                entity.corridor.material = window.Cesium.Color.CYAN.withAlpha(0.9);
+              }
+              
+              // Show popup with road info
+              const name = entity.properties.name?.getValue ? entity.properties.name.getValue() : entity.properties.name;
+              const roadType = entity.properties.road_type?.getValue ? entity.properties.road_type.getValue() : entity.properties.road_type;
+              const lengthM = entity.properties.length_m?.getValue ? entity.properties.length_m.getValue() : entity.properties.length_m;
+              const widthM = entity.properties.width_m?.getValue ? entity.properties.width_m.getValue() : entity.properties.width_m;
+              
+              const popupContent = `
+                <div style="background: rgba(30, 30, 30, 0.95); color: white; padding: 16px; border-radius: 8px; min-width: 250px;">
+                  <div style="font-weight: 600; color: ${category === 'course' ? '#FFD700' : '#00FF00'}; margin-bottom: 12px; font-size: 16px; border-bottom: 2px solid ${category === 'course' ? '#FFD700' : '#00FF00'}; padding-bottom: 8px;">
+                    🛣️ ${name || 'Road'}
+                  </div>
+                  ${roadType ? `
+                  <div style="margin-bottom: 6px;">
+                    <span style="color: #bdc3c7;">Type:</span>
+                    <span style="color: white; margin-left: 8px; font-weight: 500;">${roadType}</span>
+                  </div>
+                  ` : ''}
+                  ${lengthM ? `
+                  <div style="margin-bottom: 6px;">
+                    <span style="color: #bdc3c7;">Length:</span>
+                    <span style="color: white; margin-left: 8px; font-weight: 500;">${(lengthM / 1000).toFixed(2)} km</span>
+                  </div>
+                  ` : ''}
+                  ${widthM ? `
+                  <div style="margin-bottom: 6px;">
+                    <span style="color: #bdc3c7;">Width:</span>
+                    <span style="color: white; margin-left: 8px; font-weight: 500;">${widthM.toFixed(1)} m</span>
+                  </div>
+                  ` : ''}
+                  <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); font-size: 12px; color: #95a5a6;">
+                    Click elsewhere to deselect
+                  </div>
+                </div>
+              `;
+              
+              const cartesian = cesiumViewer.scene.pickPosition(movement.position);
+              if (cartesian) {
+                const cartographic = window.Cesium.Cartographic.fromCartesian(cartesian);
+                const longitude = window.Cesium.Math.toDegrees(cartographic.longitude);
+                const latitude = window.Cesium.Math.toDegrees(cartographic.latitude);
+                
+                // Remove existing popup
+                if (currentPopup.current) {
+                  currentPopup.current.remove();
+                }
+                
+                // Create new popup
+                const popup = document.createElement('div');
+                popup.innerHTML = popupContent;
+                popup.style.cssText = `
+                  position: absolute;
+                  left: ${movement.position.x + 10}px;
+                  top: ${movement.position.y - 10}px;
+                  z-index: 10000;
+                  pointer-events: none;
+                `;
+                document.body.appendChild(popup);
+                currentPopup.current = popup;
+              }
+              
+              console.log(`[Consolidated Map] 🛣️ Clicked road: ${name}`);
+            }
+          } else {
+            // Clicked on empty space - reset highlights
+            if (currentPopup.current) {
+              currentPopup.current.remove();
+              currentPopup.current = null;
+            }
+            // Reset all road colors
+            entitiesRef.current.forEach(entity => {
+              if (entity.corridor && entity.properties) {
+                const category = entity.properties.category?.getValue ? entity.properties.category.getValue() : entity.properties.category;
+                if (category === 'course' || category === 'survey_path') {
+                  const roadColor = window.Cesium.Color.fromCssColorString('#2C2C2C');
+                  entity.corridor.material = new window.Cesium.ColorMaterialProperty(roadColor.withAlpha(0.98));
+                }
+              }
+            });
+          }
+        }, window.Cesium.ScreenSpaceEventType.LEFT_CLICK);
+        
+        // Mouse move handler for tooltips
         tooltipHandler.setInputAction((movement) => {
           if (!cesiumViewer || !cesiumViewer.scene) return;
           const pickedObject = cesiumViewer.scene.pick(movement.endPosition);
@@ -719,15 +831,20 @@ const ConsolidatedPolygonMap = () => {
           return;
         }
         
-        // Green color for survey paths (as-built roads)
-        const surveyPathColor = window.Cesium.Color.LIME;
+        // Realistic HD survey path with asphalt and green lane markings
+        const surveyWidthMeters = 3.0; // Actual 3 meter width
+        const surveyAsphalt = window.Cesium.Color.fromCssColorString('#2C2C2C'); // Dark asphalt
         
-        const entity = cesiumViewer.entities.add({
-          polyline: {
+        // HD asphalt road surface for survey path
+        const surveySurface = cesiumViewer.entities.add({
+          corridor: {
             positions: positions,
-            width: 3,
-            material: surveyPathColor.withAlpha(0.8),
-            clampToGround: true
+            width: surveyWidthMeters,
+            material: new window.Cesium.ColorMaterialProperty(surveyAsphalt.withAlpha(0.98)),
+            height: 0.15,
+            extrudedHeight: 0.2, // Slight 3D depth
+            cornerType: window.Cesium.CornerType.ROUNDED,
+            granularity: 0.00003 // Higher detail for smoother curves
           },
           name: `Survey Path ${path.path_oid}`,
           properties: {
@@ -736,13 +853,105 @@ const ConsolidatedPolygonMap = () => {
             path_oid: path.path_oid,
             total_points: path.total_points,
             length_m: path.path_length_m,
+            width_m: surveyWidthMeters,
             is_valid: path.is_valid,
-            color: surveyPathColor.toCssColorString()
+            color: surveyAsphalt.toCssColorString()
           },
           show: showSurveyPaths
         });
+        entitiesRef.current.push(surveySurface);
         
-        entitiesRef.current.push(entity);
+        // Lane markings will be added separately from clipped geometries
+        // (Skip adding center line here - will be added from roadMarkingsData)
+        
+        // Edge lines will be added separately frommed near intersections
+        const surveyOffsetDistance = surveyWidthMeters / 2 - 0.2;
+        const surveyTrimmedEdge = trimPositionsNearIntersections(positions);
+        const surveyLeftEdge = [];
+        const surveyRightEdge = [];
+        
+        for (let i = 0; i < surveyTrimmedEdge.length - 1; i++) {
+          const p1 = surveyTrimmedEdge[i];
+          const p2 = surveyTrimmedEdge[i + 1];
+          
+          const cart1 = window.Cesium.Cartographic.fromCartesian(p1);
+          const cart2 = window.Cesium.Cartographic.fromCartesian(p2);
+          
+          const bearing = window.Cesium.Math.toDegrees(
+            Math.atan2(cart2.longitude - cart1.longitude, cart2.latitude - cart1.latitude)
+          );
+          
+          const leftBearing = (bearing + 90) % 360;
+          const rightBearing = (bearing - 90) % 360;
+          const offsetDegrees = surveyOffsetDistance / 111000;
+          
+          surveyLeftEdge.push(
+            window.Cesium.Cartesian3.fromDegrees(
+              window.Cesium.Math.toDegrees(cart1.longitude) + offsetDegrees * Math.sin(window.Cesium.Math.toRadians(leftBearing)),
+              window.Cesium.Math.toDegrees(cart1.latitude) + offsetDegrees * Math.cos(window.Cesium.Math.toRadians(leftBearing)),
+              0.15
+            )
+          );
+          
+          surveyRightEdge.push(
+            window.Cesium.Cartesian3.fromDegrees(
+              window.Cesium.Math.toDegrees(cart1.longitude) + offsetDegrees * Math.sin(window.Cesium.Math.toRadians(rightBearing)),
+              window.Cesium.Math.toDegrees(cart1.latitude) + offsetDegrees * Math.cos(window.Cesium.Math.toRadians(rightBearing)),
+              0.15
+            )
+          );
+        }
+        
+        if (surveyTrimmedEdge.length > 0) {
+          surveyLeftEdge.push(surveyTrimmedEdge[surveyTrimmedEdge.length - 1]);
+          surveyRightEdge.push(surveyTrimmedEdge[surveyTrimmedEdge.length - 1]);
+        }
+        
+        // HD white edge lines with glow for survey paths
+        if (surveyLeftEdge.length > 1) {
+          const leftEdge = cesiumViewer.entities.add({
+            polyline: {
+              positions: surveyLeftEdge,
+              width: 3,
+              material: new window.Cesium.PolylineOutlineMaterialProperty({
+                color: window.Cesium.Color.WHITE.withAlpha(1.0),
+                outlineWidth: 1,
+                outlineColor: window.Cesium.Color.WHITE.withAlpha(0.3)
+              }),
+              clampToGround: false,
+              zIndex: 3
+            },
+            properties: {
+              category: 'survey_path',
+              isRoadMarking: true
+            },
+            show: showSurveyPaths
+          });
+          entitiesRef.current.push(leftEdge);
+        }
+        
+        if (surveyRightEdge.length > 1) {
+          const rightEdge = cesiumViewer.entities.add({
+            polyline: {
+              positions: surveyRightEdge,
+              width: 3,
+              material: new window.Cesium.PolylineOutlineMaterialProperty({
+                color: window.Cesium.Color.WHITE.withAlpha(1.0),
+                outlineWidth: 1,
+                outlineColor: window.Cesium.Color.WHITE.withAlpha(0.3)
+              }),
+              clampToGround: false,
+              zIndex: 3
+            },
+            properties: {
+              category: 'survey_path',
+              isRoadMarking: true
+            },
+            show: showSurveyPaths
+          });
+          entitiesRef.current.push(rightEdge);
+        }
+        
         addedCount++;
         
         if (index < 5) {
@@ -858,6 +1067,16 @@ const ConsolidatedPolygonMap = () => {
     });
   };
 
+  // Helper function to trim positions near intersections for cleaner connections
+  const trimPositionsNearIntersections = (positions, trimDistanceMeters = 10) => {
+    if (positions.length < 3) return positions;
+    
+    // Trim first and last few points to avoid intersection overlap
+    const trimCount = Math.min(2, Math.floor(positions.length * 0.05)); // Trim 5% or 2 points max
+    
+    return positions.slice(trimCount, positions.length - trimCount);
+  };
+
   const addCoursesToCesium = (cesiumViewer) => {
     if (!coursesData?.courses) {
       console.warn('[Consolidated Map] No courses data available');
@@ -913,22 +1132,28 @@ const ConsolidatedPolygonMap = () => {
           return;
         }
         
-        // Color based on road type
-        let courseColor = window.Cesium.Color.YELLOW;
-        if (course.road_type === 'HAUL') {
-          courseColor = window.Cesium.Color.ORANGE;
+        // Realistic HD road with asphalt and lane markings
+        let roadWidthMeters = 3.0; // Actual 3 meter width
+        let roadColor = window.Cesium.Color.fromCssColorString('#2C2C2C'); // Dark asphalt
+        
+        if (course.road_type === 'MT' || course.road_type === 'HAUL') {
+          roadWidthMeters = 6.0; // Wider for main haul roads
         } else if (course.road_type === 'ACCESS') {
-          courseColor = window.Cesium.Color.CYAN;
+          roadWidthMeters = 3.0;
         } else if (course.road_type === 'NORMAL') {
-          courseColor = window.Cesium.Color.YELLOW;
+          roadWidthMeters = 3.0;
         }
         
-        const entity = cesiumViewer.entities.add({
-          polyline: {
+        // HD asphalt road surface with subtle texture
+        const roadSurface = cesiumViewer.entities.add({
+          corridor: {
             positions: positions,
-            width: 4,
-            material: courseColor.withAlpha(0.8),
-            clampToGround: true
+            width: roadWidthMeters,
+            material: new window.Cesium.ColorMaterialProperty(roadColor.withAlpha(0.98)),
+            height: 0.15,
+            extrudedHeight: 0.2, // Slight 3D depth
+            cornerType: window.Cesium.CornerType.ROUNDED,
+            granularity: 0.00003 // Higher detail for smoother curves
           },
           name: course.course_name || `Course ${course.cid}`,
           properties: {
@@ -937,12 +1162,19 @@ const ConsolidatedPolygonMap = () => {
             road_type: course.road_type,
             total_points: course.total_points,
             length_m: course.course_length_m,
-            color: courseColor.toCssColorString()
+            width_m: roadWidthMeters,
+            color: roadColor.toCssColorString()
           },
           show: showCourses
         });
+        entitiesRef.current.push(roadSurface);
         
-        entitiesRef.current.push(entity);
+        // Lane markings will be added separately from clipped geometries
+        // (Skip adding center line here - will be added from roadMarkingsData)
+        
+        // Edge lines will be added separately from clipped geometries
+        // (Skip adding edge lines here - will be added from roadMarkingsData)
+        
         addedCount++;
         
         if (index < 5) {
@@ -1534,9 +1766,9 @@ const ConsolidatedPolygonMap = () => {
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <span style={{ color: 'white', fontSize: '12px', fontWeight: 'bold' }}>⛏</span>
+                {/* <span style={{ color: 'white', fontSize: '12px', fontWeight: 'bold' }}>⛏</span> */}
               </div>
-              <span style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>Map Elements</span>
+              <span style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>Main Map</span>
             </div>
             <div 
               id="legend-toggle-arrow"
@@ -1571,7 +1803,7 @@ const ConsolidatedPolygonMap = () => {
                 color: '#bdc3c7',
                 fontWeight: '600'
               }}>
-                🗺️ BASE LAYER
+                Base Layer
               </label>
               <select
                 value={baseLayer}
@@ -1588,10 +1820,10 @@ const ConsolidatedPolygonMap = () => {
                   outline: 'none'
                 }}
               >
-                <option value="night">🌙 Night Mode (Dark)</option>
-                <option value="day">☀️ Day Mode (Satellite)</option>
-                <option value="topographic">🗺️ Topographic</option>
-                <option value="terrain">🏔️ Terrain (Colorful)</option>
+                <option value="night">Night Mode (Dark)</option>
+                <option value="day">Day Mode (Satellite)</option>
+                <option value="topographic">Topographic</option>
+                <option value="terrain">Terrain (Colorful)</option>
               </select>
               
               <div style={{ marginTop: '10px' }}>
@@ -1602,7 +1834,7 @@ const ConsolidatedPolygonMap = () => {
                   color: '#bdc3c7',
                   fontWeight: '600'
                 }}>
-                  📐 VIEW MODE
+                 View Mode
                 </label>
                 <button
                   onClick={toggleViewMode}
@@ -1619,7 +1851,7 @@ const ConsolidatedPolygonMap = () => {
                     transition: 'all 0.3s ease'
                   }}
                 >
-                  {viewMode === '2D' ? '🗺️ 2D Map View' : '🌍 3D Globe View'}
+                  {viewMode === '2D' ? '2D Map View' : '3D Globe View'}
                 </button>
               </div>
             </div>
@@ -1729,7 +1961,9 @@ const ConsolidatedPolygonMap = () => {
               </div>
             </div>
             
-            {intersectionsData?.consolidated_intersections && intersectionsData.consolidated_intersections.length > 0 && (
+            {((intersectionsData?.consolidated_intersections && intersectionsData.consolidated_intersections.length > 0) || 
+              (coursesData?.courses && coursesData.courses.length > 0) ||
+              (surveyPathsData?.paths && surveyPathsData.paths.length > 0)) && (
               <div style={{ borderLeft: '3px solid #9B59B6', margin: '8px 0' }}>
                 <div 
                   id="road-networks-header"
@@ -1764,7 +1998,9 @@ const ConsolidatedPolygonMap = () => {
                       marginLeft: '8px',
                       fontSize: '10px'
                     }}>
-                      {intersectionsData.consolidated_intersections.length}
+                      {(intersectionsData?.consolidated_intersections?.length || 0) + 
+                       (coursesData?.courses?.length || 0) + 
+                       (surveyPathsData?.paths?.length || 0)}
                     </div>
                   </div>
                   <div 
@@ -1831,7 +2067,7 @@ const ConsolidatedPolygonMap = () => {
                           borderRadius: '2px',
                           marginRight: '8px'
                         }}></div>
-                        <span style={{ color: 'white', fontWeight: '500' }}>Roads/Courses ({coursesData.courses.length})</span>
+                        <span style={{ color: 'white', fontWeight: '500' }}>Courses (Roads) ({coursesData.courses.length})</span>
                       </label>
                     </div>
                   )}

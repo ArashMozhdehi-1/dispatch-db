@@ -2006,8 +2006,8 @@ export default function MapboxComponent() {
         }).filter(feature => feature !== null)
       };
 
-      console.log('✅ Segments GeoJSON:', segmentsGeoJSON);
-      console.log('✅ Valid segments features:', segmentsGeoJSON.features.length);
+      console.log(' Segments GeoJSON:', segmentsGeoJSON);
+      console.log(' Valid segments features:', segmentsGeoJSON.features.length);
 
       map.current.addSource('segments', {
         type: 'geojson',

@@ -74,10 +74,24 @@ def extract_courses(mysql_cursor):
     """
     
     logger.info("Executing course extraction query...")
-    mysql_cursor.execute(query)
-    results = mysql_cursor.fetchall()
-    logger.info(f"Found {len(results)} course coordinate records")
-    return results
+    logger.info("⚠️  This query may take 4-5 minutes and use significant memory...")
+    logger.info("💾 Memory usage will peak during fetchall() operation")
+    
+    try:
+        mysql_cursor.execute(query)
+        logger.info("✅ Query executed, now fetching results...")
+        logger.info("⏳ Fetching all records (this may take a few minutes)...")
+        
+        results = mysql_cursor.fetchall()
+        
+        logger.info(f"✅ Successfully fetched {len(results)} course coordinate records")
+        logger.info(f"💾 Estimated memory usage: ~{len(results) * 0.001:.1f} MB")
+        return results
+    except Exception as e:
+        logger.error(f"❌ FATAL ERROR during course extraction: {e}")
+        logger.error(f"💡 If killed, the system may have run out of memory")
+        logger.error(f"💡 Try increasing Docker memory limit to 4GB+ in Docker Desktop settings")
+        raise
 
 def group_by_course(coordinates):
     """Group coordinates by course _OID_, maintaining order by _IDX_"""
@@ -116,6 +130,8 @@ def group_by_course(coordinates):
 
 def main():
     logger.info("=== Extracting Course/Road Data ===")
+    logger.info("⚠️  WARNING: This process requires significant memory (2-4 GB)")
+    logger.info("💡 If the process gets killed, increase Docker memory limit")
     
     mysql_conn = mysql.connector.connect(**MYSQL_CONFIG)
     mysql_cursor = mysql_conn.cursor(dictionary=True)
@@ -124,6 +140,7 @@ def main():
     postgres_cursor = postgres_conn.cursor()
     
     # Create courses table
+    logger.info("Creating courses table in PostgreSQL...")
     postgres_cursor.execute("""
         DROP TABLE IF EXISTS courses CASCADE;
         CREATE TABLE courses (
@@ -152,13 +169,22 @@ def main():
     
     # Extract coordinates
     logger.info("Extracting course coordinates...")
+    logger.info("📊 Step 1/3: Querying MySQL database...")
     coordinates = extract_courses(mysql_cursor)
     
+    logger.info("📊 Step 2/3: Grouping coordinates by course...")
     courses = group_by_course(coordinates)
-    logger.info(f"Grouped into {len(courses)} courses")
+    logger.info(f"✅ Grouped into {len(courses)} courses")
+    
+    # Free up memory
+    del coordinates
+    logger.info("💾 Freed coordinate list memory")
     
     total_added = 0
     skipped = 0
+    total_courses = len(courses)
+    
+    logger.info(f"📊 Step 3/3: Inserting {total_courses} courses into PostgreSQL...")
     
     for course_oid, course_data in courses.items():
         coords = course_data['coordinates']

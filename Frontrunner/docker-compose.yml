@@ -90,11 +90,16 @@ services:
       dockerfile: Dockerfile.etl
     container_name: frontrunner_geometry_etl
     restart: "no"
+    # NOTE: This container requires 2-4 GB of memory for course extraction
+    # If it gets killed, increase Docker memory limit in Docker Desktop settings
     command: >
       sh -c "
         echo '⏳ Waiting for MySQL decrypt to complete...' &&
         sleep 10 &&
         echo '🚀 Starting data migration...' &&
+        echo '⚠️  NOTE: Steps 1 and 4 require significant memory (2-4 GB)' &&
+        echo '💡 If process gets killed, increase Docker memory in Docker Desktop' &&
+        echo '' &&
         echo 'Step 1: Transferring 4 main tables with decrypted data...' &&
         python /app/etl/transfer_main_tables.py &&
         echo '' &&
@@ -105,10 +110,14 @@ services:
         python /app/etl/extract_intersections_fixed.py &&
         echo '' &&
         echo 'Step 4: Extracting courses/roads and creating road network...' &&
+        echo '⚠️  This step may take 5-10 minutes and uses 2-4 GB memory' &&
         python /app/etl/extract_courses.py &&
         echo '' &&
         echo 'Step 5: Extracting survey paths...' &&
         python /app/etl/extract_survey_paths.py &&
+        echo '' &&
+        echo 'Step 6: Cleaning road intersections with geospatial analysis...' &&
+        python /app/etl/clean_road_intersections.py &&
         echo '✅ Migration complete!'
       "
     environment:
