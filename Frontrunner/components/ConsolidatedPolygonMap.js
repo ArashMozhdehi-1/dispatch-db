@@ -831,20 +831,20 @@ const ConsolidatedPolygonMap = () => {
           return;
         }
         
-        // Realistic HD survey path with asphalt and green lane markings
-        const surveyWidthMeters = 3.0; // Actual 3 meter width
+        // ULTRA HD survey path - 3 METERS WIDE - MAXIMUM QUALITY
+        const surveyWidthMeters = 3.0; // Fixed 3 meter width
         const surveyAsphalt = window.Cesium.Color.fromCssColorString('#2C2C2C'); // Dark asphalt
         
-        // HD asphalt road surface for survey path
+        // ULTRA HD asphalt road surface - MAXIMUM DETAIL
         const surveySurface = cesiumViewer.entities.add({
           corridor: {
             positions: positions,
             width: surveyWidthMeters,
-            material: new window.Cesium.ColorMaterialProperty(surveyAsphalt.withAlpha(0.98)),
-            height: 0.15,
-            extrudedHeight: 0.2, // Slight 3D depth
+            material: new window.Cesium.ColorMaterialProperty(surveyAsphalt.withAlpha(1.0)),
+            height: 0.1,
+            extrudedHeight: 0.3, // More 3D depth for better visibility
             cornerType: window.Cesium.CornerType.ROUNDED,
-            granularity: 0.00003 // Higher detail for smoother curves
+            granularity: 0.000001 // ULTRA HD - 10x more detail than before
           },
           name: `Survey Path ${path.path_oid}`,
           properties: {
@@ -1132,28 +1132,20 @@ const ConsolidatedPolygonMap = () => {
           return;
         }
         
-        // Realistic HD road with asphalt and lane markings
-        let roadWidthMeters = 3.0; // Actual 3 meter width
-        let roadColor = window.Cesium.Color.fromCssColorString('#2C2C2C'); // Dark asphalt
+        // ULTRA HD road with asphalt - ALL ROADS 3 METERS WIDE - MAXIMUM QUALITY
+        const roadWidthMeters = 3.0; // Fixed 3 meter width for all roads
+        const roadColor = window.Cesium.Color.fromCssColorString('#2C2C2C'); // Dark asphalt
         
-        if (course.road_type === 'MT' || course.road_type === 'HAUL') {
-          roadWidthMeters = 6.0; // Wider for main haul roads
-        } else if (course.road_type === 'ACCESS') {
-          roadWidthMeters = 3.0;
-        } else if (course.road_type === 'NORMAL') {
-          roadWidthMeters = 3.0;
-        }
-        
-        // HD asphalt road surface with subtle texture
+        // ULTRA HD asphalt road surface - MAXIMUM DETAIL
         const roadSurface = cesiumViewer.entities.add({
           corridor: {
             positions: positions,
             width: roadWidthMeters,
-            material: new window.Cesium.ColorMaterialProperty(roadColor.withAlpha(0.98)),
-            height: 0.15,
-            extrudedHeight: 0.2, // Slight 3D depth
+            material: new window.Cesium.ColorMaterialProperty(roadColor.withAlpha(1.0)),
+            height: 0.1,
+            extrudedHeight: 0.3, // More 3D depth for better visibility
             cornerType: window.Cesium.CornerType.ROUNDED,
-            granularity: 0.00003 // Higher detail for smoother curves
+            granularity: 0.000001 // ULTRA HD - 10x more detail than before
           },
           name: course.course_name || `Course ${course.cid}`,
           properties: {

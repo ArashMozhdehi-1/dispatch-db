@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Frontrunner Mine Map - </title>
+        <title>Mine Map</title>
         <meta name="description" content="Interactive 3D" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style jsx global>{`

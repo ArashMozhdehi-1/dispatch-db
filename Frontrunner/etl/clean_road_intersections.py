@@ -79,8 +79,8 @@ def clean_road_intersections():
                 ST_Buffer(geom::geography, 5)::geometry as buffer_geom
             FROM road_intersection_points
         ),
-        roads_split AS (
-            -- Split roads at intersection buffers
+        roads_with_intersections AS (
+            -- Find roads that intersect with buffers
             SELECT 
                 c.course_id,
                 c.cid,
@@ -88,22 +88,28 @@ def clean_road_intersections():
                 c.haul_profile_name,
                 c.road_type,
                 c.total_points,
-                CASE 
-                    WHEN EXISTS (
-                        SELECT 1 FROM intersection_buffer ib 
-                        WHERE ST_Intersects(c.course_linestring, ib.buffer_geom)
-                    ) THEN
-                        -- Split the road at intersection points
-                        (ST_Dump(ST_Difference(
-                            c.course_linestring,
-                            (SELECT ST_Union(buffer_geom) FROM intersection_buffer 
-                             WHERE ST_Intersects(c.course_linestring, buffer_geom))
-                        ))).geom
-                    ELSE
-                        c.course_linestring
-                END as cleaned_linestring
+                c.course_linestring,
+                ST_Union(ib.buffer_geom) as intersection_union
             FROM courses c
+            LEFT JOIN intersection_buffer ib ON ST_Intersects(c.course_linestring, ib.buffer_geom)
             WHERE c.course_linestring IS NOT NULL
+            GROUP BY c.course_id, c.cid, c.course_name, c.haul_profile_name, c.road_type, c.total_points, c.course_linestring
+        ),
+        roads_split AS (
+            -- Split roads at intersection buffers using LATERAL
+            SELECT 
+                r.course_id,
+                r.cid,
+                r.course_name,
+                r.haul_profile_name,
+                r.road_type,
+                r.total_points,
+                COALESCE(d.geom, r.course_linestring) as cleaned_linestring
+            FROM roads_with_intersections r
+            LEFT JOIN LATERAL (
+                SELECT (ST_Dump(ST_Difference(r.course_linestring, r.intersection_union))).geom
+                WHERE r.intersection_union IS NOT NULL
+            ) d ON true
         )
         SELECT 
             row_number() OVER () as segment_id,
@@ -142,28 +148,35 @@ def clean_road_intersections():
                 ST_Buffer(geom::geography, 5)::geometry as buffer_geom
             FROM road_intersection_points
         ),
-        paths_split AS (
+        paths_with_intersections AS (
+            -- Find paths that intersect with buffers
             SELECT 
                 sp.path_id,
                 sp.path_oid,
                 sp.cid,
                 sp.is_valid,
                 sp.total_points,
-                CASE 
-                    WHEN EXISTS (
-                        SELECT 1 FROM intersection_buffer ib 
-                        WHERE ST_Intersects(sp.path_linestring, ib.buffer_geom)
-                    ) THEN
-                        (ST_Dump(ST_Difference(
-                            sp.path_linestring,
-                            (SELECT ST_Union(buffer_geom) FROM intersection_buffer 
-                             WHERE ST_Intersects(sp.path_linestring, buffer_geom))
-                        ))).geom
-                    ELSE
-                        sp.path_linestring
-                END as cleaned_linestring
+                sp.path_linestring,
+                ST_Union(ib.buffer_geom) as intersection_union
             FROM survey_paths sp
+            LEFT JOIN intersection_buffer ib ON ST_Intersects(sp.path_linestring, ib.buffer_geom)
             WHERE sp.path_linestring IS NOT NULL
+            GROUP BY sp.path_id, sp.path_oid, sp.cid, sp.is_valid, sp.total_points, sp.path_linestring
+        ),
+        paths_split AS (
+            -- Split paths at intersection buffers using LATERAL
+            SELECT 
+                p.path_id,
+                p.path_oid,
+                p.cid,
+                p.is_valid,
+                p.total_points,
+                COALESCE(d.geom, p.path_linestring) as cleaned_linestring
+            FROM paths_with_intersections p
+            LEFT JOIN LATERAL (
+                SELECT (ST_Dump(ST_Difference(p.path_linestring, p.intersection_union))).geom
+                WHERE p.intersection_union IS NOT NULL
+            ) d ON true
         )
         SELECT 
             row_number() OVER () as segment_id,
