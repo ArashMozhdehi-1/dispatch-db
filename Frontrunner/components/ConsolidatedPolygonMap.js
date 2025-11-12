@@ -12,9 +12,11 @@ const ConsolidatedPolygonMap = () => {
   const [consolidatedData, setConsolidatedData] = useState(null);
   const [intersectionsData, setIntersectionsData] = useState(null);
   const [surveyPointsData, setSurveyPointsData] = useState(null);
+  const [coursesData, setCoursesData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [visibleCategories, setVisibleCategories] = useState(new Set());
   const [showSurveyPolylines, setShowSurveyPolylines] = useState(true);
+  const [showCourses, setShowCourses] = useState(true);
   const [baseLayer, setBaseLayer] = useState('night');
   const [viewMode, setViewMode] = useState('3D');
   const getConsolidatedCategory = (category) => {
@@ -165,6 +167,22 @@ const ConsolidatedPolygonMap = () => {
   }, [surveyPointsData, mapLoaded]);
 
   useEffect(() => {
+    if (mapLoaded && coursesData && cesiumViewerRef.current) {
+      console.log('[Consolidated Map] 🛤️ useEffect triggered - Adding courses to map...');
+      console.log('[Consolidated Map] 🛤️ mapLoaded:', mapLoaded);
+      console.log('[Consolidated Map] 🛤️ coursesData:', coursesData);
+      console.log('[Consolidated Map] 🛤️ cesiumViewerRef.current:', !!cesiumViewerRef.current);
+      addCoursesToCesium(cesiumViewerRef.current);
+    } else {
+      console.log('[Consolidated Map] ⏳ Waiting for courses conditions:', {
+        mapLoaded,
+        hasCoursesData: !!coursesData,
+        hasViewer: !!cesiumViewerRef.current
+      });
+    }
+  }, [coursesData, mapLoaded]);
+
+  useEffect(() => {
     if ((consolidatedData?.consolidated_locations || intersectionsData?.consolidated_intersections) && visibleCategories.size === 0) {
       const uniqueCategories = new Set();
       
@@ -195,15 +213,26 @@ const ConsolidatedPolygonMap = () => {
 
   useEffect(() => {
     if (cesiumViewerRef.current && entitiesRef.current.length > 0) {
-      console.log('[Consolidated Map] 🔄 Updating entity visibility, visibleCategories:', Array.from(visibleCategories));
+      console.log('[Consolidated Map] 🔄 Updating entity visibility');
+      console.log('[Consolidated Map] 📊 visibleCategories:', Array.from(visibleCategories));
+      console.log('[Consolidated Map] 🛤️ showCourses:', showCourses);
+      console.log('[Consolidated Map] 📍 showSurveyPolylines:', showSurveyPolylines);
       let intersectionCount = 0;
       let visibleIntersectionCount = 0;
       let locationCount = 0;
       let visibleLocationCount = 0;
+      let courseCount = 0;
+      let visibleCourseCount = 0;
       
       entitiesRef.current.forEach((entity, entityIndex) => {
         if (entity && entity.properties) {
-          let category = entity.properties.category;
+          // Cesium properties might need getValue()
+          let category = entity.properties.category?.getValue ? entity.properties.category.getValue() : entity.properties.category;
+          
+          // Debug first 5 and last 5 entities to see courses
+          if (entityIndex < 5 || entityIndex >= entitiesRef.current.length - 5) {
+            console.log(`[Consolidated Map] Entity ${entityIndex}: category=${category}, hasProperties=${!!entity.properties}, needsGetValue=${!!entity.properties.category?.getValue}`);
+          }
           
           if (category === 'intersection') {
             intersectionCount++;
@@ -215,6 +244,16 @@ const ConsolidatedPolygonMap = () => {
           
           if (category === 'survey_point') {
             entity.show = showSurveyPolylines;
+            return;
+          }
+          
+          if (category === 'course') {
+            courseCount++;
+            entity.show = showCourses;
+            if (showCourses) visibleCourseCount++;
+            if (entityIndex >= entitiesRef.current.length - 5) {
+              console.log(`[Consolidated Map] 🛤️ Course entity ${entityIndex}: show=${entity.show}, showCourses=${showCourses}`);
+            }
             return;
           }
           
@@ -239,13 +278,13 @@ const ConsolidatedPolygonMap = () => {
         }
       });
       
-      console.log(`[Consolidated Map] 📊 Visibility: ${visibleIntersectionCount}/${intersectionCount} intersections, ${visibleLocationCount}/${locationCount} locations visible`);
+      console.log(`[Consolidated Map] 📊 Visibility: ${visibleIntersectionCount}/${intersectionCount} intersections, ${visibleLocationCount}/${locationCount} locations, ${visibleCourseCount}/${courseCount} courses visible`);
       
       if (cesiumViewerRef.current.scene) {
         cesiumViewerRef.current.scene.requestRender();
       }
     }
-  }, [visibleCategories]);
+  }, [visibleCategories, showCourses, showSurveyPolylines]);
 
   const fetchData = async () => {
     try {
@@ -305,6 +344,20 @@ const ConsolidatedPolygonMap = () => {
       } else {
         const errorText = await surveyResponse.text();
         console.error('❌ Could not fetch survey points:', surveyResponse.status, errorText);
+      }
+      
+      const coursesResponse = await fetch('/api/courses');
+      console.log('🛤️ Courses API response status:', coursesResponse.status);
+      if (coursesResponse.ok) {
+        const coursesResult = await coursesResponse.json();
+        console.log(`🛤️ Loaded ${coursesResult.total_courses} courses`);
+        if (coursesResult.courses && coursesResult.courses.length > 0) {
+          console.log('🛤️ Sample course:', coursesResult.courses[0]);
+        }
+        setCoursesData(coursesResult);
+      } else {
+        const errorText = await coursesResponse.text();
+        console.error('❌ Could not fetch courses:', coursesResponse.status, errorText);
       }
       
       if (!result.consolidated_locations || result.consolidated_locations.length === 0) {
@@ -795,6 +848,110 @@ const ConsolidatedPolygonMap = () => {
       newSet.add('intersection');
       return newSet;
     });
+  };
+
+  const addCoursesToCesium = (cesiumViewer) => {
+    if (!coursesData?.courses) {
+      console.warn('[Consolidated Map] No courses data available');
+      return;
+    }
+    
+    console.log(`[Consolidated Map] 🛤️ Adding ${coursesData.courses.length} courses to Cesium`);
+    
+    let addedCount = 0;
+    let errorCount = 0;
+    
+    coursesData.courses.forEach((course, index) => {
+      try {
+        let geometry = course.linestring;
+        if (!geometry) {
+          console.warn(`[Consolidated Map] No linestring for course ${index}: ${course.course_name}`);
+          errorCount++;
+          return;
+        }
+        
+        if (typeof geometry === 'string') {
+          try {
+            geometry = JSON.parse(geometry);
+          } catch (e) {
+            console.warn(`[Consolidated Map] Failed to parse linestring for course ${index}:`, e);
+            errorCount++;
+            return;
+          }
+        }
+        
+        if (!geometry || !geometry.coordinates || geometry.coordinates.length === 0) {
+          console.warn(`[Consolidated Map] Invalid geometry for course ${index}:`, geometry);
+          errorCount++;
+          return;
+        }
+        
+        const positions = [];
+        if (geometry.type === 'LineString' && geometry.coordinates) {
+          geometry.coordinates.forEach(coord => {
+            if (coord && Array.isArray(coord) && coord.length >= 2 && !isNaN(coord[0]) && !isNaN(coord[1])) {
+              const lon = parseFloat(coord[0]);
+              const lat = parseFloat(coord[1]);
+              if (!isNaN(lon) && !isNaN(lat) && lon >= -180 && lon <= 180 && lat >= -90 && lat <= 90) {
+                positions.push(window.Cesium.Cartesian3.fromDegrees(lon, lat, 2));
+              }
+            }
+          });
+        }
+        
+        if (positions.length < 2) {
+          console.warn(`[Consolidated Map] Not enough valid positions for course ${index}: ${course.course_name}`);
+          errorCount++;
+          return;
+        }
+        
+        // Color based on road type
+        let courseColor = window.Cesium.Color.YELLOW;
+        if (course.road_type === 'HAUL') {
+          courseColor = window.Cesium.Color.ORANGE;
+        } else if (course.road_type === 'ACCESS') {
+          courseColor = window.Cesium.Color.CYAN;
+        } else if (course.road_type === 'NORMAL') {
+          courseColor = window.Cesium.Color.YELLOW;
+        }
+        
+        const entity = cesiumViewer.entities.add({
+          polyline: {
+            positions: positions,
+            width: 4,
+            material: courseColor.withAlpha(0.8),
+            clampToGround: true
+          },
+          name: course.course_name || `Course ${course.cid}`,
+          properties: {
+            name: course.course_name,
+            category: 'course',
+            road_type: course.road_type,
+            total_points: course.total_points,
+            length_m: course.course_length_m,
+            color: courseColor.toCssColorString()
+          },
+          show: showCourses
+        });
+        
+        entitiesRef.current.push(entity);
+        addedCount++;
+        
+        if (index < 5) {
+          console.log(`[Consolidated Map] ✅ Added course ${index}: ${course.course_name} (${course.road_type})`);
+        }
+        
+      } catch (err) {
+        errorCount++;
+        console.error(`[Consolidated Map] Error adding course ${index}:`, err);
+      }
+    });
+    
+    console.log(`[Consolidated Map] ✅ Added ${addedCount} courses (${errorCount} errors), total entities now: ${entitiesRef.current.length}`);
+    
+    if (cesiumViewer.scene) {
+      cesiumViewer.scene.requestRender();
+    }
   };
 
   const addPolygonsToCesium = (cesiumViewer) => {
@@ -1640,6 +1797,36 @@ const ConsolidatedPolygonMap = () => {
                       <span style={{ color: 'white', fontWeight: '500' }}>Intersections ({intersectionsData.consolidated_intersections.length})</span>
                     </label>
                   </div>
+                  
+                  {coursesData && coursesData.courses && coursesData.courses.length > 0 && (
+                    <div style={{ marginBottom: '6px' }}>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        color: '#bdc3c7',
+                        fontSize: '12px'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={showCourses}
+                          onChange={(e) => setShowCourses(e.target.checked)}
+                          style={{
+                            marginRight: '8px',
+                            cursor: 'pointer'
+                          }}
+                        />
+                        <div style={{
+                          width: '12px',
+                          height: '12px',
+                          backgroundColor: '#FFD700',
+                          borderRadius: '2px',
+                          marginRight: '8px'
+                        }}></div>
+                        <span style={{ color: 'white', fontWeight: '500' }}>Roads/Courses ({coursesData.courses.length})</span>
+                      </label>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
