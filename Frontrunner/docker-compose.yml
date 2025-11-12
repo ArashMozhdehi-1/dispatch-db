@@ -92,6 +92,8 @@ services:
     restart: "no"
     command: >
       sh -c "
+        echo '⏳ Waiting for MySQL decrypt to complete...' &&
+        sleep 10 &&
         echo '🚀 Starting data migration...' &&
         echo 'Step 1: Transferring 4 main tables with decrypted data...' &&
         python /app/etl/transfer_main_tables.py &&
@@ -101,6 +103,9 @@ services:
         echo '' &&
         echo 'Step 3: Extracting intersections and creating polygons...' &&
         python /app/etl/extract_intersections_fixed.py &&
+        echo '' &&
+        echo 'Step 4: Extracting courses/roads and creating road network...' &&
+        python /app/etl/extract_courses.py &&
         echo '✅ Migration complete!'
       "
     environment:
@@ -124,6 +129,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      mysql_decrypt:
+        condition: service_completed_successfully
     networks:
       - frontrunner_network
 
