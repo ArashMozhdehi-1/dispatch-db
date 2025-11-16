@@ -14,26 +14,44 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Return ALL courses - they're already deduplicated with ~31 points average
+    // Return courses with survey_path flag - check if course overlaps with any survey path
     const result = await pool.query(`
       SELECT 
-        course_id,
-        cid,
-        course_name,
-        haul_profile_name,
-        road_type,
-        total_points,
-        course_length_m,
-        start_latitude,
-        start_longitude,
-        end_latitude,
-        end_longitude,
-        ST_AsGeoJSON(course_linestring)::json as linestring
-      FROM courses
-      ORDER BY course_length_m DESC
+        c.course_id,
+        c.cid,
+        c.course_name,
+        c.haul_profile_name,
+        c.road_type,
+        c.total_points,
+        c.course_length_m,
+        c.start_latitude,
+        c.start_longitude,
+        c.end_latitude,
+        c.end_longitude,
+        c.is_spline,
+        CASE 
+          WHEN EXISTS (
+            SELECT 1 
+            FROM survey_paths sp 
+            WHERE ST_DWithin(
+              c.course_linestring::geography, 
+              sp.path_linestring::geography, 
+              10
+            )
+          ) THEN true 
+          ELSE false 
+        END as has_survey_path,
+        ST_AsGeoJSON(c.course_linestring)::json as linestring
+      FROM courses c
+      ORDER BY c.course_length_m DESC
     `);
 
     console.log(`Fetched ${result.rows.length} courses from database`);
+    
+    // Debug: Count courses with/without survey paths
+    const withSurveyPath = result.rows.filter(r => r.has_survey_path === true).length;
+    const withoutSurveyPath = result.rows.filter(r => r.has_survey_path === false).length;
+    console.log(`Courses with survey_path: ${withSurveyPath}, without: ${withoutSurveyPath}`);
 
     const courses = result.rows.map(row => ({
       course_id: row.course_id,
@@ -47,6 +65,8 @@ export default async function handler(req, res) {
       start_longitude: row.start_longitude,
       end_latitude: row.end_latitude,
       end_longitude: row.end_longitude,
+      is_spline: row.is_spline,
+      has_survey_path: row.has_survey_path,
       linestring: row.linestring
     }));
 
