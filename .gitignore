@@ -1,6 +1,6 @@
-backend/public/*
-backend/node_modules/*
-backend/.next/*
+backend/public/
+backend/node_modules/
+backend/.next/
 geoserver_data/
 .mypy_cache/
 .ipynb_checkpoints/
