@@ -12,3 +12,4 @@ Frontrunner/backups/*.sql
 Frontrunner/backup.sql
 Frontrunner/backups/*
 sql_backups/*
+backend/.next/*
