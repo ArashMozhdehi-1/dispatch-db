@@ -234,11 +234,14 @@ const ConsolidatedPolygonMap = () => {
   }, [consolidatedData, intersectionsData]);
 
   useEffect(() => {
-    if (cesiumViewerRef.current && entitiesRef.current.length > 0) {
+    if (cesiumViewerRef.current) {
       console.log('[Consolidated Map] 🔄 Updating entity visibility');
       console.log('[Consolidated Map] 📊 visibleCategories:', Array.from(visibleCategories));
       console.log('[Consolidated Map] 🛤️ showCourses:', showCourses);
+      console.log('[Consolidated Map] 🛤️ showTravels:', showTravels);
       console.log('[Consolidated Map] 🛤️ showSurveyPaths:', showSurveyPaths);
+      console.log('[Consolidated Map] 📊 entitiesRef.current.length:', entitiesRef.current.length);
+      
       let intersectionCount = 0;
       let visibleIntersectionCount = 0;
       let locationCount = 0;
@@ -247,16 +250,17 @@ const ConsolidatedPolygonMap = () => {
       let visibleCourseCount = 0;
       let surveyPathCount = 0;
       let visibleSurveyPathCount = 0;
+      let travelCount = 0;
+      let visibleTravelCount = 0;
       
-      entitiesRef.current.forEach((entity, entityIndex) => {
+      // Update ALL entities in the viewer, not just entitiesRef
+      const allEntities = Array.from(cesiumViewerRef.current.entities.values);
+      console.log('[Consolidated Map] 📊 Total entities in viewer:', allEntities.length);
+      
+      allEntities.forEach((entity, entityIndex) => {
         if (entity && entity.properties) {
           // Cesium properties might need getValue()
           let category = entity.properties.category?.getValue ? entity.properties.category.getValue() : entity.properties.category;
-          
-          // Debug first 5 and last 5 entities to see courses
-          if (entityIndex < 5 || entityIndex >= entitiesRef.current.length - 5) {
-            console.log(`[Consolidated Map] Entity ${entityIndex}: category=${category}, hasProperties=${!!entity.properties}, needsGetValue=${!!entity.properties.category?.getValue}`);
-          }
           
           if (category === 'intersection') {
             intersectionCount++;
@@ -277,14 +281,13 @@ const ConsolidatedPolygonMap = () => {
             courseCount++;
             entity.show = showCourses;
             if (showCourses) visibleCourseCount++;
-            if (entityIndex >= entitiesRef.current.length - 5) {
-              console.log(`[Consolidated Map] 🛤️ Course entity ${entityIndex}: show=${entity.show}, showCourses=${showCourses}`);
-            }
             return;
           }
           
           if (category === 'travel') {
-            // Travels are handled separately below, but count here for consistency
+            travelCount++;
+            entity.show = showTravels;
+            if (showTravels) visibleTravelCount++;
             return;
           }
           
@@ -306,18 +309,6 @@ const ConsolidatedPolygonMap = () => {
             entity.show = isVisible;
             if (isVisible) visibleLocationCount++;
           }
-        }
-      });
-      
-      // Update travel visibility
-      let travelCount = 0;
-      let visibleTravelCount = 0;
-      cesiumViewerRef.current.entities.values.forEach(entity => {
-        const category = entity.properties?.category?.getValue?.() || entity.properties?.category;
-        if (category === 'travel') {
-          travelCount++;
-          entity.show = showTravels; // Travels have their own toggle
-          if (showTravels) visibleTravelCount++;
         }
       });
       
@@ -991,9 +982,12 @@ const ConsolidatedPolygonMap = () => {
           return;
         }
         
+        // Simplify coordinates to prevent Cesium errors
+        const simplifiedCoords = simplifyCoordinates(geometry.coordinates, 50);
+        
         const positions = [];
-        if (geometry.type === 'LineString' && geometry.coordinates) {
-          geometry.coordinates.forEach(coord => {
+        if (geometry.type === 'LineString' && simplifiedCoords) {
+          simplifiedCoords.forEach(coord => {
             if (coord && Array.isArray(coord) && coord.length >= 2 && !isNaN(coord[0]) && !isNaN(coord[1])) {
               const lon = parseFloat(coord[0]);
               const lat = parseFloat(coord[1]);
@@ -1010,20 +1004,20 @@ const ConsolidatedPolygonMap = () => {
           return;
         }
         
-        // ULTRA HD survey path - 3 METERS WIDE - MAXIMUM QUALITY
+        // Survey path - 3 METERS WIDE - GREEN
         const surveyWidthMeters = 3.0; // Fixed 3 meter width
-        const surveyAsphalt = window.Cesium.Color.fromCssColorString('#2C2C2C'); // Dark asphalt
+        const surveyAsphalt = window.Cesium.Color.fromCssColorString('#00FF00'); // Green to match legend
         
-        // ULTRA HD asphalt road surface - MAXIMUM DETAIL
+        // Green road surface
         const surveySurface = cesiumViewer.entities.add({
           corridor: {
             positions: positions,
             width: surveyWidthMeters,
-            material: new window.Cesium.ColorMaterialProperty(surveyAsphalt.withAlpha(1.0)),
-            height: -0.05, // Negative height to ensure roads are always below location polygons
-            extrudedHeight: 0.25, // Reduced to keep roads below locations
+            material: surveyAsphalt,
+            height: 0.5, // Raised to be visible
+            extrudedHeight: 0.8, // Slightly extruded
             cornerType: window.Cesium.CornerType.ROUNDED,
-            granularity: 0.000001 // ULTRA HD - 10x more detail than before
+            granularity: 0.01 // Reduced to prevent excessive vertices
           },
           name: `Survey Path ${path.path_oid}`,
           properties: {
@@ -1097,19 +1091,14 @@ const ConsolidatedPolygonMap = () => {
           surveyRightEdge.push(surveyTrimmedEdge[surveyTrimmedEdge.length - 1]);
         }
         
-        // HD white edge lines with glow for survey paths
+        // White edge lines for survey paths
         if (surveyLeftEdge.length > 1) {
           const leftEdge = cesiumViewer.entities.add({
             polyline: {
               positions: surveyLeftEdge,
-              width: 3,
-              material: new window.Cesium.PolylineOutlineMaterialProperty({
-                color: window.Cesium.Color.WHITE.withAlpha(1.0),
-                outlineWidth: 1,
-                outlineColor: window.Cesium.Color.WHITE.withAlpha(0.3)
-              }),
-              clampToGround: false,
-              zIndex: 3
+              width: 2,
+              material: window.Cesium.Color.WHITE.withAlpha(0.8),
+              clampToGround: false
             },
             properties: {
               category: 'survey_path',
@@ -1124,14 +1113,9 @@ const ConsolidatedPolygonMap = () => {
           const rightEdge = cesiumViewer.entities.add({
             polyline: {
               positions: surveyRightEdge,
-              width: 3,
-              material: new window.Cesium.PolylineOutlineMaterialProperty({
-                color: window.Cesium.Color.WHITE.withAlpha(1.0),
-                outlineWidth: 1,
-                outlineColor: window.Cesium.Color.WHITE.withAlpha(0.3)
-              }),
-              clampToGround: false,
-              zIndex: 3
+              width: 2,
+              material: window.Cesium.Color.WHITE.withAlpha(0.8),
+              clampToGround: false
             },
             properties: {
               category: 'survey_path',
@@ -1268,6 +1252,29 @@ const ConsolidatedPolygonMap = () => {
     return positions.slice(trimCount, positions.length - trimCount);
   };
 
+  // Simplify coordinates to prevent "invalid array length" errors in Cesium
+  // Cesium has limits on geometry complexity, so we limit to maxPoints per geometry
+  const simplifyCoordinates = (coords, maxPoints = 50) => {
+    if (!coords || coords.length <= maxPoints) {
+      return coords;
+    }
+    
+    // Keep first and last point, then sample evenly
+    const simplified = [coords[0]]; // Always keep first point
+    const step = Math.ceil((coords.length - 2) / (maxPoints - 2));
+    
+    for (let i = step; i < coords.length - 1; i += step) {
+      simplified.push(coords[i]);
+    }
+    
+    // Always keep last point
+    if (simplified[simplified.length - 1] !== coords[coords.length - 1]) {
+      simplified.push(coords[coords.length - 1]);
+    }
+    
+    return simplified;
+  };
+
   const addCoursesToCesium = (cesiumViewer) => {
     if (!coursesData?.courses) {
       console.warn('[Consolidated Map] No courses data available');
@@ -1304,9 +1311,12 @@ const ConsolidatedPolygonMap = () => {
           return;
         }
         
+        // Simplify coordinates to prevent Cesium errors
+        const simplifiedCoords = simplifyCoordinates(geometry.coordinates, 50);
+        
         const positions = [];
-        if (geometry.type === 'LineString' && geometry.coordinates) {
-          geometry.coordinates.forEach(coord => {
+        if (geometry.type === 'LineString' && simplifiedCoords) {
+          simplifiedCoords.forEach(coord => {
             if (coord && Array.isArray(coord) && coord.length >= 2 && !isNaN(coord[0]) && !isNaN(coord[1])) {
               const lon = parseFloat(coord[0]);
               const lat = parseFloat(coord[1]);
@@ -1323,20 +1333,20 @@ const ConsolidatedPolygonMap = () => {
           return;
         }
         
-        // ULTRA HD road with asphalt - ALL ROADS 3 METERS WIDE - MAXIMUM QUALITY
+        // Course road - 3 METERS WIDE - GOLD
         const roadWidthMeters = 3.0; // Fixed 3 meter width for all roads
-        const roadColor = window.Cesium.Color.fromCssColorString('#2C2C2C'); // Dark asphalt
+        const roadColor = window.Cesium.Color.fromCssColorString('#FFD700'); // Gold to match legend
         
-        // ULTRA HD asphalt road surface - MAXIMUM DETAIL
+        // Gold road surface
         const roadSurface = cesiumViewer.entities.add({
           corridor: {
             positions: positions,
             width: roadWidthMeters,
-            material: new window.Cesium.ColorMaterialProperty(roadColor.withAlpha(1.0)),
-            height: -0.05, // Negative height to ensure roads are always below location polygons
-            extrudedHeight: 0.25, // Reduced to keep roads below locations
+            material: roadColor,
+            height: 0.5, // Raised to be visible
+            extrudedHeight: 0.8, // Slightly extruded
             cornerType: window.Cesium.CornerType.ROUNDED,
-            granularity: 0.000001 // ULTRA HD - 10x more detail than before
+            granularity: 0.01 // Reduced to prevent excessive vertices
           },
           name: course.course_name || `Course ${course.cid}`,
           properties: {
@@ -1426,9 +1436,12 @@ const ConsolidatedPolygonMap = () => {
           return;
         }
         
+        // Simplify coordinates to prevent Cesium errors
+        const simplifiedCoords = simplifyCoordinates(geometry.coordinates, 50);
+        
         const positions = [];
-        if (geometry.type === 'LineString' && geometry.coordinates) {
-          geometry.coordinates.forEach(coord => {
+        if (geometry.type === 'LineString' && simplifiedCoords) {
+          simplifiedCoords.forEach(coord => {
             if (coord && Array.isArray(coord) && coord.length >= 2 && !isNaN(coord[0]) && !isNaN(coord[1])) {
               const lon = parseFloat(coord[0]);
               const lat = parseFloat(coord[1]);
@@ -1445,7 +1458,7 @@ const ConsolidatedPolygonMap = () => {
           return;
         }
         
-        // Travel roads - 3 meters wide, distinct color to differentiate from regular courses
+        // Travel roads - 3 meters wide - BLUE
         const roadWidthMeters = 3.0;
         const travelColor = window.Cesium.Color.fromCssColorString('#4A90E2'); // Blue color for travels
         
@@ -1458,11 +1471,11 @@ const ConsolidatedPolygonMap = () => {
           corridor: {
             positions: positions,
             width: roadWidthMeters,
-            material: new window.Cesium.ColorMaterialProperty(travelColor.withAlpha(1.0)),
-            height: -0.05, // Same as courses - below locations
-            extrudedHeight: 0.25,
+            material: travelColor,
+            height: 0.5, // Raised to be visible
+            extrudedHeight: 0.8, // Slightly extruded
             cornerType: window.Cesium.CornerType.ROUNDED,
-            granularity: 0.000001
+            granularity: 0.01 // Reduced to prevent excessive vertices
           },
           name: travelName,
           properties: {

@@ -20,9 +20,9 @@ export default async function handler(req, res) {
         -- Create 15m buffer around each intersection polygon
         SELECT 
           intersection_id,
-          ST_Buffer(geometry::geography, 15)::geometry as buffer_geom
+          ST_Buffer(intersection_polygon::geography, 15)::geometry as buffer_geom
         FROM consolidated_intersections
-        WHERE geometry IS NOT NULL
+        WHERE intersection_polygon IS NOT NULL
       ),
       all_intersections_union AS (
         -- Union all intersection buffers into one geometry
