@@ -14,20 +14,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Return ALL courses - they're already deduplicated with ~31 points average
+    // Return ALL courses with ALL columns including coordinate aggregates
     const result = await pool.query(`
       SELECT 
-        course_id,
-        cid,
-        course_name,
-        haul_profile_name,
-        road_type,
-        total_points,
-        course_length_m,
-        start_latitude,
-        start_longitude,
-        end_latitude,
-        end_longitude,
+        *,
         ST_AsGeoJSON(course_linestring)::json as linestring
       FROM courses
       ORDER BY course_length_m DESC
@@ -35,20 +25,15 @@ export default async function handler(req, res) {
 
     console.log(`Fetched ${result.rows.length} courses from database`);
 
-    const courses = result.rows.map(row => ({
-      course_id: row.course_id,
-      cid: row.cid,
-      course_name: row.course_name,
-      haul_profile_name: row.haul_profile_name,
-      road_type: row.road_type,
-      total_points: row.total_points,
-      course_length_m: row.course_length_m,
-      start_latitude: row.start_latitude,
-      start_longitude: row.start_longitude,
-      end_latitude: row.end_latitude,
-      end_longitude: row.end_longitude,
-      linestring: row.linestring
-    }));
+    // Return ALL columns from the database
+    const courses = result.rows.map(row => {
+      const course = { ...row };
+      // Rename linestring to avoid overwriting
+      if (course.linestring) {
+        course.linestring = course.linestring;
+      }
+      return course;
+    });
 
     console.log(`Returning ${courses.length} courses to client`);
 

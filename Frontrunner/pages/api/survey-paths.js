@@ -14,21 +14,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Return ALL survey paths
+    // Return ALL survey paths with ALL columns including coordinate aggregates
     const result = await pool.query(`
       SELECT 
-        path_id,
-        path_oid,
-        cid,
-        is_valid,
-        is_changeable,
-        is_external,
-        total_points,
-        path_length_m,
-        start_latitude,
-        start_longitude,
-        end_latitude,
-        end_longitude,
+        *,
         ST_AsGeoJSON(path_linestring)::json as linestring
       FROM survey_paths
       ORDER BY path_length_m DESC
@@ -36,21 +25,15 @@ export default async function handler(req, res) {
 
     console.log(`Fetched ${result.rows.length} survey paths from database`);
 
-    const paths = result.rows.map(row => ({
-      path_id: row.path_id,
-      path_oid: row.path_oid,
-      cid: row.cid,
-      is_valid: row.is_valid,
-      is_changeable: row.is_changeable,
-      is_external: row.is_external,
-      total_points: row.total_points,
-      path_length_m: row.path_length_m,
-      start_latitude: row.start_latitude,
-      start_longitude: row.start_longitude,
-      end_latitude: row.end_latitude,
-      end_longitude: row.end_longitude,
-      linestring: row.linestring
-    }));
+    // Return ALL columns from the database
+    const paths = result.rows.map(row => {
+      const path = { ...row };
+      // Keep linestring as is
+      if (path.linestring) {
+        path.linestring = path.linestring;
+      }
+      return path;
+    });
 
     console.log(`Returning ${paths.length} survey paths to client`);
 

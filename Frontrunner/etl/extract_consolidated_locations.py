@@ -53,11 +53,48 @@ def transform_local_to_latlon(x_mm, y_mm):
     return latitude, longitude
 
 def extract_locations_by_type(mysql_cursor, location_type_pattern):
-    """Extract locations matching a type pattern"""
+    """Extract locations matching a type pattern - includes ALL pit_loc columns"""
     query = """
         SELECT DISTINCT
-            pl._location_survey,
+            pl._OID_ as pit_loc_oid,
+            pl._CID_ as pit_loc_cid,
             pl.name as location_name,
+            pl._location_survey,
+            pl._def_dump_prof,
+            pl._cur_dump_prof,
+            pl.inclination,
+            pl.crusher_interface_enabled,
+            pl.auto_pause_enabled,
+            pl.min_steering_radius,
+            pl.max_acceleration,
+            pl.max_deceleration,
+            pl.max_centripetal_accel,
+            pl.max_forward_speed,
+            pl.max_reverse_speed,
+            pl.ignore_dismiss,
+            pl.mixed_location_current_type,
+            pl.crush_bed_hold_time,
+            pl.default_crush_bed_hold_time_used,
+            pl.crush_move_fwd_while_lower_bed,
+            pl.default_crush_move_fwd_while_lower_bed_used,
+            pl.highdump__,
+            pl.highdump__node_threshold,
+            pl.highdump__default_node_threshold_used,
+            pl.highdump__node_increment,
+            pl.highdump__default_node_increment_used,
+            pl.highdump__row_spacing,
+            pl.highdump__default_row_spacing_used,
+            pl.highdump__dump_spacing,
+            pl.highdump__default_dump_spacing_used,
+            pl.highdump__bed_hold_time,
+            pl.highdump__default_bed_hold_time_used,
+            pl.highdump__tip_area_depth,
+            pl.highdump__edge_detection_dist,
+            pl.highdump__default_edge_detection_dist_used,
+            pl.highdump__extra_edge_approach_dist,
+            pl.highdump__default_extra_edge_approach_dist_used,
+            pl.highdump__lower_bed_before_move_fwd,
+            pl.highdump__default_lower_bed_before_move_fwd_used,
             c._OID_ as coordinate_id,
             c.coord_x,
             c.coord_y,
@@ -79,13 +116,54 @@ def extract_locations_by_type(mysql_cursor, location_type_pattern):
     return mysql_cursor.fetchall()
 
 def group_coordinates_by_location(coordinates):
-    """Group coordinates by location name"""
+    """Group coordinates by location name - stores ALL pit_loc columns"""
     locations = {}
     for row in coordinates:
         location_name = row['location_name']
         if location_name not in locations:
-            locations[location_name] = []
-        locations[location_name].append({
+            # Store all pit_loc columns from first occurrence (they're the same for all coords)
+            locations[location_name] = {
+                'pit_loc_oid': row.get('pit_loc_oid'),
+                'pit_loc_cid': row.get('pit_loc_cid'),
+                '_location_survey': row.get('_location_survey'),
+                '_def_dump_prof': row.get('_def_dump_prof'),
+                '_cur_dump_prof': row.get('_cur_dump_prof'),
+                'inclination': row.get('inclination'),
+                'crusher_interface_enabled': row.get('crusher_interface_enabled'),
+                'auto_pause_enabled': row.get('auto_pause_enabled'),
+                'min_steering_radius': row.get('min_steering_radius'),
+                'max_acceleration': row.get('max_acceleration'),
+                'max_deceleration': row.get('max_deceleration'),
+                'max_centripetal_accel': row.get('max_centripetal_accel'),
+                'max_forward_speed': row.get('max_forward_speed'),
+                'max_reverse_speed': row.get('max_reverse_speed'),
+                'ignore_dismiss': row.get('ignore_dismiss'),
+                'mixed_location_current_type': row.get('mixed_location_current_type'),
+                'crush_bed_hold_time': row.get('crush_bed_hold_time'),
+                'default_crush_bed_hold_time_used': row.get('default_crush_bed_hold_time_used'),
+                'crush_move_fwd_while_lower_bed': row.get('crush_move_fwd_while_lower_bed'),
+                'default_crush_move_fwd_while_lower_bed_used': row.get('default_crush_move_fwd_while_lower_bed_used'),
+                'highdump__': row.get('highdump__'),
+                'highdump__node_threshold': row.get('highdump__node_threshold'),
+                'highdump__default_node_threshold_used': row.get('highdump__default_node_threshold_used'),
+                'highdump__node_increment': row.get('highdump__node_increment'),
+                'highdump__default_node_increment_used': row.get('highdump__default_node_increment_used'),
+                'highdump__row_spacing': row.get('highdump__row_spacing'),
+                'highdump__default_row_spacing_used': row.get('highdump__default_row_spacing_used'),
+                'highdump__dump_spacing': row.get('highdump__dump_spacing'),
+                'highdump__default_dump_spacing_used': row.get('highdump__default_dump_spacing_used'),
+                'highdump__bed_hold_time': row.get('highdump__bed_hold_time'),
+                'highdump__default_bed_hold_time_used': row.get('highdump__default_bed_hold_time_used'),
+                'highdump__tip_area_depth': row.get('highdump__tip_area_depth'),
+                'highdump__edge_detection_dist': row.get('highdump__edge_detection_dist'),
+                'highdump__default_edge_detection_dist_used': row.get('highdump__default_edge_detection_dist_used'),
+                'highdump__extra_edge_approach_dist': row.get('highdump__extra_edge_approach_dist'),
+                'highdump__default_extra_edge_approach_dist_used': row.get('highdump__default_extra_edge_approach_dist_used'),
+                'highdump__lower_bed_before_move_fwd': row.get('highdump__lower_bed_before_move_fwd'),
+                'highdump__default_lower_bed_before_move_fwd_used': row.get('highdump__default_lower_bed_before_move_fwd_used'),
+                'coordinates': []
+            }
+        locations[location_name]['coordinates'].append({
             'coordinate_id': row['coordinate_id'],
             'coord_x': row['coord_x'],
             'coord_y': row['coord_y'],
@@ -133,6 +211,16 @@ def main():
             location_boundary GEOMETRY(LineString, 4326),
             area_sqm DOUBLE PRECISION,
             all_coordinate_ids TEXT,
+            -- All pit_loc columns
+            pit_loc_oid VARCHAR(32),
+            pit_loc_cid VARCHAR(32),
+            location_survey VARCHAR(32),
+            def_dump_prof VARCHAR(32),
+            cur_dump_prof VARCHAR(32),
+            inclination VARCHAR(32),
+            mixed_location_current_type VARCHAR(32),
+            -- Store all other pit_loc columns as JSONB for flexibility
+            pit_loc_attributes JSONB,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         CREATE INDEX idx_consolidated_locations_category ON consolidated_locations(category);
@@ -165,7 +253,8 @@ def main():
         locations = group_coordinates_by_location(category_coords)
         logger.info(f"Grouped into {len(locations)} {description}")
         
-        for location_name, coords in locations.items():
+        for location_name, location_data in locations.items():
+            coords = location_data['coordinates']
             if len(coords) < 3:
                 logger.warning(f"Skipping {location_name}: only {len(coords)} points")
                 continue
@@ -213,6 +302,42 @@ def main():
             # Get coordinate IDs
             coord_ids = ','.join([str(c['coordinate_id']) for c in coords])
             
+            # Prepare pit_loc attributes as JSONB
+            import json
+            pit_loc_attrs = {
+                'crusher_interface_enabled': location_data.get('crusher_interface_enabled'),
+                'auto_pause_enabled': location_data.get('auto_pause_enabled'),
+                'min_steering_radius': location_data.get('min_steering_radius'),
+                'max_acceleration': location_data.get('max_acceleration'),
+                'max_deceleration': location_data.get('max_deceleration'),
+                'max_centripetal_accel': location_data.get('max_centripetal_accel'),
+                'max_forward_speed': location_data.get('max_forward_speed'),
+                'max_reverse_speed': location_data.get('max_reverse_speed'),
+                'ignore_dismiss': location_data.get('ignore_dismiss'),
+                'crush_bed_hold_time': location_data.get('crush_bed_hold_time'),
+                'default_crush_bed_hold_time_used': location_data.get('default_crush_bed_hold_time_used'),
+                'crush_move_fwd_while_lower_bed': location_data.get('crush_move_fwd_while_lower_bed'),
+                'default_crush_move_fwd_while_lower_bed_used': location_data.get('default_crush_move_fwd_while_lower_bed_used'),
+                'highdump__': location_data.get('highdump__'),
+                'highdump__node_threshold': location_data.get('highdump__node_threshold'),
+                'highdump__default_node_threshold_used': location_data.get('highdump__default_node_threshold_used'),
+                'highdump__node_increment': location_data.get('highdump__node_increment'),
+                'highdump__default_node_increment_used': location_data.get('highdump__default_node_increment_used'),
+                'highdump__row_spacing': location_data.get('highdump__row_spacing'),
+                'highdump__default_row_spacing_used': location_data.get('highdump__default_row_spacing_used'),
+                'highdump__dump_spacing': location_data.get('highdump__dump_spacing'),
+                'highdump__default_dump_spacing_used': location_data.get('highdump__default_dump_spacing_used'),
+                'highdump__bed_hold_time': location_data.get('highdump__bed_hold_time'),
+                'highdump__default_bed_hold_time_used': location_data.get('highdump__default_bed_hold_time_used'),
+                'highdump__tip_area_depth': location_data.get('highdump__tip_area_depth'),
+                'highdump__edge_detection_dist': location_data.get('highdump__edge_detection_dist'),
+                'highdump__default_edge_detection_dist_used': location_data.get('highdump__default_edge_detection_dist_used'),
+                'highdump__extra_edge_approach_dist': location_data.get('highdump__extra_edge_approach_dist'),
+                'highdump__default_extra_edge_approach_dist_used': location_data.get('highdump__default_extra_edge_approach_dist_used'),
+                'highdump__lower_bed_before_move_fwd': location_data.get('highdump__lower_bed_before_move_fwd'),
+                'highdump__default_lower_bed_before_move_fwd_used': location_data.get('highdump__default_lower_bed_before_move_fwd_used')
+            }
+            
             # Insert into PostgreSQL using CONVEX HULL for outer boundary
             postgres_cursor.execute("""
                 WITH points AS (
@@ -225,7 +350,10 @@ def main():
                     location_name, category, total_points,
                     center_latitude, center_longitude,
                     center_point, location_polygon, location_boundary,
-                    area_sqm, all_coordinate_ids
+                    area_sqm, all_coordinate_ids,
+                    pit_loc_oid, pit_loc_cid, location_survey,
+                    def_dump_prof, cur_dump_prof, inclination,
+                    mixed_location_current_type, pit_loc_attributes
                 )
                 SELECT 
                     %s, %s, %s, %s, %s,
@@ -233,14 +361,22 @@ def main():
                     hull_geom,
                     ST_ExteriorRing(hull_geom),
                     ST_Area(hull_geom::geography),
-                    %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s
                 FROM hull
             """, (
                 polygon_wkt,
                 location_name, category, len(coords),
                 center_lat, center_lon,
                 center_lon, center_lat,
-                coord_ids
+                coord_ids,
+                location_data.get('pit_loc_oid'),
+                location_data.get('pit_loc_cid'),
+                location_data.get('_location_survey'),
+                location_data.get('_def_dump_prof'),
+                location_data.get('_cur_dump_prof'),
+                location_data.get('inclination'),
+                location_data.get('mixed_location_current_type'),
+                json.dumps(pit_loc_attrs)
             ))
             
             total_locations += 1

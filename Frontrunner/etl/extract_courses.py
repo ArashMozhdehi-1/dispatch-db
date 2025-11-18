@@ -251,6 +251,7 @@ def main():
                 
         except Exception as e:
             logger.warning(f"Failed to add course {course_oid}: {e}")
+            postgres_conn.rollback()  # Reset transaction after error
             skipped += 1
     
     postgres_conn.commit()
@@ -269,7 +270,10 @@ def main():
     logger.info(f"\n=== COURSES SUMMARY ===")
     logger.info(f"Total Courses: {row[0]}")
     logger.info(f"Total Points: {row[1]}")
-    logger.info(f"Total Length: {row[2]} meters ({row[2]/1000:.1f} km)")
+    if row[2] is not None:
+        logger.info(f"Total Length: {row[2]} meters ({row[2]/1000:.1f} km)")
+    else:
+        logger.info(f"Total Length: 0 meters (0.0 km)")
     logger.info(f"Road Types: {row[3]}")
     logger.info(f"Skipped: {skipped}")
     

@@ -14,13 +14,17 @@ const ConsolidatedPolygonMap = () => {
   const [intersectionsData, setIntersectionsData] = useState(null);
   const [surveyPathsData, setSurveyPathsData] = useState(null);
   const [coursesData, setCoursesData] = useState(null);
+  const [travelsData, setTravelsData] = useState(null);
   const [roadMarkingsData, setRoadMarkingsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [visibleCategories, setVisibleCategories] = useState(new Set());
   const [showSurveyPaths, setShowSurveyPaths] = useState(true);
   const [showCourses, setShowCourses] = useState(true);
+  const [showTravels, setShowTravels] = useState(true);
   const [baseLayer, setBaseLayer] = useState('night');
   const [viewMode, setViewMode] = useState('3D');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogData, setDialogData] = useState(null);
   const getConsolidatedCategory = (category) => {
     if (!category) return 'default';
     const categoryStr = String(category);
@@ -185,6 +189,22 @@ const ConsolidatedPolygonMap = () => {
   }, [coursesData, mapLoaded]);
 
   useEffect(() => {
+    if (mapLoaded && travelsData && cesiumViewerRef.current) {
+      console.log('[Consolidated Map] 🚗 useEffect triggered - Adding travels to map...');
+      console.log('[Consolidated Map] 🚗 mapLoaded:', mapLoaded);
+      console.log('[Consolidated Map] 🚗 travelsData:', travelsData);
+      console.log('[Consolidated Map] 🚗 cesiumViewerRef.current:', !!cesiumViewerRef.current);
+      addTravelsToCesium(cesiumViewerRef.current);
+    } else {
+      console.log('[Consolidated Map] ⏳ Waiting for travels conditions:', {
+        mapLoaded,
+        hasTravelsData: !!travelsData,
+        hasViewer: !!cesiumViewerRef.current
+      });
+    }
+  }, [travelsData, mapLoaded]);
+
+  useEffect(() => {
     if ((consolidatedData?.consolidated_locations || intersectionsData?.consolidated_intersections) && visibleCategories.size === 0) {
       const uniqueCategories = new Set();
       
@@ -263,6 +283,11 @@ const ConsolidatedPolygonMap = () => {
             return;
           }
           
+          if (category === 'travel') {
+            // Travels are handled separately below, but count here for consistency
+            return;
+          }
+          
           if (category) {
             locationCount++;
             if (typeof category === 'string') {
@@ -284,13 +309,25 @@ const ConsolidatedPolygonMap = () => {
         }
       });
       
-      console.log(`[Consolidated Map] 📊 Visibility: ${visibleIntersectionCount}/${intersectionCount} intersections, ${visibleLocationCount}/${locationCount} locations, ${visibleCourseCount}/${courseCount} courses, ${visibleSurveyPathCount}/${surveyPathCount} survey paths visible`);
+      // Update travel visibility
+      let travelCount = 0;
+      let visibleTravelCount = 0;
+      cesiumViewerRef.current.entities.values.forEach(entity => {
+        const category = entity.properties?.category?.getValue?.() || entity.properties?.category;
+        if (category === 'travel') {
+          travelCount++;
+          entity.show = showTravels; // Travels have their own toggle
+          if (showTravels) visibleTravelCount++;
+        }
+      });
+      
+      console.log(`[Consolidated Map] 📊 Visibility: ${visibleIntersectionCount}/${intersectionCount} intersections, ${visibleLocationCount}/${locationCount} locations, ${visibleCourseCount}/${courseCount} courses, ${visibleTravelCount}/${travelCount} travels, ${visibleSurveyPathCount}/${surveyPathCount} survey paths visible`);
       
       if (cesiumViewerRef.current.scene) {
         cesiumViewerRef.current.scene.requestRender();
       }
     }
-  }, [visibleCategories, showCourses, showSurveyPaths]);
+  }, [visibleCategories, showCourses, showTravels, showSurveyPaths]);
 
   const fetchData = async () => {
     try {
@@ -353,6 +390,21 @@ const ConsolidatedPolygonMap = () => {
       } else {
         const errorText = await coursesResponse.text();
         console.error('❌ Could not fetch courses:', coursesResponse.status, errorText);
+      }
+      
+      // Fetch travels (filtered courses based on travel from/to locations)
+      const travelsResponse = await fetch('/api/travels');
+      console.log('🚗 Travels API response status:', travelsResponse.status);
+      if (travelsResponse.ok) {
+        const travelsResult = await travelsResponse.json();
+        console.log(`🚗 Loaded ${travelsResult.total_travels} travels`);
+        if (travelsResult.travels && travelsResult.travels.length > 0) {
+          console.log('🚗 Sample travel:', travelsResult.travels[0]);
+        }
+        setTravelsData(travelsResult);
+      } else {
+        const errorText = await travelsResponse.text();
+        console.error('❌ Could not fetch travels:', travelsResponse.status, errorText);
       }
       
       // Fetch geospatially-clipped road markings (excludes intersection zones)
@@ -604,98 +656,225 @@ const ConsolidatedPolygonMap = () => {
         
         const tooltipHandler = cesiumViewer.cesiumWidget.screenSpaceEventHandler;
         
-        // Add click handler for roads
+        // Add click handler for all entities
         tooltipHandler.setInputAction((movement) => {
           if (!cesiumViewer || !cesiumViewer.scene) return;
           const pickedObject = cesiumViewer.scene.pick(movement.position);
           
           if (window.Cesium.defined(pickedObject) && pickedObject.id && pickedObject.id.properties) {
             const entity = pickedObject.id;
-            const category = entity.properties.category?.getValue ? entity.properties.category.getValue() : entity.properties.category;
             
-            // Check if it's a road (course or survey_path)
-            if (category === 'course' || category === 'survey_path') {
-              // Highlight the road
-              if (entity.corridor) {
-                entity.corridor.material = window.Cesium.Color.CYAN.withAlpha(0.9);
-              }
-              
-              // Show popup with road info
-              const name = entity.properties.name?.getValue ? entity.properties.name.getValue() : entity.properties.name;
-              const roadType = entity.properties.road_type?.getValue ? entity.properties.road_type.getValue() : entity.properties.road_type;
-              const lengthM = entity.properties.length_m?.getValue ? entity.properties.length_m.getValue() : entity.properties.length_m;
-              const widthM = entity.properties.width_m?.getValue ? entity.properties.width_m.getValue() : entity.properties.width_m;
-              
-              const popupContent = `
-                <div style="background: rgba(30, 30, 30, 0.95); color: white; padding: 16px; border-radius: 8px; min-width: 250px;">
-                  <div style="font-weight: 600; color: ${category === 'course' ? '#FFD700' : '#00FF00'}; margin-bottom: 12px; font-size: 16px; border-bottom: 2px solid ${category === 'course' ? '#FFD700' : '#00FF00'}; padding-bottom: 8px;">
-                    🛣️ ${name || 'Road'}
-                  </div>
-                  ${roadType ? `
-                  <div style="margin-bottom: 6px;">
-                    <span style="color: #bdc3c7;">Type:</span>
-                    <span style="color: white; margin-left: 8px; font-weight: 500;">${roadType}</span>
-                  </div>
-                  ` : ''}
-                  ${lengthM ? `
-                  <div style="margin-bottom: 6px;">
-                    <span style="color: #bdc3c7;">Length:</span>
-                    <span style="color: white; margin-left: 8px; font-weight: 500;">${(lengthM / 1000).toFixed(2)} km</span>
-                  </div>
-                  ` : ''}
-                  ${widthM ? `
-                  <div style="margin-bottom: 6px;">
-                    <span style="color: #bdc3c7;">Width:</span>
-                    <span style="color: white; margin-left: 8px; font-weight: 500;">${widthM.toFixed(1)} m</span>
-                  </div>
-                  ` : ''}
-                  <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); font-size: 12px; color: #95a5a6;">
-                    Click elsewhere to deselect
-                  </div>
-                </div>
-              `;
-              
-              const cartesian = cesiumViewer.scene.pickPosition(movement.position);
-              if (cartesian) {
-                const cartographic = window.Cesium.Cartographic.fromCartesian(cartesian);
-                const longitude = window.Cesium.Math.toDegrees(cartographic.longitude);
-                const latitude = window.Cesium.Math.toDegrees(cartographic.latitude);
-                
-                // Remove existing popup
-                if (currentPopup.current) {
-                  currentPopup.current.remove();
+            // Extract ALL properties from the entity - iterate through EVERY property
+            const allProperties = {};
+            if (entity.properties) {
+              // Method 1: Try to get propertyNames if available
+              try {
+                const propertyNames = entity.properties.propertyNames;
+                if (propertyNames && propertyNames.length > 0) {
+                  propertyNames.forEach(propName => {
+                    try {
+                      const prop = entity.properties[propName];
+                      if (prop !== undefined && prop !== null) {
+                        if (prop && typeof prop.getValue === 'function') {
+                          allProperties[propName] = prop.getValue();
+                        } else {
+                          allProperties[propName] = prop;
+                        }
+                      }
+                    } catch (e) {
+                      console.warn(`[Consolidated Map] Failed to get property ${propName}:`, e);
+                    }
+                  });
                 }
-                
-                // Create new popup
-                const popup = document.createElement('div');
-                popup.innerHTML = popupContent;
-                popup.style.cssText = `
-                  position: absolute;
-                  left: ${movement.position.x + 10}px;
-                  top: ${movement.position.y - 10}px;
-                  z-index: 10000;
-                  pointer-events: none;
-                `;
-                document.body.appendChild(popup);
-                currentPopup.current = popup;
+              } catch (e) {
+                console.warn('[Consolidated Map] propertyNames not available, using direct iteration');
               }
               
-              console.log(`[Consolidated Map] 🛣️ Clicked road: ${name}`);
+              // Method 2: Use propertyNames array (Cesium's official way to get all property names)
+              try {
+                if (entity.properties && entity.properties.propertyNames) {
+                  const propertyNames = entity.properties.propertyNames;
+                  for (let i = 0; i < propertyNames.length; i++) {
+                    const propName = propertyNames[i];
+                    
+                    // Skip if already added
+                    if (allProperties.hasOwnProperty(propName)) {
+                      continue;
+                    }
+                    
+                    try {
+                      const prop = entity.properties[propName];
+                      // Skip functions - only get actual data values
+                      if (prop !== undefined && prop !== null && typeof prop !== 'function') {
+                        if (prop && typeof prop.getValue === 'function') {
+                          try {
+                            const value = prop.getValue();
+                            // Only store if it's not a function
+                            if (typeof value !== 'function') {
+                              allProperties[propName] = value;
+                            }
+                          } catch (e) {
+                            // If getValue fails, skip
+                          }
+                        } else {
+                          // Direct value, not a function
+                          allProperties[propName] = prop;
+                        }
+                      }
+                    } catch (e) {
+                      // Skip errors silently
+                    }
+                  }
+                }
+              } catch (e) {
+                console.warn('[Consolidated Map] Failed to iterate propertyNames:', e);
+              }
+              
+              // Method 3: Also try known property names as fallback
+              const knownProperties = [
+                'name', 'category', 'course_name', 'path_oid', 'location_name', 'intersection_name',
+                'road_type', 'haul_profile_name', 'cid', 'is_valid', 'is_changeable', 'is_external',
+                'total_points', 'course_length_m', 'path_length_m', 'length_m', 'width_m',
+                'start_latitude', 'start_longitude', 'end_latitude', 'end_longitude',
+                'inflections', 'is_spline', 'all_coordinate_oids', 'created_at',
+                'area_sqm', 'center_latitude', 'center_longitude',
+                'intersection_type', 'all_coordinate_ids',
+                'course_id', 'path_id', 'course_oid_original', 'course_attributes_value',
+                'course_attributes_oid', 'coursegeometry_oid', 'inclination_factor',
+                'start_direction', 'assigned_watering_path', 'required_gnss_base_id',
+                'version_ver', 'version_ver2', 'replica_version', 'replica_age',
+                'path_oid_original', 'shapepath_oid', 'shapepath_is_path',
+                'color', 'intersection_name', 'total_points', 'avg_altitude'
+              ];
+              
+              knownProperties.forEach(propName => {
+                if (!allProperties.hasOwnProperty(propName)) {
+                  try {
+                    const prop = entity.properties[propName];
+                    // Only get non-function values
+                    if (prop !== undefined && prop !== null && typeof prop !== 'function') {
+                      if (prop && typeof prop.getValue === 'function') {
+                        try {
+                          const value = prop.getValue();
+                          if (typeof value !== 'function') {
+                            allProperties[propName] = value;
+                          }
+                        } catch (e) {
+                          // Skip
+                        }
+                      } else {
+                        allProperties[propName] = prop;
+                      }
+                    }
+                  } catch (e) {
+                    // Skip
+                  }
+                }
+              });
             }
+            
+            // Also get entity name if available
+            if (entity.name && !allProperties.name) {
+              allProperties.name = entity.name;
+            }
+            
+            console.log(`[Consolidated Map] Extracted ${Object.keys(allProperties).length} properties:`, Object.keys(allProperties));
+            
+            // Get category
+            const category = allProperties.category || entity.properties?.category?.getValue?.() || entity.properties?.category;
+            
+            // FIRST: Clear all previous highlights - restore all entities to original colors
+            if (cesiumViewerRef.current && cesiumViewerRef.current.entities) {
+              cesiumViewerRef.current.entities.values.forEach(prevEntity => {
+                if (prevEntity._originalMaterial) {
+                  if (prevEntity.corridor) {
+                    prevEntity.corridor.material = prevEntity._originalMaterial;
+                    prevEntity.corridor.outline = false;
+                  } else if (prevEntity.polygon) {
+                    prevEntity.polygon.material = prevEntity._originalMaterial;
+                    prevEntity.polygon.outline = false;
+                  }
+                }
+              });
+            }
+            
+            // NOW: Highlight ONLY the clicked entity - make it very visible
+            if (entity.corridor) {
+              // Store original material for restoration
+              if (!entity._originalMaterial) {
+                entity._originalMaterial = entity.corridor.material;
+              }
+              entity.corridor.material = window.Cesium.Color.CYAN.withAlpha(1.0);
+              entity.corridor.outline = true;
+              entity.corridor.outlineColor = window.Cesium.Color.YELLOW;
+              entity.corridor.outlineWidth = 3;
+            } else if (entity.polygon) {
+              // Store original material for restoration
+              if (!entity._originalMaterial) {
+                entity._originalMaterial = entity.polygon.material;
+              }
+              entity.polygon.material = window.Cesium.Color.CYAN.withAlpha(0.9);
+              entity.polygon.outline = true;
+              entity.polygon.outlineColor = window.Cesium.Color.YELLOW;
+              entity.polygon.outlineWidth = 3;
+            }
+            
+            // Show dialog with ALL information
+            setDialogData({
+              category: category,
+              name: allProperties.name || allProperties.course_name || allProperties.location_name || allProperties.intersection_name || 'Unknown',
+              allProperties: allProperties
+            });
+            setDialogOpen(true);
+            
+            console.log(`[Consolidated Map] Clicked entity:`, allProperties);
           } else {
-            // Clicked on empty space - reset highlights
+            // Clicked on empty space - close dialog and reset highlights
+            setDialogOpen(false);
+            setDialogData(null);
+            
             if (currentPopup.current) {
               currentPopup.current.remove();
               currentPopup.current = null;
             }
-            // Reset all road colors
+            
+            // Reset all entity colors
             entitiesRef.current.forEach(entity => {
               if (entity.corridor && entity.properties) {
                 const category = entity.properties.category?.getValue ? entity.properties.category.getValue() : entity.properties.category;
                 if (category === 'course' || category === 'survey_path') {
-                  const roadColor = window.Cesium.Color.fromCssColorString('#2C2C2C');
-                  entity.corridor.material = new window.Cesium.ColorMaterialProperty(roadColor.withAlpha(0.98));
+                  // Restore original material if stored, otherwise use default
+                  if (entity._originalMaterial) {
+                    entity.corridor.material = entity._originalMaterial;
+                    delete entity._originalMaterial;
+                  } else {
+                    const roadColor = window.Cesium.Color.fromCssColorString('#2C2C2C');
+                    entity.corridor.material = new window.Cesium.ColorMaterialProperty(roadColor.withAlpha(0.98));
+                  }
+                  entity.corridor.outline = false;
                 }
+              } else if (entity.polygon && entity.properties) {
+                const category = entity.properties.category?.getValue ? entity.properties.category.getValue() : entity.properties.category;
+                // Restore original material if stored, otherwise use default
+                if (entity._originalMaterial) {
+                  entity.polygon.material = entity._originalMaterial;
+                  delete entity._originalMaterial;
+                } else {
+                  const originalColor = entity.properties.color?.getValue ? entity.properties.color.getValue() : entity.properties.color || '#FF0000';
+                  if (category === 'intersection') {
+                    entity.polygon.material = window.Cesium.Color.RED.withAlpha(0.6);
+                  } else {
+                    const cesiumColor = window.Cesium.Color.fromCssColorString(originalColor);
+                    entity.polygon.material = cesiumColor.withAlpha(0.8);
+                  }
+                }
+                entity.polygon.outline = true; // Keep outline but reset color
+                if (category === 'intersection') {
+                  entity.polygon.outlineColor = window.Cesium.Color.RED;
+                } else {
+                  entity.polygon.outlineColor = window.Cesium.Color.YELLOW;
+                }
+                entity.polygon.outlineWidth = 2;
               }
             });
           }
@@ -841,8 +1020,8 @@ const ConsolidatedPolygonMap = () => {
             positions: positions,
             width: surveyWidthMeters,
             material: new window.Cesium.ColorMaterialProperty(surveyAsphalt.withAlpha(1.0)),
-            height: 0.1,
-            extrudedHeight: 0.3, // More 3D depth for better visibility
+            height: -0.05, // Negative height to ensure roads are always below location polygons
+            extrudedHeight: 0.25, // Reduced to keep roads below locations
             cornerType: window.Cesium.CornerType.ROUNDED,
             granularity: 0.000001 // ULTRA HD - 10x more detail than before
           },
@@ -850,11 +1029,22 @@ const ConsolidatedPolygonMap = () => {
           properties: {
             name: `Survey Path ${path.path_oid}`,
             category: 'survey_path',
+            path_id: path.path_id,
             path_oid: path.path_oid,
-            total_points: path.total_points,
-            length_m: path.path_length_m,
-            width_m: surveyWidthMeters,
+            cid: path.cid,
             is_valid: path.is_valid,
+            is_changeable: path.is_changeable,
+            is_external: path.is_external,
+            total_points: path.total_points,
+            path_length_m: path.path_length_m,
+            length_m: path.path_length_m,
+            start_latitude: path.start_latitude,
+            start_longitude: path.start_longitude,
+            end_latitude: path.end_latitude,
+            end_longitude: path.end_longitude,
+            all_coordinate_oids: path.all_coordinate_oids,
+            created_at: path.created_at,
+            width_m: surveyWidthMeters,
             color: surveyAsphalt.toCssColorString()
           },
           show: showSurveyPaths
@@ -1029,8 +1219,9 @@ const ConsolidatedPolygonMap = () => {
             outlineColor: window.Cesium.Color.RED,
             outlineWidth: 2,
             perPositionHeight: false,
-            heightReference: window.Cesium.HeightReference.CLAMP_TO_GROUND,
-            extrudedHeight: 0
+            height: 0.3, // Above roads (-0.05 to 0.20) but below locations (0.01 to 3.01+)
+            heightReference: window.Cesium.HeightReference.RELATIVE_TO_GROUND,
+            extrudedHeight: 0.5 // Extends to 0.8m, clearly above roads
           },
           name: intersection.location_name || `Intersection ${index}`,
           properties: {
@@ -1142,8 +1333,8 @@ const ConsolidatedPolygonMap = () => {
             positions: positions,
             width: roadWidthMeters,
             material: new window.Cesium.ColorMaterialProperty(roadColor.withAlpha(1.0)),
-            height: 0.1,
-            extrudedHeight: 0.3, // More 3D depth for better visibility
+            height: -0.05, // Negative height to ensure roads are always below location polygons
+            extrudedHeight: 0.25, // Reduced to keep roads below locations
             cornerType: window.Cesium.CornerType.ROUNDED,
             granularity: 0.000001 // ULTRA HD - 10x more detail than before
           },
@@ -1151,9 +1342,22 @@ const ConsolidatedPolygonMap = () => {
           properties: {
             name: course.course_name,
             category: 'course',
+            course_id: course.course_id,
+            cid: course.cid,
+            course_name: course.course_name,
+            haul_profile_name: course.haul_profile_name,
             road_type: course.road_type,
+            inflections: course.inflections,
+            is_spline: course.is_spline,
             total_points: course.total_points,
+            course_length_m: course.course_length_m,
             length_m: course.course_length_m,
+            start_latitude: course.start_latitude,
+            start_longitude: course.start_longitude,
+            end_latitude: course.end_latitude,
+            end_longitude: course.end_longitude,
+            all_coordinate_oids: course.all_coordinate_oids,
+            created_at: course.created_at,
             width_m: roadWidthMeters,
             color: roadColor.toCssColorString()
           },
@@ -1180,6 +1384,138 @@ const ConsolidatedPolygonMap = () => {
     });
     
     console.log(`[Consolidated Map] ✅ Added ${addedCount} courses (${errorCount} errors), total entities now: ${entitiesRef.current.length}`);
+    
+    if (cesiumViewer.scene) {
+      cesiumViewer.scene.requestRender();
+    }
+  };
+
+  const addTravelsToCesium = (cesiumViewer) => {
+    if (!travelsData?.travels) {
+      console.warn('[Consolidated Map] No travels data available');
+      return;
+    }
+    
+    console.log(`[Consolidated Map] 🚗 Adding ${travelsData.travels.length} travels to Cesium`);
+    
+    let addedCount = 0;
+    let errorCount = 0;
+    
+    travelsData.travels.forEach((travel, index) => {
+      try {
+        let geometry = travel.linestring;
+        if (!geometry) {
+          console.warn(`[Consolidated Map] No linestring for travel ${index}: ${travel.travel_oid}`);
+          errorCount++;
+          return;
+        }
+        
+        if (typeof geometry === 'string') {
+          try {
+            geometry = JSON.parse(geometry);
+          } catch (e) {
+            console.warn(`[Consolidated Map] Failed to parse linestring for travel ${index}:`, e);
+            errorCount++;
+            return;
+          }
+        }
+        
+        if (!geometry || !geometry.coordinates || geometry.coordinates.length === 0) {
+          console.warn(`[Consolidated Map] Invalid geometry for travel ${index}:`, geometry);
+          errorCount++;
+          return;
+        }
+        
+        const positions = [];
+        if (geometry.type === 'LineString' && geometry.coordinates) {
+          geometry.coordinates.forEach(coord => {
+            if (coord && Array.isArray(coord) && coord.length >= 2 && !isNaN(coord[0]) && !isNaN(coord[1])) {
+              const lon = parseFloat(coord[0]);
+              const lat = parseFloat(coord[1]);
+              if (!isNaN(lon) && !isNaN(lat) && lon >= -180 && lon <= 180 && lat >= -90 && lat <= 90) {
+                positions.push(window.Cesium.Cartesian3.fromDegrees(lon, lat, 2));
+              }
+            }
+          });
+        }
+        
+        if (positions.length < 2) {
+          console.warn(`[Consolidated Map] Not enough valid positions for travel ${index}: ${travel.travel_oid}`);
+          errorCount++;
+          return;
+        }
+        
+        // Travel roads - 3 meters wide, distinct color to differentiate from regular courses
+        const roadWidthMeters = 3.0;
+        const travelColor = window.Cesium.Color.fromCssColorString('#4A90E2'); // Blue color for travels
+        
+        // Create travel road surface
+        const travelName = travel.from_location_name && travel.to_location_name 
+          ? `${travel.from_location_name} → ${travel.to_location_name}`
+          : `Travel ${travel.travel_oid}`;
+        
+        const roadSurface = cesiumViewer.entities.add({
+          corridor: {
+            positions: positions,
+            width: roadWidthMeters,
+            material: new window.Cesium.ColorMaterialProperty(travelColor.withAlpha(1.0)),
+            height: -0.05, // Same as courses - below locations
+            extrudedHeight: 0.25,
+            cornerType: window.Cesium.CornerType.ROUNDED,
+            granularity: 0.000001
+          },
+          name: travelName,
+          properties: {
+            name: travelName,
+            category: 'travel',
+            travel_id: travel.travel_id,
+            travel_oid: travel.travel_oid,
+            travel_cid: travel.travel_cid,
+            course_oid: travel.course_oid,
+            course_cid: travel.course_cid,
+            from_location_name: travel.from_location_name,
+            to_location_name: travel.to_location_name,
+            from_location_cid: travel.from_location_cid,
+            to_location_cid: travel.to_location_cid,
+            road_type: travel.road_type,
+            aht_profile_name: travel.aht_profile_name,
+            course_attributes_value: travel.course_attributes_value,
+            inflections: travel.inflections,
+            spline_oid: travel.spline_oid,
+            inclination_factor: travel.inclination_factor,
+            start_direction: travel.start_direction,
+            active: travel.active,
+            closed: travel.closed,
+            segment_start: travel.segment_start,
+            segment_end: travel.segment_end,
+            total_points: travel.total_points,
+            travel_length_m: travel.travel_length_m,
+            length_m: travel.travel_length_m,
+            start_latitude: travel.start_latitude,
+            start_longitude: travel.start_longitude,
+            end_latitude: travel.end_latitude,
+            end_longitude: travel.end_longitude,
+            all_coordinate_oids: travel.all_coordinate_oids,
+            width_m: roadWidthMeters,
+            color: travelColor.toCssColorString()
+          },
+          show: showTravels // Travels have their own toggle
+        });
+        entitiesRef.current.push(roadSurface);
+        
+        addedCount++;
+        
+        if (index < 5) {
+          console.log(`[Consolidated Map] ✅ Added travel ${index}: ${travelName} (${travel.road_type})`);
+        }
+        
+      } catch (err) {
+        errorCount++;
+        console.error(`[Consolidated Map] Error adding travel ${index}:`, err);
+      }
+    });
+    
+    console.log(`[Consolidated Map] ✅ Added ${addedCount} travels (${errorCount} errors), total entities now: ${entitiesRef.current.length}`);
     
     if (cesiumViewer.scene) {
       cesiumViewer.scene.requestRender();
@@ -1267,7 +1603,7 @@ const ConsolidatedPolygonMap = () => {
             outline: true,
             outlineColor: cesiumColor,
             outlineWidth: 2,
-            height: 0,
+            height: 0.01, // Small positive height to ensure locations are always above roads
             extrudedHeight: buildingHeight,
             heightReference: window.Cesium.HeightReference.RELATIVE_TO_GROUND
           },
@@ -1955,6 +2291,7 @@ const ConsolidatedPolygonMap = () => {
             
             {((intersectionsData?.consolidated_intersections && intersectionsData.consolidated_intersections.length > 0) || 
               (coursesData?.courses && coursesData.courses.length > 0) ||
+              (travelsData?.travels && travelsData.travels.length > 0) ||
               (surveyPathsData?.paths && surveyPathsData.paths.length > 0)) && (
               <div style={{ borderLeft: '3px solid #9B59B6', margin: '8px 0' }}>
                 <div 
@@ -1992,6 +2329,7 @@ const ConsolidatedPolygonMap = () => {
                     }}>
                       {(intersectionsData?.consolidated_intersections?.length || 0) + 
                        (coursesData?.courses?.length || 0) + 
+                       (travelsData?.travels?.length || 0) +
                        (surveyPathsData?.paths?.length || 0)}
                     </div>
                   </div>
@@ -2064,6 +2402,36 @@ const ConsolidatedPolygonMap = () => {
                     </div>
                   )}
                   
+                  {travelsData && travelsData.travels && travelsData.travels.length > 0 && (
+                    <div style={{ marginBottom: '6px' }}>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        color: '#bdc3c7',
+                        fontSize: '12px'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={showTravels}
+                          onChange={(e) => setShowTravels(e.target.checked)}
+                          style={{
+                            marginRight: '8px',
+                            cursor: 'pointer'
+                          }}
+                        />
+                        <div style={{
+                          width: '12px',
+                          height: '12px',
+                          backgroundColor: '#4A90E2',
+                          borderRadius: '2px',
+                          marginRight: '8px'
+                        }}></div>
+                        <span style={{ color: 'white', fontWeight: '500' }}>Travels ({travelsData.travels.length})</span>
+                      </label>
+                    </div>
+                  )}
+                  
                   {surveyPathsData && surveyPathsData.paths && surveyPathsData.paths.length > 0 && (
                     <div style={{ marginBottom: '6px' }}>
                       <label style={{
@@ -2098,6 +2466,186 @@ const ConsolidatedPolygonMap = () => {
             )}
             
 
+          </div>
+        </div>
+      )}
+
+      {/* Entity Information Dialog */}
+      {dialogOpen && dialogData && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            backdropFilter: 'blur(5px)'
+          }}
+          onClick={() => {
+            setDialogOpen(false);
+            setDialogData(null);
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#1e1e1e',
+              borderRadius: '8px',
+              padding: '16px',
+              maxWidth: '600px',
+              maxHeight: '70vh',
+              width: '85%',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '12px',
+              paddingBottom: '10px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.2)'
+            }}>
+              <div>
+                <h2 style={{
+                  color: '#fff',
+                  margin: 0,
+                  fontSize: '16px',
+                  fontWeight: '600'
+                }}>
+                  {dialogData.category === 'course' ? '🛣️' : 
+                   dialogData.category === 'survey_path' ? '🛤️' :
+                   dialogData.category === 'intersection' ? '🚦' : '📍'} {dialogData.name}
+                </h2>
+                <p style={{
+                  color: '#bdc3c7',
+                  margin: '2px 0 0 0',
+                  fontSize: '11px',
+                  textTransform: 'capitalize'
+                }}>
+                  {dialogData.category || 'Entity'} Information
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setDialogOpen(false);
+                  setDialogData(null);
+                }}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '4px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{
+              overflowY: 'auto',
+              flex: 1,
+              paddingRight: '6px'
+            }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '8px'
+              }}>
+                {Object.entries(dialogData.allProperties)
+                  .filter(([key]) => {
+                    // Only filter out huge geometry objects that would break the display
+                    return key !== 'linestring' && key !== 'polygon' && key !== 'geometry';
+                  })
+                  .sort(([a], [b]) => {
+                    // Sort: important fields first, then alphabetically
+                    const important = ['name', 'category', 'course_name', 'path_oid', 'location_name', 'intersection_name'];
+                    const aImportant = important.indexOf(a);
+                    const bImportant = important.indexOf(b);
+                    if (aImportant !== -1 && bImportant !== -1) return aImportant - bImportant;
+                    if (aImportant !== -1) return -1;
+                    if (bImportant !== -1) return 1;
+                    return a.localeCompare(b);
+                  })
+                  .map(([key, value]) => {
+                    // Format value for display
+                    let displayValue = value;
+                    if (value === null || value === undefined) {
+                      displayValue = 'N/A';
+                    } else if (typeof value === 'boolean') {
+                      displayValue = value ? 'Yes' : 'No';
+                    } else if (typeof value === 'number') {
+                      if (key.includes('length') || key.includes('distance')) {
+                        displayValue = value >= 1000 ? `${(value / 1000).toFixed(2)} km` : `${value.toFixed(2)} m`;
+                      } else if (key.includes('area')) {
+                        displayValue = value >= 1000000 ? `${(value / 1000000).toFixed(2)} km²` : `${value.toFixed(2)} m²`;
+                      } else if (key.includes('latitude') || key.includes('longitude')) {
+                        displayValue = value.toFixed(6);
+                      } else {
+                        displayValue = value.toString();
+                      }
+                    } else if (typeof value === 'object') {
+                      displayValue = JSON.stringify(value, null, 2);
+                    } else {
+                      displayValue = String(value);
+                    }
+
+                    return (
+                      <div
+                        key={key}
+                        style={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          padding: '8px',
+                          borderRadius: '6px',
+                          border: '1px solid rgba(255, 255, 255, 0.1)'
+                        }}
+                      >
+                        <div style={{
+                          color: '#bdc3c7',
+                          fontSize: '10px',
+                          fontWeight: '600',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.3px',
+                          marginBottom: '4px'
+                        }}>
+                          {key.replace(/_/g, ' ')}
+                        </div>
+                        <div style={{
+                          color: '#fff',
+                          fontSize: '12px',
+                          wordBreak: 'break-word',
+                          fontFamily: 'monospace',
+                          whiteSpace: 'pre-wrap'
+                        }}>
+                          {displayValue}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
           </div>
         </div>
       )}
