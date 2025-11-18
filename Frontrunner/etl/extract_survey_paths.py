@@ -265,9 +265,9 @@ def main():
             FROM survey_path__shapepath__x_y_z spxyz
             INNER JOIN survey_path sp ON sp._CID_ = spxyz._CID_
             INNER JOIN coordinate cor ON cor._OID_ = spxyz._coordinate
-            WHERE spxyz._OID_ IN ({placeholders})
-            AND cor.coord_x IS NOT NULL
-            AND cor.coord_y IS NOT NULL
+        WHERE spxyz._OID_ IN ({placeholders})
+        AND cor.coord_x IS NOT NULL
+        AND cor.coord_y IS NOT NULL
             ORDER BY spxyz._OID_, spxyz._IDX_
         """
         

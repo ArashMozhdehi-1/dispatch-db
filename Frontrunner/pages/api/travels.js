@@ -13,6 +13,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Disable caching to force fresh data
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   try {
     console.log('📊 [Travels API] Fetching travels from database...');
     
@@ -45,7 +50,7 @@ export default async function handler(req, res) {
         start_longitude,
         end_latitude,
         end_longitude,
-        ST_AsGeoJSON(ST_Simplify(travel_linestring, 0.001))::json as linestring
+        ST_AsGeoJSON(travel_linestring)::json as linestring
       FROM travels
       WHERE travel_linestring IS NOT NULL
       ORDER BY travel_length_m DESC
@@ -53,30 +58,8 @@ export default async function handler(req, res) {
 
     console.log(`📊 [Travels API] Fetched ${result.rows.length} travels from database`);
 
-    // Further simplify linestrings to max 100 points
-    const travels = result.rows.map(row => {
-      const travel = { ...row };
-      if (travel.linestring && travel.linestring.coordinates) {
-        const coords = travel.linestring.coordinates;
-        if (coords.length > 100) {
-          // Keep max 100 points per linestring
-          const step = Math.ceil(coords.length / 100);
-          const simplified = [];
-          for (let i = 0; i < coords.length; i += step) {
-            simplified.push(coords[i]);
-          }
-          // Always include the last point
-          if (simplified.length === 0 || simplified[simplified.length - 1] !== coords[coords.length - 1]) {
-            simplified.push(coords[coords.length - 1]);
-          }
-          travel.linestring = {
-            type: 'LineString',
-            coordinates: simplified
-          };
-        }
-      }
-      return travel;
-    });
+    // No simplification - return full geometries
+    const travels = result.rows;
 
     const jsonSize = JSON.stringify(travels).length;
     console.log(`📊 [Travels API] Returning ${travels.length} travels (JSON size: ${(jsonSize / 1024 / 1024).toFixed(2)} MB)`);

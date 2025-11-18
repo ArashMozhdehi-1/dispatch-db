@@ -466,29 +466,83 @@ const ConsolidatedPolygonMap = () => {
     
     const category = props.category || 'N/A';
     const displayName = getCategoryDisplayName(category);
-    const color = props.color || getCategoryColor(category);
     
-    return `
-      <div style="font-weight: 600; color: ${color}; margin-bottom: 8px; font-size: 14px; border-bottom: 2px solid ${color}; padding-bottom: 4px;">
-        ${props.name || 'Location'}
-      </div>
-      <div style="margin-bottom: 4px;">
-        <span style="color: #bdc3c7;">Category:</span>
-        <span style="color: white; margin-left: 8px; font-weight: 500;">${displayName}</span>
-      </div>
-      ${props.total_points ? `
-      <div style="margin-bottom: 4px;">
-        <span style="color: #bdc3c7;">Points:</span>
-        <span style="color: white; margin-left: 8px; font-weight: 500;">${props.total_points}</span>
-      </div>
-      ` : ''}
-      ${props.area_sqm ? `
-      <div style="margin-bottom: 4px;">
-        <span style="color: #bdc3c7;">Area:</span>
-        <span style="color: white; margin-left: 8px; font-weight: 500;">${Math.round(props.area_sqm).toLocaleString()} m²</span>
-      </div>
-      ` : ''}
-    `;
+    // Simple list format - no card, single column
+    const items = [];
+    
+    // Name
+    items.push(`NAME: ${props.name || 'N/A'}`);
+    
+    // Category
+    items.push(`CATEGORY: ${displayName || category}`);
+    
+    // Travel-specific fields
+    if (category === 'travel') {
+      if (props.active !== undefined) items.push(`ACTIVE: ${props.active ? 'Yes' : 'No'}`);
+      if (props.closed !== undefined) items.push(`CLOSED: ${props.closed ? 'Yes' : 'No'}`);
+      if (props.aht_profile_name) items.push(`AHT PROFILE NAME: ${props.aht_profile_name}`);
+      if (props.color) items.push(`COLOR: ${props.color}`);
+      if (props.course_attributes_value !== undefined && props.course_attributes_value !== null) {
+        items.push(`COURSE ATTRIBUTES VALUE: ${props.course_attributes_value}`);
+      }
+      if (props.course_cid) items.push(`COURSE CID: ${props.course_cid}`);
+      if (props.course_oid) items.push(`COURSE OID: ${props.course_oid}`);
+      if (props.end_latitude !== undefined) items.push(`END LATITUDE: ${props.end_latitude}`);
+      if (props.end_longitude !== undefined) items.push(`END LONGITUDE: ${props.end_longitude}`);
+      if (props.from_location_cid) items.push(`FROM LOCATION CID: ${props.from_location_cid}`);
+      if (props.from_location_name) items.push(`FROM: ${props.from_location_name}`);
+      if (props.inclination_factor !== undefined && props.inclination_factor !== null) {
+        items.push(`INCLINATION FACTOR: ${props.inclination_factor}`);
+      }
+      if (props.inflections) items.push(`INFLECTIONS: ${props.inflections}`);
+      if (props.road_type) items.push(`ROAD TYPE: ${props.road_type}`);
+      if (props.segment_end !== undefined && props.segment_end !== null) {
+        items.push(`SEGMENT END: ${Math.round(props.segment_end)} m`);
+      }
+      if (props.segment_start !== undefined && props.segment_start !== null) {
+        items.push(`SEGMENT START: ${Math.round(props.segment_start)} m`);
+      }
+      if (props.spline_oid) items.push(`SPLINE OID: ${props.spline_oid}`);
+      if (props.start_direction !== undefined && props.start_direction !== null) {
+        items.push(`START DIRECTION: ${props.start_direction}`);
+      }
+      if (props.start_latitude !== undefined) items.push(`START LATITUDE: ${props.start_latitude}`);
+      if (props.start_longitude !== undefined) items.push(`START LONGITUDE: ${props.start_longitude}`);
+      if (props.to_location_cid) items.push(`TO LOCATION CID: ${props.to_location_cid}`);
+      if (props.to_location_name) items.push(`TO: ${props.to_location_name}`);
+      if (props.total_points) items.push(`TOTAL POINTS: ${props.total_points}`);
+      if (props.travel_cid) items.push(`TRAVEL CID: ${props.travel_cid}`);
+      if (props.travel_id) items.push(`TRAVEL ID: ${props.travel_id}`);
+      if (props.travel_length_m !== undefined) {
+        items.push(`TRAVEL LENGTH: ${Math.round(props.travel_length_m)} m (${(props.travel_length_m / 1000).toFixed(2)} km)`);
+      }
+      if (props.travel_oid) items.push(`TRAVEL OID: ${props.travel_oid}`);
+    }
+    // Course-specific fields
+    else if (category === 'course') {
+      if (props.total_points) items.push(`POINTS: ${props.total_points}`);
+      if (props.length_m !== undefined) {
+        items.push(`LENGTH: ${Math.round(props.length_m)} m (${(props.length_m / 1000).toFixed(2)} km)`);
+      }
+      if (props.road_type) items.push(`ROAD TYPE: ${props.road_type}`);
+      if (props.course_cid) items.push(`COURSE CID: ${props.course_cid}`);
+      if (props.course_oid) items.push(`COURSE OID: ${props.course_oid}`);
+    }
+    // Survey path-specific fields
+    else if (category === 'survey_path') {
+      if (props.total_points) items.push(`POINTS: ${props.total_points}`);
+      if (props.length_m !== undefined) {
+        items.push(`LENGTH: ${Math.round(props.length_m)} m (${(props.length_m / 1000).toFixed(2)} km)`);
+      }
+      if (props.path_oid) items.push(`PATH OID: ${props.path_oid}`);
+    }
+    // Location/Intersection fields
+    else {
+      if (props.total_points) items.push(`POINTS: ${props.total_points}`);
+      if (props.area_sqm) items.push(`AREA: ${Math.round(props.area_sqm).toLocaleString()} m²`);
+    }
+    
+    return items.map(item => `<div style="margin-bottom: 2px; color: white; font-size: 12px;">${item}</div>`).join('');
   };
 
   const loadMap = async () => {
@@ -982,8 +1036,8 @@ const ConsolidatedPolygonMap = () => {
           return;
         }
         
-        // Simplify coordinates to prevent Cesium errors
-        const simplifiedCoords = simplifyCoordinates(geometry.coordinates, 50);
+        // Don't simplify - keep all points for smooth curves
+        const simplifiedCoords = geometry.coordinates;
         
         const positions = [];
         if (geometry.type === 'LineString' && simplifiedCoords) {
@@ -1311,8 +1365,8 @@ const ConsolidatedPolygonMap = () => {
           return;
         }
         
-        // Simplify coordinates to prevent Cesium errors
-        const simplifiedCoords = simplifyCoordinates(geometry.coordinates, 50);
+        // Don't simplify - keep all points for smooth curves
+        const simplifiedCoords = geometry.coordinates;
         
         const positions = [];
         if (geometry.type === 'LineString' && simplifiedCoords) {
@@ -1436,8 +1490,8 @@ const ConsolidatedPolygonMap = () => {
           return;
         }
         
-        // Simplify coordinates to prevent Cesium errors
-        const simplifiedCoords = simplifyCoordinates(geometry.coordinates, 50);
+        // Don't simplify - keep all points for smooth curves
+        const simplifiedCoords = geometry.coordinates;
         
         const positions = [];
         if (geometry.type === 'LineString' && simplifiedCoords) {

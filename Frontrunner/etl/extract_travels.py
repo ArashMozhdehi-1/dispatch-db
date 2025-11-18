@@ -136,6 +136,8 @@ def main():
         INNER JOIN pit_loc from_loc ON t._fromloc = from_loc._OID_
         INNER JOIN pit_loc to_loc ON t._toloc = to_loc._OID_
         WHERE t._segment__course IS NOT NULL
+        AND t.active = 1
+        AND t.closed = 0
     """
     mysql_cursor.execute(travel_query)
     travels_list = mysql_cursor.fetchall()
@@ -147,125 +149,26 @@ def main():
         postgres_conn.close()
         return
     
-    # Get unique course CIDs and OIDs
-    course_cids = set(t['course_cid'] for t in travels_list if t['course_cid'])
-    course_oids = set(t['course_oid'] for t in travels_list if t['course_oid'])
-    logger.info(f"✅ Found {len(course_cids):,} unique course CIDs")
-    logger.info(f"✅ Found {len(course_oids):,} unique course OIDs")
+    # Use geometries from PostgreSQL courses table instead of re-fetching from MySQL
+    logger.info("📊 Fetching course geometries from PostgreSQL courses table...")
     
-    # Decide whether to use OIDs or CIDs for fetching coordinates
-    # Use OIDs if there are more unique OIDs than CIDs, or if CIDs are missing
-    use_oid = len(course_oids) > len(course_cids) or len(course_cids) == 0
-    course_ids_to_fetch = list(course_oids) if use_oid else list(course_cids)
-    logger.info(f"📊 Using {'OIDs' if use_oid else 'CIDs'} for coordinate fetching ({len(course_ids_to_fetch)} courses)")
+    postgres_cursor.execute("""
+        SELECT cid, course_linestring, ST_Length(course_linestring::geography) as length_m
+        FROM courses
+        WHERE course_linestring IS NOT NULL
+    """)
     
-    # Fetch ALL coordinates at once (no batching)
-    logger.info("📊 Fetching coordinates for all courses...")
+    courses_in_postgres = {}
+    for row in postgres_cursor.fetchall():
+        courses_in_postgres[row[0]] = {
+            'geometry': row[1],  # Store the geometry object, not WKT
+            'length_m': row[2]
+        }
     
-    if use_oid:
-        # First, get the CIDs for all course OIDs
-        placeholders = ','.join(['%s'] * len(course_ids_to_fetch))
-        cid_query = f"""
-            SELECT DISTINCT _OID_, _CID_ 
-            FROM course 
-            WHERE _OID_ IN ({placeholders})
-        """
-        mysql_cursor.execute(cid_query, course_ids_to_fetch)
-        cid_rows = mysql_cursor.fetchall()
-        oid_to_cid = {row['_OID_']: row['_CID_'] for row in cid_rows}
-        all_cids = list(oid_to_cid.values())
-        
-        logger.info(f"✅ Found {len(all_cids)} CIDs for {len(course_ids_to_fetch)} course OIDs")
-        
-        if not all_cids:
-            logger.warning("❌ No CIDs found for any course OIDs!")
-            mysql_conn.close()
-            postgres_conn.close()
-            return
-        
-        # Now fetch coordinates using all CIDs
-        # Group by ccxyz._OID_ (course geometry) to get unique course paths
-        cid_placeholders = ','.join(['%s'] * len(all_cids))
-        coord_query = f"""
-            SELECT 
-                ccxyz._OID_ as geometry_oid,
-                ccxyz._CID_ as course_cid,
-                c._OID_ as course_oid,
-                ccxyz._IDX_ as coord_idx,
-                ccxyz._coordinate as coord_oid,
-                cor.coord_x,
-                cor.coord_y,
-                cor.coord_z
-            FROM course__coursegeometry__x_y_z ccxyz
-            INNER JOIN course c ON c._CID_ = ccxyz._CID_
-            INNER JOIN coordinate cor ON cor._OID_ = ccxyz._coordinate
-            WHERE c._OID_ IN ({cid_placeholders})
-            AND cor.coord_x IS NOT NULL
-            AND cor.coord_y IS NOT NULL
-            ORDER BY c._OID_, ccxyz._IDX_
-        """
-        # Use course OIDs for the query since we're querying by c._OID_
-        all_oids = list(course_ids_to_fetch)  # These are already OIDs
-        logger.info(f"📊 Executing coordinate query for {len(all_oids)} course OIDs...")
-        mysql_cursor.execute(coord_query, all_oids)
-    else:
-        placeholders = ','.join(['%s'] * len(course_ids_to_fetch))
-        coord_query = f"""
-            SELECT 
-                ccxyz._OID_ as geometry_oid,
-                ccxyz._CID_ as course_cid,
-                c._OID_ as course_oid,
-                ccxyz._IDX_ as coord_idx,
-                ccxyz._coordinate as coord_oid,
-                cor.coord_x,
-                cor.coord_y,
-                cor.coord_z
-            FROM course__coursegeometry__x_y_z ccxyz
-            INNER JOIN course c ON c._CID_ = ccxyz._CID_
-            INNER JOIN coordinate cor ON cor._OID_ = ccxyz._coordinate
-            WHERE c._CID_ IN ({placeholders})
-            AND cor.coord_x IS NOT NULL
-            AND cor.coord_y IS NOT NULL
-            ORDER BY c._OID_, ccxyz._IDX_
-        """
-        logger.info(f"📊 Executing coordinate query for {len(course_ids_to_fetch)} course CIDs...")
-        mysql_cursor.execute(coord_query, course_ids_to_fetch)
+    logger.info(f"✅ Found {len(courses_in_postgres)} courses in PostgreSQL")
     
-    # Group coordinates by course identifier (OID or CID) for lookup
-    coords_by_course = {}
-    total_coords_fetched = 0
-    
-    logger.info("📊 Fetching coordinate results...")
-    while True:
-        rows = mysql_cursor.fetchmany(10000)
-        if not rows:
-            break
-        total_coords_fetched += len(rows)
-        for coord in rows:
-            # Use course_oid from the query result
-            if use_oid:
-                course_key = coord.get('course_oid')
-            else:
-                course_key = coord.get('course_cid')
-            
-            if not course_key:
-                continue
-            
-            if course_key not in coords_by_course:
-                coords_by_course[course_key] = []
-            
-            coords_by_course[course_key].append({
-                'idx': coord.get('coord_idx', 0),
-                'coord_x': coord.get('coord_x'),
-                'coord_y': coord.get('coord_y'),
-                'coord_z': coord.get('coord_z')
-            })
-    
-    # Sort coordinates by index for each course
-    for course_key in coords_by_course:
-        coords_by_course[course_key].sort(key=lambda c: c.get('idx', 0))
-    
-    logger.info(f"✅ Fetched {total_coords_fetched:,} coordinates for {len(coords_by_course)} courses")
+    # Close MySQL connection - we don't need it anymore
+    mysql_conn.close()
     
     # Now process all travels
     total_added = 0
@@ -274,61 +177,70 @@ def main():
     
     logger.info(f"📊 Processing {len(travels_list)} travels...")
     
-    # Process each travel individually (don't aggregate by from/to location)
+    # Process each travel individually using PostgreSQL course geometries
     for travel in travels_list:
         from_name = travel.get('from_location_name')
         to_name = travel.get('to_location_name')
         course_cid = travel.get('course_cid')
-        course_oid = travel.get('course_oid')
+        course_oid = travel.get('course_oid')  # This is what's stored in courses.cid!
         
-        if not from_name or not to_name:
+        if not from_name or not to_name or not course_oid:
             skipped += 1
             continue
         
-        # Get coordinates for this specific course
-        course_key_for_lookup = course_oid if use_oid else course_cid
-        if course_key_for_lookup not in coords_by_course:
+        # Get geometry from PostgreSQL courses table using course_oid (stored in courses.cid)
+        if course_oid not in courses_in_postgres:
             skipped += 1
             continue
         
-        coords = coords_by_course[course_key_for_lookup]
+        course_info = courses_in_postgres[course_oid]
+        segment_start = travel.get('segment_start')
+        segment_end = travel.get('segment_end')
         
-        if len(coords) < 2:
+        # Extract the segment of the course if segment_start and segment_end are provided
+        if segment_start is not None and segment_end is not None and course_info['length_m'] > 0:
+            # Convert segment positions to fractions (0 to 1)
+            start_fraction = max(0, min(1, segment_start / course_info['length_m']))
+            end_fraction = max(0, min(1, segment_end / course_info['length_m']))
+            
+            # Use ST_LineSubstring to extract just the travel segment
+            postgres_cursor.execute("""
+                SELECT ST_AsText(ST_LineSubstring(%s::geometry, %s, %s)) as wkt
+            """, (course_info['geometry'], start_fraction, end_fraction))
+            result = postgres_cursor.fetchone()
+            linestring_wkt = result[0] if result else None
+        else:
+            # No segment info, use full course
+            postgres_cursor.execute("""
+                SELECT ST_AsText(%s::geometry) as wkt
+            """, (course_info['geometry'],))
+            result = postgres_cursor.fetchone()
+            linestring_wkt = result[0] if result else None
+        
+        if not linestring_wkt:
             skipped += 1
             continue
         
-        # Transform coordinates to lat/lon
-        latlon_points = []
-        for coord in coords:
-            if coord.get('coord_x') and coord.get('coord_y'):
-                lat, lon = transform_local_to_latlon(coord['coord_x'], coord['coord_y'])
-                latlon_points.append((lon, lat))
+        # Parse WKT to get start/end points (LINESTRING(lon lat, lon lat, ...))
+        coords_str = linestring_wkt.replace('LINESTRING(', '').replace(')', '')
+        coord_pairs = coords_str.split(',')
         
-        if len(latlon_points) < 2:
+        if len(coord_pairs) < 2:
             skipped += 1
             continue
-        
-        # Create WKT LineString
-        wkt_coords = ', '.join([f"{lon} {lat}" for lon, lat in latlon_points])
-        linestring_wkt = f"LINESTRING({wkt_coords})"
         
         # Get start and end points
-        start_lon, start_lat = latlon_points[0]
-        end_lon, end_lat = latlon_points[-1]
+        start_parts = coord_pairs[0].strip().split()
+        end_parts = coord_pairs[-1].strip().split()
+        start_lon, start_lat = float(start_parts[0]), float(start_parts[1])
+        end_lon, end_lat = float(end_parts[0]), float(end_parts[1])
         
-        # Calculate aggregates from coordinate data
-        coord_x_values = [c['coord_x'] for c in coords if c.get('coord_x') is not None]
-        coord_y_values = [c['coord_y'] for c in coords if c.get('coord_y') is not None]
-        coord_z_values = [c['coord_z'] for c in coords if c.get('coord_z') is not None]
+        total_points = len(coord_pairs)
         
-        def safe_agg(values):
-            if not values:
-                return (None, None, None)
-            return (min(values), max(values), sum(values) / len(values))
-        
-        min_x, max_x, avg_x = safe_agg(coord_x_values)
-        min_y, max_y, avg_y = safe_agg(coord_y_values)
-        min_z, max_z, avg_z = safe_agg(coord_z_values)
+        # Set aggregates to None (we don't have raw coord_x/y/z anymore)
+        min_x = max_x = avg_x = None
+        min_y = max_y = avg_y = None
+        min_z = max_z = avg_z = None
         
         # Create unique travel_oid from travel data
         travel_key = f"{from_name}->{to_name}:{course_oid or course_cid}"
@@ -382,7 +294,7 @@ def main():
                     is_closed,
                     travel.get('segment_start'),
                     travel.get('segment_end'),
-                    len(coords),
+                    total_points,
                     linestring_wkt,
                     linestring_wkt,
                     start_lat,
@@ -429,7 +341,6 @@ def main():
     logger.info(f"Skipped: {skipped}")
     logger.info(f"\n✅ Complete: Added {total_added} travels")
     
-    mysql_conn.close()
     postgres_conn.close()
 
 if __name__ == '__main__':
