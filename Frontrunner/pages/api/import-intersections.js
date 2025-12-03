@@ -57,7 +57,7 @@ export default async function handler(req, res) {
       ON consolidated_intersections USING GIST (intersection_polygon)
     `);
 
-    console.log('✅ Created consolidated_intersections table');
+    console.log('Created consolidated_intersections table');
 
     // Step 2: Extract intersections from MySQL
     // Query pit_loc table with _CID_ = 'pit_loc_intersection' (same pattern as grouped-locations.js)

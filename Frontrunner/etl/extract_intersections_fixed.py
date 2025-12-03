@@ -124,7 +124,7 @@ def main():
         CREATE INDEX idx_intersections_geom ON consolidated_intersections USING GIST(intersection_polygon);
     """)
     postgres_conn.commit()
-    logger.info("✅ Created consolidated_intersections table")
+    logger.info("Created consolidated_intersections table")
     
     # Extract coordinates
     logger.info("Extracting intersection coordinates...")
@@ -222,7 +222,7 @@ def main():
     
     logger.info(f"\n=== SUMMARY ===")
     logger.info(f"Intersections: {row[0]}, Points: {row[1]}, Total Area: {row[2]} sqm")
-    logger.info(f"✅ Complete: Added {total_added} intersections")
+    logger.info(f"Complete: Added {total_added} intersections")
     
     mysql_conn.close()
     postgres_conn.close()

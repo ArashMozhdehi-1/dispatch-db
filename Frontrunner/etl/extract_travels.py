@@ -339,7 +339,7 @@ def main():
     else:
         logger.info(f"Total Length: 0 meters (0.0 km)")
     logger.info(f"Skipped: {skipped}")
-    logger.info(f"\n✅ Complete: Added {total_added} travels")
+    logger.info(f"\nComplete: Added {total_added} travels")
     
     postgres_conn.close()
 

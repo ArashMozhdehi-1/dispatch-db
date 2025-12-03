@@ -177,6 +177,7 @@ const typeDefs = gql`
     geometry: String!
     safety_buffer_m: Float!
     r_min_m: Float!
+    connected_roads: [Int]
     created_at: String!
   }
 

@@ -15,7 +15,7 @@ services:
       - ./Dataset:/app/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dispatch_user -d dispatch_db"]
+      test: [ "CMD-SHELL", "pg_isready -U dispatch_user -d dispatch_db" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -102,6 +102,25 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    restart: unless-stopped
+
+  dispatch-map:
+    build: ./dispatch-map
+    container_name: dispatch_map
+    depends_on:
+      postgres:
+        condition: service_healthy
+      graphql:
+        condition: service_started
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./dispatch-map:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NEXT_PUBLIC_GRAPHQL_URL=http://localhost:3000/api/graphql
+    command: npm run dev
     restart: unless-stopped
 
 volumes:

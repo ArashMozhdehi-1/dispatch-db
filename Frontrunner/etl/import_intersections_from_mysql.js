@@ -121,7 +121,7 @@ async function createConsolidatedIntersectionsTable(pgClient) {
     ON consolidated_intersections USING GIST (center_point)
   `);
   
-  console.log('✅ Created consolidated_intersections table and indexes');
+  console.log('Created consolidated_intersections table and indexes');
 }
 
 async function insertIntersectionsToPostgres(intersections, pgClient) {

@@ -290,7 +290,7 @@ def main():
         road_type = row[0] or 'Unknown'
         logger.info(f"{road_type:20} {row[1]:4} courses, {row[2]:10} m")
     
-    logger.info(f"\n✅ Complete: Added {total_added} courses")
+    logger.info(f"\nComplete: Added {total_added} courses")
     
     mysql_conn.close()
     postgres_conn.close()

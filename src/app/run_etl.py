@@ -17,6 +17,11 @@ def main():
         # Run the ETL process
         etl_main()
         
+        # Run intersection generation
+        print("\n🛣️ Starting Intersection Geometry Generation...")
+        from src.app.generate_intersections import main as intersections_main
+        intersections_main()
+        
         print("🎉 ETL Service completed successfully!")
         return True
         

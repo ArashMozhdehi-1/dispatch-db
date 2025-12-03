@@ -30,7 +30,7 @@ const resolvers = {
           ORDER BY i.location_id
           LIMIT $1
         `, [limit]);
-        
+
         const locations = result.rows.map(row => ({
           location_id: row.location_id,
           location_name: row.location_name,
@@ -43,7 +43,7 @@ const resolvers = {
           pit_name: row.pit_name,
           region_name: row.region_name
         }));
-        
+
         // Debug: Log coordinate ranges
         if (locations.length > 0) {
           const lats = locations.map(l => l.latitude).filter(lat => lat !== null);
@@ -52,7 +52,7 @@ const resolvers = {
           console.log('  Latitude range:', Math.min(...lats), 'to', Math.max(...lats));
           console.log('  Longitude range:', Math.min(...lngs), 'to', Math.max(...lngs));
         }
-        
+
         return locations;
       } catch (error) {
         console.error('Error fetching locations:', error);
@@ -65,7 +65,7 @@ const resolvers = {
         console.log(`🔍 Fetching segments with limit: ${limit || 'unlimited'}`);
         const limitClause = limit ? 'LIMIT $1' : '';
         const params = limit ? [limit] : [];
-        
+
         const result = await query(`
           SELECT 
             ls.lane_id,
@@ -94,9 +94,9 @@ const resolvers = {
           ORDER BY ls.road_id, ls.lane_id
           ${limitClause}
         `, params);
-        
+
         console.log(`✅ Fetched ${result.rows.length} segments`);
-        
+
         try {
           const mappedSegments = result.rows.map((row, index) => {
             try {
@@ -130,7 +130,7 @@ const resolvers = {
               throw rowError;
             }
           });
-          
+
           console.log(`✅ Successfully mapped ${mappedSegments.length} segments`);
           return mappedSegments;
         } catch (mappingError) {
@@ -172,11 +172,11 @@ const resolvers = {
           WHERE i.location_id = $1
             AND i.center_point IS NOT NULL
         `, [id]);
-        
+
         if (result.rows.length === 0) {
           return null;
         }
-        
+
         const row = result.rows[0];
         return {
           location_id: row.location_id,
@@ -223,11 +223,11 @@ const resolvers = {
             AND ST_Y(ST_EndPoint(ls.geometry)) BETWEEN -30 AND -10    -- Queensland latitude range (filter out South Pole coordinates like -85)
             AND ST_X(ST_EndPoint(ls.geometry)) BETWEEN 140 AND 155    -- Queensland longitude range (filter out Indian Ocean coordinates like 56)
         `, [id]);
-        
+
         if (result.rows.length === 0) {
           return null;
         }
-        
+
         const row = result.rows[0];
         return {
           lane_id: row.lane_id,
@@ -277,7 +277,7 @@ const resolvers = {
             AND ST_X(ST_EndPoint(ls.geometry)) BETWEEN 140 AND 155    -- Queensland longitude range (filter out Indian Ocean coordinates like 56)
           ORDER BY ls.lane_id
         `, [roadId]);
-        
+
         return result.rows.map(row => ({
           lane_id: row.lane_id,
           road_id: row.road_id,
@@ -332,7 +332,7 @@ const resolvers = {
             END = $1
           ORDER BY i.location_id
         `, [category]);
-        
+
         return result.rows.map(row => ({
           location_id: row.location_id,
           location_name: row.location_name,
@@ -381,9 +381,9 @@ const resolvers = {
             AND ST_X(ST_EndPoint(ls.geometry)) BETWEEN 110 AND 130    -- Western Australia longitude range
           ORDER BY ls.road_id, ls.lane_id
         `);
-        
+
         console.log(`✅ Fetched ${result.rows.length} trolley segments`);
-        
+
         return result.rows.map(row => ({
           lane_id: row.lane_id,
           road_id: row.road_id,
@@ -420,12 +420,12 @@ const resolvers = {
       try {
         let whereClause = "WHERE ST_Y(ts.geometry) BETWEEN -60 AND -20 AND ST_X(ts.geometry) BETWEEN 140 AND 155";
         let params = [];
-        
+
         if (laneId) {
           whereClause += " AND ts.lane_id = $1";
           params.push(laneId);
         }
-        
+
         const result = await query(`
           SELECT 
             ts.support_id,
@@ -441,7 +441,7 @@ const resolvers = {
           ${whereClause}
           ORDER BY ts.lane_id, ts.measure
         `, params);
-        
+
         return result.rows.map(row => ({
           support_id: row.support_id,
           lane_id: row.lane_id,
@@ -479,7 +479,7 @@ const resolvers = {
             AND ST_X(ts.geometry) BETWEEN 140 AND 155
           ORDER BY ts.substation_id
         `);
-        
+
         return result.rows.map(row => ({
           substation_id: row.substation_id,
           substation_name: row.substation_name,
@@ -526,7 +526,7 @@ const resolvers = {
             AND ST_X(pg.geometry) BETWEEN 140 AND 155
           ORDER BY pg.generator_id
         `);
-        
+
         return result.rows.map(row => ({
           generator_id: row.generator_id,
           generator_name: row.generator_name,
@@ -571,7 +571,7 @@ const resolvers = {
           WHERE sl.lane_id = $1
           ORDER BY vs.series_name
         `, [laneId]);
-        
+
         return result.rows.map(row => ({
           speed_limit_id: row.speed_limit_id,
           lane_id: row.lane_id,
@@ -608,7 +608,7 @@ const resolvers = {
           WHERE ls.road_id = $1
           ORDER BY vs.series_name
         `, [roadId]);
-        
+
         return result.rows.map(row => ({
           speed_limit_id: row.speed_limit_id,
           lane_id: row.lane_id,
@@ -639,9 +639,9 @@ const resolvers = {
             AND lc.condition_type = 'watering_schedule'
           LIMIT 1
         `, [laneId]);
-        
+
         if (scheduleResult.rows.length === 0) return null;
-        
+
         const eventResult = await query(`
           SELECT 
             SPLIT_PART(SPLIT_PART(lc.condition_value, 'equipment:', 2), ',', 1) as equipment,
@@ -653,10 +653,10 @@ const resolvers = {
           ORDER BY lc.effective_start DESC
           LIMIT 1
         `, [laneId]);
-        
+
         const schedule = scheduleResult.rows[0];
         const event = eventResult.rows[0] || {};
-        
+
         return {
           lane_id: schedule.lane_id,
           interval_minutes: parseInt(schedule.interval_minutes),
@@ -685,7 +685,7 @@ const resolvers = {
           WHERE ls.road_id = $1
             AND lc.condition_type = 'watering_schedule'
         `, [roadId]);
-        
+
         return result.rows.map(row => ({
           lane_id: row.lane_id,
           interval_minutes: parseInt(row.interval_minutes),
@@ -729,7 +729,7 @@ const resolvers = {
             AND ST_X(et.geometry) BETWEEN 140 AND 155
           ORDER BY et.truck_id
         `);
-        
+
         return result.rows.map(row => ({
           truck_id: row.truck_id,
           unit_type_id: row.unit_type_id,
@@ -761,12 +761,12 @@ const resolvers = {
       try {
         let whereClause = "WHERE lc.effective_start <= NOW() AND lc.effective_end >= NOW()";
         let params = [];
-        
+
         if (laneId) {
           whereClause += " AND lc.lane_id = $1";
           params.push(laneId);
         }
-        
+
         const result = await query(`
           SELECT 
             lc.condition_id,
@@ -781,7 +781,7 @@ const resolvers = {
           ${whereClause}
           ORDER BY lc.lane_id, lc.start_measure
         `, params);
-        
+
         return result.rows.map(row => ({
           condition_id: row.condition_id,
           lane_id: row.lane_id,
@@ -819,9 +819,9 @@ const resolvers = {
             AND ST_X(ws.geometry) BETWEEN 110 AND 130
           ORDER BY ws.station_id
         `);
-        
+
         console.log(`✅ Fetched ${result.rows.length} watering stations`);
-        
+
         return result.rows.map(row => ({
           station_id: row.station_id,
           station_name: row.station_name,
@@ -865,9 +865,9 @@ const resolvers = {
           ORDER BY sm.measurement_timestamp DESC
           LIMIT 100
         `);
-        
+
         console.log(`✅ Fetched ${result.rows.length} speed monitoring records`);
-        
+
         return result.rows.map(row => ({
           monitoring_id: row.monitoring_id,
           unit_type_id: row.unit_type_id,
@@ -899,11 +899,12 @@ const resolvers = {
             ST_AsGeoJSON(geometry) as geometry,
             safety_buffer_m,
             r_min_m,
+            connected_roads,
             created_at
           FROM intersections
           ORDER BY intersection_name
         `);
-        
+
         console.log(`✅ Fetched ${result.rows.length} intersections`);
         return result.rows.map(row => ({
           intersection_id: row.intersection_id,
@@ -912,6 +913,7 @@ const resolvers = {
           geometry: row.geometry,
           safety_buffer_m: parseFloat(row.safety_buffer_m),
           r_min_m: parseFloat(row.r_min_m),
+          connected_roads: row.connected_roads,
           created_at: row.created_at
         }));
       } catch (error) {
@@ -939,7 +941,7 @@ const resolvers = {
         return null;
       }
     },
-    
+
     trolley_current_limit: async (parent) => {
       if (!parent.is_trolley) return null;
       try {
@@ -957,7 +959,7 @@ const resolvers = {
         return null;
       }
     },
-    
+
     trolley_wire_height: async (parent) => {
       if (!parent.is_trolley) return null;
       try {
@@ -975,7 +977,7 @@ const resolvers = {
         return null;
       }
     },
-    
+
     trolley_catenary_type: async (parent) => {
       if (!parent.is_trolley) return null;
       try {
@@ -993,7 +995,7 @@ const resolvers = {
         return null;
       }
     },
-    
+
     trolley_supports: async (parent) => {
       if (!parent.is_trolley) return [];
       try {
@@ -1012,7 +1014,7 @@ const resolvers = {
           WHERE ts.lane_id = $1
           ORDER BY ts.measure
         `, [parent.lane_id]);
-        
+
         return result.rows.map(row => ({
           support_id: row.support_id,
           lane_id: row.lane_id,
@@ -1028,7 +1030,7 @@ const resolvers = {
         return [];
       }
     },
-    
+
     trolley_conditions: async (parent) => {
       if (!parent.is_trolley) return [];
       try {
@@ -1048,7 +1050,7 @@ const resolvers = {
             AND lc.effective_end >= NOW()
           ORDER BY lc.start_measure
         `, [parent.lane_id]);
-        
+
         return result.rows.map(row => ({
           condition_id: row.condition_id,
           lane_id: row.lane_id,

@@ -96,7 +96,7 @@ def create_consolidated_intersections_table():
             ON consolidated_intersections USING GIST (intersection_polygon);
         """)
         
-        logger.info("✅ Created consolidated_intersections table")
+        logger.info("Created consolidated_intersections table")
         
     except Exception as e:
         logger.error(f"Error creating table: {e}")

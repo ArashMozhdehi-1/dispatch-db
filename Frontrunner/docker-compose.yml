@@ -146,6 +146,39 @@ services:
     networks:
       - frontrunner_network
 
+  dispatch_etl:
+    build:
+      context: ..
+      dockerfile: Frontrunner/Dockerfile.dispatch_etl
+    container_name: frontrunner_dispatch_etl
+    restart: "no"
+    environment:
+      # Connect to Dispatch database on host
+      DB_HOST: host.docker.internal
+      DB_PORT: 5434
+      DB_NAME: dispatch_db
+      DB_USER: dispatch_user
+      DB_PASSWORD: dispatch_password
+      DOCKER_MODE: "true"
+    volumes:
+      - ../src:/app/src
+      - ../Dataset:/app/Dataset
+      - ../sql:/app/sql
+      - ../config:/app/config
+      - ./logs:/app/logs
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - frontrunner_network
+    command: >
+      sh -c "
+        echo '🚛 Starting Dispatch ETL Service...' &&
+        echo '📡 Connecting to Dispatch DB at host.docker.internal:5434' &&
+        echo '📂 Source: /app/src/app/run_etl.py' &&
+        python src/app/run_etl.py &&
+        echo '✅ Dispatch ETL completed!'
+      "
+
   data_consolidator:
     build:
       context: .
@@ -244,6 +277,65 @@ services:
       retries: 5
       start_period: 90s
 
+  map_dump_etl:
+    build:
+      context: .
+      dockerfile: Dockerfile.etl
+    container_name: frontrunner_map_dump_etl
+    restart: "no"
+    environment:
+      # PostgreSQL for map dump database (all inside Docker)
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      MAP_DUMP_DB_NAME: mf_geoserver_db
+      POSTGRES_USER: infra_user
+      POSTGRES_PASSWORD: infra_password
+      # GeoServer (all inside Docker)
+      GEOSERVER_URL: http://geoserver:8080/geoserver
+      GEOSERVER_USER: admin
+      GEOSERVER_PASSWORD: geoserver
+      GEOSERVER_WORKSPACE: frontrunner
+      # Dump file location (mounted volume)
+      MAP_DUMP_FILE: /app/backups/mf_geoserver_db.sql
+    volumes:
+      - ./backups:/app/backups:ro
+      - ./etl:/app/etl:ro
+      - ./scripts:/app/scripts:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      geoserver:
+        condition: service_healthy
+    networks:
+      - frontrunner_network
+    command: |
+      sh -c "
+        echo '🚀 Starting Map Dump Database Setup (All Inside Docker)...' &&
+        echo '📦 Database: mf_geoserver_db on postgres container' &&
+        echo '🌐 GeoServer: geoserver container' &&
+        echo '📁 Dump file: /app/backups/mf_geoserver_db.sql' &&
+        echo '' &&
+        echo 'Step 1: Waiting for PostgreSQL...' &&
+        for i in 1 2 3 4 5 6 7 8 9 10; do
+          if pg_isready -h postgres -p 5432 -U infra_user > /dev/null 2>&1; then
+            echo '✅ PostgreSQL is ready' &&
+            break
+          fi
+          echo \"   Waiting for PostgreSQL... attempt $$i/10\" &&
+          sleep 2
+        done &&
+        echo '' &&
+        echo 'Step 2: Running Python ETL script...' &&
+        python /app/etl/setup_map_dump_database.py &&
+        echo '' &&
+        echo 'Step 3: Calculating road lengths from polygon geometry...' &&
+        (python /app/etl/calculate_road_lengths.py || echo '⚠️  Skipping calculate_road_lengths.py (file not found)') &&
+        echo '' &&
+        echo '✅ Map Dump ETL completed successfully!' &&
+        echo '📊 Database: mf_geoserver_db' &&
+        echo '🗺️  GeoServer layers configured'
+      "
+
   geoserver_init:
     build:
       context: .
@@ -269,6 +361,8 @@ services:
       postgres:
         condition: service_healthy
       geometry_etl:
+        condition: service_completed_successfully
+      map_dump_etl:
         condition: service_completed_successfully
     networks:
       - frontrunner_network
@@ -303,11 +397,28 @@ services:
     container_name: frontrunner_backend
     restart: unless-stopped
     environment:
+      # Frontrunner Infrastructure DB
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: infrastructure_db
       DB_USER: infra_user
       DB_PASSWORD: infra_password
+      # Map Dump DB (from SQL dump)
+      MAP_DUMP_DB_HOST: postgres
+      MAP_DUMP_DB_PORT: 5432
+      MAP_DUMP_DB_NAME: mf_geoserver_db
+      MAP_DUMP_DB_USER: infra_user
+      MAP_DUMP_DB_PASSWORD: infra_password
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: infra_user
+      POSTGRES_PASSWORD: infra_password
+      # Dispatch DB (external - running on host)
+      DISPATCH_DB_HOST: host.docker.internal
+      DISPATCH_DB_PORT: 5434
+      DISPATCH_DB_NAME: dispatch_db
+      DISPATCH_DB_USER: dispatch_user
+      DISPATCH_DB_PASSWORD: dispatch_password
       GEOSERVER_URL: http://geoserver:8080/geoserver
       GEOSERVER_USER: admin
       GEOSERVER_PASSWORD: geoserver
@@ -318,7 +429,7 @@ services:
       NEXT_PUBLIC_GEOSERVER_URL: http://localhost:8082/geoserver
       NODE_ENV: development
     ports:
-      - "3001:3000"
+      - "3001:3001"
     volumes:
       - ./components:/app/components
       - ./pages:/app/pages
@@ -333,6 +444,10 @@ services:
         condition: service_healthy
       geoserver_init:
         condition: service_completed_successfully
+      map_dump_etl:
+        condition: service_completed_successfully
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - frontrunner_network
     command: npm run dev

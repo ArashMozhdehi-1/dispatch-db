@@ -396,7 +396,7 @@ def main():
     for row in postgres_cursor.fetchall():
         logger.info(f"{row[0]:15} {row[1]:3} locations, {row[2]:6} points, {row[3]:12} sqm")
     
-    logger.info(f"\n✅ Complete: Added {total_locations} consolidated locations")
+    logger.info(f"\nComplete: Added {total_locations} consolidated locations")
     
     mysql_conn.close()
     postgres_conn.close()

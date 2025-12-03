@@ -435,7 +435,7 @@ def main():
     total_length = row[2] or 0
     logger.info(f"Total Length: {total_length} meters ({total_length/1000:.1f} km)")
     logger.info(f"Skipped: {skipped}")
-    logger.info(f"\n✅ Complete: Added {total_added} survey paths")
+    logger.info(f"\nComplete: Added {total_added} survey paths")
     
     mysql_conn.close()
     postgres_conn.close()
