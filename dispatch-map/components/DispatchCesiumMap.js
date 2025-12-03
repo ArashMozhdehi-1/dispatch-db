@@ -858,20 +858,46 @@ export default function DispatchCesiumMap() {
                 try {
                     const raw = i.nice_geometry || i.geometry; // fallback
                     const g = typeof raw === "string" ? JSON.parse(raw) : raw;
-                    if (!g?.coordinates?.[0]) return;
+                    if (!g || !g.coordinates) return;
 
-                    viewer.entities.add({
-                        polygon: {
-                            hierarchy: g.coordinates[0].map((c) =>
-                                Cesium.Cartesian3.fromDegrees(c[0], c[1])
-                            ),
-                            material: Cesium.Color.fromCssColorString(NIGHT_THEME.intersectionFillColor).withAlpha(NIGHT_THEME.intersectionFillAlpha),
-                            height: 0.6, // Lift slightly above roads
-                            outline: true,
-                            outlineColor: Cesium.Color.fromCssColorString(NIGHT_THEME.intersectionOutlineColor).withAlpha(NIGHT_THEME.intersectionOutlineAlpha),
-                            outlineWidth: NIGHT_THEME.polygonOutlineWidth,
-                        },
-                        properties: { category: "dispatch_intersection", ...i }
+                    // Normalize to a list of polygons (each polygon is a list of rings)
+                    // Polygon: [ [ [x,y], [x,y], ... ], [hole...] ]
+                    // MultiPolygon: [ [ [ [x,y]... ] ], [ [ [x,y]... ] ] ]
+                    let polygons = [];
+                    if (g.type === 'MultiPolygon') {
+                        polygons = g.coordinates;
+                    } else if (g.type === 'Polygon') {
+                        polygons = [g.coordinates];
+                    } else {
+                        return;
+                    }
+
+                    polygons.forEach((polyRings, idx) => {
+                        // polyRings[0] is exterior. We IGNORE holes (polyRings[1..]) 
+                        // to avoid "circles" or artifacts inside the intersection.
+                        if (!polyRings || !polyRings[0]) return;
+
+                        const hierarchy = new Cesium.PolygonHierarchy(
+                            polyRings[0].map(c => Cesium.Cartesian3.fromDegrees(c[0], c[1]))
+                        );
+
+                        // Holes ignored intentionally.
+
+                        viewer.entities.add({
+                            polygon: {
+                                hierarchy: hierarchy,
+                                material: Cesium.Color.fromCssColorString(NIGHT_THEME.intersectionFillColor).withAlpha(NIGHT_THEME.intersectionFillAlpha),
+                                height: 0.6, // Lift slightly above roads
+                                outline: true,
+                                outlineColor: Cesium.Color.fromCssColorString(NIGHT_THEME.intersectionOutlineColor).withAlpha(NIGHT_THEME.intersectionOutlineAlpha),
+                                outlineWidth: NIGHT_THEME.polygonOutlineWidth,
+                            },
+                            properties: {
+                                category: "dispatch_intersection",
+                                ...i,
+                                part_index: idx
+                            }
+                        });
                     });
                 } catch (e) {
                     console.error("Bad intersection geometry", i, e);

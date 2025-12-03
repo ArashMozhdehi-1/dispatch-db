@@ -44,7 +44,7 @@ def create_intersections_table(conn):
                 intersection_id SERIAL PRIMARY KEY,
                 intersection_name VARCHAR(255),
                 intersection_type VARCHAR(50) DEFAULT 'road_intersection',
-                geometry GEOMETRY(POLYGON, 4326),
+                geometry GEOMETRY(MULTIPOLYGON, 4326),
                 center_point GEOMETRY(POINT, 4326),
                 safety_buffer_m DECIMAL(10,2) DEFAULT 5.0,
                 r_min_m DECIMAL(10,2) DEFAULT 10.0,
@@ -317,7 +317,7 @@ def detect_intersections(conn):
                     ) VALUES (
                         %s,
                         'road_intersection',
-                        ST_GeomFromText(%s, 4326),
+                        ST_Multi(ST_GeomFromText(%s, 4326)),
                         ST_SetSRID(ST_MakePoint(%s, %s), 4326),
                         5.0,
                         10.0,
@@ -360,12 +360,34 @@ def main():
         # 2. Build smooth polygons
         # Fetch all intersections
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM intersections")
+        cur.execute("""
+            SELECT 
+                intersection_id, 
+                intersection_name, 
+                ST_AsGeoJSON(geometry) as geometry 
+            FROM intersections
+        """)
         intersections = cur.fetchall()
+        # Parse GeoJSON strings to dicts
+        for i in intersections:
+            if isinstance(i["geometry"], str):
+                i["geometry"] = json.loads(i["geometry"])
 
-        # Fetch all roads
-        cur.execute("SELECT road_id, ST_AsGeoJSON(geometry) as geometry FROM lane_segments")
+        # Fetch all roads (merged by road_id)
+        cur.execute("""
+            SELECT
+                road_id,
+                ST_AsGeoJSON(
+                    ST_LineMerge(ST_Union(geometry))
+                ) AS geometry
+            FROM lane_segments
+            GROUP BY road_id
+        """)
         roads = cur.fetchall()
+        # Parse GeoJSON strings to dicts
+        for r in roads:
+            if isinstance(r["geometry"], str):
+                r["geometry"] = json.loads(r["geometry"])
 
         print(f"🏗️ Building smooth polygons for {len(intersections)} intersections...")
         
@@ -373,8 +395,8 @@ def main():
         results = build_intersection_polygons(
             roads, 
             intersections, 
-            road_width_m=40.0,
-            slice_length_m=150.0,
+            road_width_m=30.0,
+            slice_length_m=70.0,
             nearby_threshold_m=150.0,
             intersection_expand_factor=0.8,
             debug=True
@@ -389,7 +411,7 @@ def main():
                 update_cur.execute(
                     """
                     UPDATE intersections
-                    SET geometry = ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326)
+                    SET geometry = ST_Multi(ST_CollectionExtract(ST_MakeValid(ST_Simplify(ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), 0.000001)), 3))
                     WHERE intersection_id = %s
                     """,
                     (geom_json, res["intersection_id"])

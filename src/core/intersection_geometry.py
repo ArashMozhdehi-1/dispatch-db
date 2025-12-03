@@ -276,25 +276,39 @@ def build_intersection_polygons(
         for entry in local_roads:
             line: LineString = entry["line"]
 
+            # Skip roads too far from this intersection
             dist = center_local.distance(line)
             if dist > nearby_threshold_m:
                 continue
 
+            # Distance along the line of the projected centre
             along = line.project(center_local)
-            start_dist = max(0.0, along - slice_length_m)
-            end_dist = along
 
-            sub = line_substring(line, start_dist, end_dist)
-            if sub is None or sub.length == 0:
-                continue
-
-            buf = sub.buffer(
-                half_road_width,
-                cap_style=3,    # square caps
-                join_style=2,   # mitre joins
-                resolution=8,
+            # 50 m (or slice_length_m) BEFORE the centre
+            pre = line_substring(
+                line,
+                max(0.0, along - slice_length_m),
+                along,
             )
-            candidate_slices.append(buf)
+
+            # 50 m (or slice_length_m) AFTER the centre
+            post = line_substring(
+                line,
+                along,
+                min(line.length, along + slice_length_m),
+            )
+
+            for sub in (pre, post):
+                if sub is None or sub.length == 0:
+                    continue
+
+                buf = sub.buffer(
+                    half_road_width,
+                    cap_style=3,   # square at far end
+                    join_style=2,  # mitre along edges
+                    resolution=16,
+                )
+                candidate_slices.append(buf)
 
         if debug:
             name = inter.get("intersection_name", f"#{idx}")
