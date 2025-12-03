@@ -1,0 +1,8 @@
+﻿Id,EnumTypeId,Idx,Description,Abbreviation,Flags
+319,30,0,Disabled,DI,1
+320,30,1,End Point,EP,1
+321,30,2,Way Point,WP,1
+322,30,3,End Point D,ED,1
+323,30,4,Way Point D,WD,1
+324,30,5,Load Unload,LU,0
+325,30,6,Load Unload D,LD,0

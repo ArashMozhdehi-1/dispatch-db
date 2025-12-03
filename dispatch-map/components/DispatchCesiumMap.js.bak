@@ -1,0 +1,489 @@
+import React, { useState, useEffect, useRef } from 'react';
+import Script from 'next/script';
+
+export default function DispatchCesiumMap() {
+    const mapContainer = useRef(null);
+    const cesiumViewerRef = useRef(null);
+
+    const [mapLoaded, setMapLoaded] = useState(false);
+    const [mapError, setMapError] = useState(null);
+    const [cesiumLoaded, setCesiumLoaded] = useState(false);
+
+    // Data states
+    const [locations, setLocations] = useState([]);
+    const [segments, setSegments] = useState([]);
+    const [trolleySegments, setTrolleySegments] = useState([]);
+    const [wateringStations, setWateringStations] = useState([]);
+    const [speedMonitoring, setSpeedMonitoring] = useState([]);
+    const [intersections, setIntersections] = useState([]);
+
+    // Visibility toggles
+    const [showLocations, setShowLocations] = useState(true);
+    const [showSegments, setShowSegments] = useState(true);
+    const [showTrolley, setShowTrolley] = useState(true);
+    const [showWatering, setShowWatering] = useState(true);
+    const [showSpeed, setShowSpeed] = useState(true);
+    const [showIntersections, setShowIntersections] = useState(true);
+
+    // Load Cesium viewer after CDN loads
+    useEffect(() => {
+        if (!cesiumLoaded || !mapContainer.current || cesiumViewerRef.current) return;
+
+        const initCesium = () => {
+            try {
+                const Cesium = window.Cesium;
+                if (!Cesium) {
+                    console.error('[Dispatch Map] Cesium not loaded from CDN');
+                    return;
+                }
+
+                // Set Cesium Ion token
+                Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkN2JiMWMyMS05YmU0LTQ2MzktODk5Yy0xZjJjMDkyOGJkMzkiLCJpZCI6MTg0NzYsImlhdCI6MTYzOTQzOTU4Mn0.6GMOP-Y9nPwqGPZ0fLCuO-YXK1xVHK0HxxMz4EBqhJk';
+
+                // Create Cesium viewer with NO base layer
+                const viewer = new Cesium.Viewer(mapContainer.current, {
+                    baseLayerPicker: false,
+                    geocoder: false,
+                    homeButton: false,
+                    sceneModePicker: false,
+                    navigationHelpButton: false,
+                    animation: false,
+                    timeline: false,
+                    fullscreenButton: false,
+                    vrButton: false,
+                    imageryProvider: false,  // No base imagery
+                    terrainProvider: new Cesium.EllipsoidTerrainProvider()
+                });
+
+                // Remove Cesium credit/logo
+                viewer.cesiumWidget.creditContainer.style.display = 'none';
+
+                // Set camera to dispatch data location
+                viewer.camera.setView({
+                    destination: Cesium.Cartesian3.fromDegrees(148.980202, -23.847083, 5000),
+                    orientation: {
+                        heading: Cesium.Math.toRadians(0),
+                        pitch: Cesium.Math.toRadians(-90),
+                        roll: 0.0
+                    }
+                });
+
+                cesiumViewerRef.current = viewer;
+                window.cesiumViewer = viewer;
+
+                setMapLoaded(true);
+                console.log('[Dispatch Map] ✅ Cesium viewer initialized');
+
+                // Setup coordinate tracking
+                setupCoordinateTracking(viewer, Cesium);
+
+            } catch (error) {
+                console.error('[Dispatch Map] ❌ Error initializing Cesium:', error);
+                setMapError(error.message);
+            }
+        };
+
+        initCesium();
+
+        return () => {
+            if (cesiumViewerRef.current && !cesiumViewerRef.current.isDestroyed()) {
+                cesiumViewerRef.current.destroy();
+                cesiumViewerRef.current = null;
+            }
+        };
+    }, [cesiumLoaded]);
+
+    // Setup coordinate tracking
+    const setupCoordinateTracking = (viewer, Cesium) => {
+        const coordDisplay = document.createElement('div');
+        coordDisplay.id = 'mouse-coordinates';
+        coordDisplay.style.cssText = `
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(50, 50, 50, 0.92);
+      color: white;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 12px;
+      font-weight: 400;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(12px);
+      z-index: 1000;
+      min-width: 140px;
+      text-align: left;
+      display: block;
+      line-height: 1.3;
+    `;
+        document.body.appendChild(coordDisplay);
+
+        const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+
+        handler.setInputAction((movement) => {
+            const cartesian = viewer.scene.pickPosition(movement.endPosition);
+            if (Cesium.defined(cartesian)) {
+                const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+                const lng = Cesium.Math.toDegrees(cartographic.longitude);
+                const lat = Cesium.Math.toDegrees(cartographic.latitude);
+
+                coordDisplay.innerHTML = `
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="color: #a0a0a0; font-weight: 400;">Lat:</span>
+            <span style="color: white; font-weight: 500; font-variant-numeric: tabular-nums;">
+              ${lat.toFixed(6)}°
+            </span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #a0a0a0; font-weight: 400;">Lng:</span>
+            <span style="color: white; font-weight: 500; font-variant-numeric: tabular-nums;">
+              ${lng.toFixed(6)}°
+            </span>
+          </div>
+        `;
+            }
+        }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+    };
+
+    // Load dispatch data
+    useEffect(() => {
+        if (!mapLoaded) return;
+
+        const loadData = async () => {
+            try {
+                console.log('[Dispatch Map] 📡 Loading dispatch data...');
+
+                const [locationsRes, segmentsRes, trolleyRes, wateringRes, speedRes, intersectionsRes] = await Promise.all([
+                    fetch('http://localhost:3000/api/graphql', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            query: `query { locations { location_id location_name latitude longitude unit_type location_category } }`
+                        })
+                    }),
+                    fetch('http://localhost:3000/api/graphql', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            query: `query { segments { lane_id road_id geometry is_closed direction length_m } }`
+                        })
+                    }),
+                    fetch('http://localhost:3000/api/graphql', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            query: `query { trolleySegments { lane_id lane_name direction length_m trolley_voltage trolley_current_limit trolley_wire_height start_latitude start_longitude end_latitude end_longitude } }`
+                        })
+                    }),
+                    fetch('http://localhost:3000/api/graphql', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            query: `query { wateringStations { station_id station_name station_code station_type capacity_liters current_level_percent status latitude longitude } }`
+                        })
+                    }),
+                    fetch('http://localhost:3000/api/graphql', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            query: `query { speedMonitoring { monitoring_id lane_id measure speed_kmh violation_type operational_mode latitude longitude } }`
+                        })
+                    }),
+                    fetch('http://localhost:3000/api/graphql', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            query: `query { intersections { intersection_id intersection_name intersection_type geometry safety_buffer_m r_min_m created_at } }`
+                        })
+                    })
+                ]);
+
+                const [locationsData, segmentsData, trolleyData, wateringData, speedData, intersectionsData] = await Promise.all([
+                    locationsRes.json(),
+                    segmentsRes.json(),
+                    trolleyRes.json(),
+                    wateringRes.json(),
+                    speedRes.json(),
+                    intersectionsRes.json()
+                ]);
+
+                const locs = locationsData.data?.locations || [];
+                const segs = segmentsData.data?.segments || [];
+                const trolley = trolleyData.data?.trolleySegments || [];
+                const watering = wateringData.data?.wateringStations || [];
+                const speed = speedData.data?.speedMonitoring || [];
+                const inters = intersectionsData.data?.intersections || [];
+
+                setLocations(locs);
+                setSegments(segs);
+                setTrolleySegments(trolley);
+                setWateringStations(watering);
+                setSpeedMonitoring(speed);
+                setIntersections(inters);
+
+                console.log('[Dispatch Map] ✅ Data loaded:', { locations: locs.length, segments: segs.length, trolley: trolley.length, watering: watering.length, speed: speed.length, intersections: inters.length });
+
+            } catch (error) {
+                console.error('[Dispatch Map] ❌ Error loading data:', error);
+            }
+        };
+
+        loadData();
+    }, [mapLoaded]);
+
+    // Render data on Cesium map
+    useEffect(() => {
+        if (!cesiumViewerRef.current || !window.Cesium) return;
+
+        const viewer = cesiumViewerRef.current;
+        const Cesium = window.Cesium;
+
+        // Clear existing entities
+        viewer.entities.removeAll();
+
+        // Render locations
+        if (showLocations) {
+            locations.forEach(loc => {
+                viewer.entities.add({
+                    position: Cesium.Cartesian3.fromDegrees(loc.longitude, loc.latitude),
+                    billboard: {
+                        image: 'data:image/svg+xml;base64,' + btoa(`
+              <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" fill="#FF6B6B" stroke="white" stroke-width="2"/>
+              </svg>
+            `),
+                        width: 24,
+                        height: 24,
+                        verticalOrigin: Cesium.VerticalOrigin.BOTTOM
+                    },
+                    label: {
+                        text: loc.location_name || 'Unknown',
+                        font: '12px sans-serif',
+                        fillColor: Cesium.Color.WHITE,
+                        outlineColor: Cesium.Color.BLACK,
+                        outlineWidth: 2,
+                        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                        verticalOrigin: Cesium.VerticalOrigin.TOP,
+                        pixelOffset: new Cesium.Cartesian2(0, 10)
+                    },
+                    properties: {
+                        type: 'location',
+                        data: loc
+                    }
+                });
+            });
+            console.log(`[Dispatch Map] ✅ Rendered ${locations.length} locations`);
+        }
+
+        // Render segments
+        if (showSegments) {
+            segments.forEach(seg => {
+                try {
+                    const geom = typeof seg.geometry === 'string' ? JSON.parse(seg.geometry) : seg.geometry;
+                    if (geom?.coordinates && geom.coordinates.length >= 2) {
+                        const positions = geom.coordinates.map(coord =>
+                    }
+                } catch (error) {
+                    console.warn('[Dispatch Map] ⚠️ Error rendering segment:', seg.lane_id, error);
+                }
+            });
+            console.log(`[Dispatch Map] ✅ Rendered ${segments.length} segments`);
+        }
+
+        // Render trolley lines
+        if (showTrolley) {
+            trolleySegments.forEach(trolley => {
+                viewer.entities.add({
+                    polyline: {
+                        positions: Cesium.Cartesian3.fromDegreesArray([
+                            trolley.start_longitude, trolley.start_latitude,
+                            trolley.end_longitude, trolley.end_latitude
+                        ]),
+                        width: 5,
+                        material: Cesium.Color.YELLOW.withAlpha(0.9),
+                        clampToGround: true
+                    },
+                    properties: {
+                        type: 'trolley',
+                        data: trolley
+                    }
+                });
+            });
+            console.log(`[Dispatch Map] ✅ Rendered ${trolleySegments.length} trolley lines`);
+        }
+
+        // Render watering stations
+        if (showWatering) {
+            wateringStations.forEach(station => {
+                viewer.entities.add({
+                    position: Cesium.Cartesian3.fromDegrees(station.longitude, station.latitude),
+                    billboard: {
+                        image: 'data:image/svg+xml;base64,' + btoa(`
+              <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" fill="#06D6A0" stroke="white" stroke-width="2"/>
+              </svg>
+            `),
+                        width: 24,
+                        height: 24
+                    },
+                    label: {
+                        text: station.station_name || 'Watering',
+                        font: '11px sans-serif',
+                        fillColor: Cesium.Color.WHITE,
+                        outlineColor: Cesium.Color.BLACK,
+                        outlineWidth: 2,
+                        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                        verticalOrigin: Cesium.VerticalOrigin.TOP,
+                        pixelOffset: new Cesium.Cartesian2(0, 10)
+                    },
+                    properties: {
+                        type: 'watering',
+                        data: station
+                    }
+                });
+            });
+            console.log(`[Dispatch Map] ✅ Rendered ${wateringStations.length} watering stations`);
+        }
+
+        // Render speed monitoring
+        if (showSpeed) {
+            speedMonitoring.forEach(speed => {
+                viewer.entities.add({
+                    position: Cesium.Cartesian3.fromDegrees(speed.longitude, speed.latitude),
+                    billboard: {
+                        image: 'data:image/svg+xml;base64,' + btoa(`
+              <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                <rect width="20" height="20" fill="#F77F00" stroke="white" stroke-width="1"/>
+              </svg>
+            `),
+                        width: 20,
+                        height: 20
+                    },
+                    properties: {
+                        type: 'speed',
+                        data: speed
+                    }
+                });
+            });
+            console.log(`[Dispatch Map] ✅ Rendered ${speedMonitoring.length} speed monitoring points`);
+        }
+
+        // Render intersections
+        if (showIntersections) {
+            intersections.forEach(inter => {
+                try {
+                    const geom = typeof inter.geometry === 'string' ? JSON.parse(inter.geometry) : inter.geometry;
+                    if (geom?.coordinates && geom.coordinates.length > 0) {
+                        const positions = geom.coordinates[0].map(coord =>
+                            Cesium.Cartesian3.fromDegrees(coord[0], coord[1])
+                        );
+
+                        viewer.entities.add({
+                            polygon: {
+                                hierarchy: positions,
+                                material: Cesium.Color.ORANGE.withAlpha(0.5),
+                                outline: true,
+                                outlineColor: Cesium.Color.WHITE,
+                                outlineWidth: 2,
+                                extrudedHeight: 5,
+                                closeTop: true,
+                                closeBottom: false
+                            },
+                            properties: {
+                                type: 'intersection',
+                                data: inter
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.warn('[Dispatch Map] ⚠️ Error rendering intersection:', inter.intersection_name, error);
+                }
+            });
+            console.log(`[Dispatch Map] ✅ Rendered ${intersections.length} intersections`);
+        }
+
+    }, [locations, segments, trolleySegments, wateringStations, speedMonitoring, intersections, showLocations, showSegments, showTrolley, showWatering, showSpeed, showIntersections]);
+
+    // Render error state
+    if (mapError) {
+        return (
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a1a1a', color: 'white' }}>
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                    <h2>Map Error</h2>
+                    <p>{mapError}</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <>
+            {/* Load Cesium from CDN */}
+            <Script
+                src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js"
+                onLoad={() => {
+                    console.log('[Dispatch Map] Cesium loaded from CDN');
+                    setCesiumLoaded(true);
+                }}
+                onError={() => {
+                    console.error('[Dispatch Map] Failed to load Cesium from CDN');
+                    setMapError('Failed to load Cesium library');
+                }}
+            />
+
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                <div ref={mapContainer} style={{ width: '100%', height: '100%', background: '#1a1a2e' }} />
+
+                {/* Legend - styled like Frontrunner */}
+                <div style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: 'rgba(27, 38, 59, 0.95)',
+                    color: 'white',
+                    padding: '20px',
+                    borderRadius: '12px',
+                    minWidth: '240px',
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                    fontSize: '13px',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)',
+                    backdropFilter: 'blur(16px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    zIndex: 1000
+                }}>
+                    <h3 style={{ margin: '0 0 16px 0', fontSize: '17px', fontWeight: 600, letterSpacing: '0.3px' }}>Dispatch Map</h3>
+
+                    <label style={{ display: 'flex', alignItems: 'center', marginBottom: '10px', cursor: 'pointer', transition: 'opacity 0.2s' }}>
+                        <input type="checkbox" checked={showLocations} onChange={(e) => setShowLocations(e.target.checked)} style={{ marginRight: '10px', cursor: 'pointer' }} />
+                        <span>Locations ({locations.length})</span>
+                    </label>
+
+                    <label style={{ display: 'flex', alignItems: 'center', marginBottom: '10px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={showSegments} onChange={(e) => setShowSegments(e.target.checked)} style={{ marginRight: '10px', cursor: 'pointer' }} />
+                        <span>Road Segments ({segments.length})</span>
+                    </label>
+
+                    <label style={{ display: 'flex', alignItems: 'center', marginBottom: '10px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={showTrolley} onChange={(e) => setShowTrolley(e.target.checked)} style={{ marginRight: '10px', cursor: 'pointer' }} />
+                        <span>Trolley Lines ({trolleySegments.length})</span>
+                    </label>
+
+                    <label style={{ display: 'flex', alignItems: 'center', marginBottom: '10px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={showWatering} onChange={(e) => setShowWatering(e.target.checked)} style={{ marginRight: '10px', cursor: 'pointer' }} />
+                        <span>Watering Stations ({wateringStations.length})</span>
+                    </label>
+
+                    <label style={{ display: 'flex', alignItems: 'center', marginBottom: '10px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={showSpeed} onChange={(e) => setShowSpeed(e.target.checked)} style={{ marginRight: '10px', cursor: 'pointer' }} />
+                        <span>Speed Monitoring ({speedMonitoring.length})</span>
+                    </label>
+
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={showIntersections} onChange={(e) => setShowIntersections(e.target.checked)} style={{ marginRight: '10px', cursor: 'pointer' }} />
+                        <span>Intersections ({intersections.length})</span>
+                    </label>
+                </div>
+            </div>
+        </>
+    );
+}

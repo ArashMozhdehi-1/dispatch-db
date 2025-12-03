@@ -1,0 +1,7635 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertices": 23
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.244438547,
+              -22.779870469
+            ],
+            [
+              119.244488971,
+              -22.779942424
+            ],
+            [
+              119.244531718,
+              -22.779998146
+            ],
+            [
+              119.244588672,
+              -22.780067702
+            ],
+            [
+              119.24463532,
+              -22.780120639
+            ],
+            [
+              119.244697159,
+              -22.780185534
+            ],
+            [
+              119.244761353,
+              -22.780248043
+            ],
+            [
+              119.244814435,
+              -22.780295466
+            ],
+            [
+              119.244942048,
+              -22.780402539
+            ],
+            [
+              119.244988684,
+              -22.780439881
+            ],
+            [
+              119.244864469,
+              -22.780595013
+            ],
+            [
+              119.244815181,
+              -22.780555515
+            ],
+            [
+              119.244685513,
+              -22.780446718
+            ],
+            [
+              119.244624237,
+              -22.780391915
+            ],
+            [
+              119.244557182,
+              -22.78032662
+            ],
+            [
+              119.244490111,
+              -22.780256336
+            ],
+            [
+              119.244436047,
+              -22.780194999
+            ],
+            [
+              119.244376955,
+              -22.780122831
+            ],
+            [
+              119.244327451,
+              -22.780058231
+            ],
+            [
+              119.244274645,
+              -22.779982878
+            ],
+            [
+              119.24424894,
+              -22.779943002
+            ],
+            [
+              119.244416162,
+              -22.779835612
+            ],
+            [
+              119.244438547,
+              -22.779870469
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 1,
+        "angle": 182.47,
+        "angle_quality": 87.53,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244488971,
+          -22.779942424
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 2,
+        "angle": 181.82,
+        "angle_quality": 88.18,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244531718,
+          -22.779998146
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 3,
+        "angle": 182.08,
+        "angle_quality": 87.92,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244588672,
+          -22.780067702
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 4,
+        "angle": 182.23,
+        "angle_quality": 87.77,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "4"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.24463532,
+          -22.780120639
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 5,
+        "angle": 182.14,
+        "angle_quality": 87.86,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "5"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244697159,
+          -22.780185534
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 6,
+        "angle": 182.46,
+        "angle_quality": 87.54,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "6"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244761353,
+          -22.780248043
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 7,
+        "angle": 181.78,
+        "angle_quality": 88.22,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "7"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244814435,
+          -22.780295466
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 8,
+        "angle": 181.31,
+        "angle_quality": 88.69,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "8"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244942048,
+          -22.780402539
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 9,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "9"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244988684,
+          -22.780439881
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 10,
+        "angle": 89.98,
+        "angle_quality": 0.02,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "10"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244864469,
+          -22.780595013
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 11,
+        "angle": 178.71,
+        "angle_quality": 88.71,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "11"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244815181,
+          -22.780555515
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 12,
+        "angle": 178.19,
+        "angle_quality": 88.19,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "12"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244685513,
+          -22.780446718
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 13,
+        "angle": 177.57,
+        "angle_quality": 87.57,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "13"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244624237,
+          -22.780391915
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 14,
+        "angle": 177.9,
+        "angle_quality": 87.9,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "14"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244557182,
+          -22.78032662
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 15,
+        "angle": 177.73,
+        "angle_quality": 87.73,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "15"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244490111,
+          -22.780256336
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 16,
+        "angle": 177.92,
+        "angle_quality": 87.92,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "16"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244436047,
+          -22.780194999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 17,
+        "angle": 178.15,
+        "angle_quality": 88.15,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "17"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244376955,
+          -22.780122831
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 18,
+        "angle": 177.56,
+        "angle_quality": 87.56,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "18"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244327451,
+          -22.780058231
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 19,
+        "angle": 177.78,
+        "angle_quality": 87.78,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "19"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244274645,
+          -22.779982878
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 20,
+        "angle": 89.9,
+        "angle_quality": 0.1,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "20"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.24424894,
+          -22.779943002
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909147211",
+        "road_name": "G_02 -> INT_03",
+        "vertex_index": 21,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "21"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244416162,
+          -22.779835612
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertices": 26
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.2448959,
+              -22.780342767
+            ],
+            [
+              119.244821582,
+              -22.780280908
+            ],
+            [
+              119.244774202,
+              -22.78023804
+            ],
+            [
+              119.244718237,
+              -22.780183207
+            ],
+            [
+              119.244664201,
+              -22.780126059
+            ],
+            [
+              119.244614999,
+              -22.780069817
+            ],
+            [
+              119.244611232,
+              -22.780065242
+            ],
+            [
+              119.24457695,
+              -22.780020985
+            ],
+            [
+              119.244542305,
+              -22.779971647
+            ],
+            [
+              119.244539517,
+              -22.779967436
+            ],
+            [
+              119.244510181,
+              -22.779920582
+            ],
+            [
+              119.244507378,
+              -22.779915815
+            ],
+            [
+              119.244466306,
+              -22.7798413
+            ],
+            [
+              119.244640354,
+              -22.779745368
+            ],
+            [
+              119.244680091,
+              -22.779817461
+            ],
+            [
+              119.244706619,
+              -22.779859831
+            ],
+            [
+              119.244735548,
+              -22.779901202
+            ],
+            [
+              119.244766528,
+              -22.779941196
+            ],
+            [
+              119.244812479,
+              -22.779993722
+            ],
+            [
+              119.244861201,
+              -22.780045147
+            ],
+            [
+              119.244911783,
+              -22.780094615
+            ],
+            [
+              119.244950331,
+              -22.780129503
+            ],
+            [
+              119.245020612,
+              -22.78018803
+            ],
+            [
+              119.245133022,
+              -22.780277641
+            ],
+            [
+              119.24500914,
+              -22.78043304
+            ],
+            [
+              119.2448959,
+              -22.780342767
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 1,
+        "angle": 177.63,
+        "angle_quality": 87.63,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244821582,
+          -22.780280908
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 2,
+        "angle": 177.72,
+        "angle_quality": 87.72,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244774202,
+          -22.78023804
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 3,
+        "angle": 177.81,
+        "angle_quality": 87.81,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244718237,
+          -22.780183207
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 4,
+        "angle": 177.78,
+        "angle_quality": 87.78,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "4"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244664201,
+          -22.780126059
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 5,
+        "angle": 178.29,
+        "angle_quality": 88.29,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "5"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244614999,
+          -22.780069817
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 6,
+        "angle": 178.29,
+        "angle_quality": 88.29,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "6"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244611232,
+          -22.780065242
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 7,
+        "angle": 177.31,
+        "angle_quality": 87.31,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "7"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.24457695,
+          -22.780020985
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 8,
+        "angle": 178.43,
+        "angle_quality": 88.43,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "8"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244542305,
+          -22.779971647
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 9,
+        "angle": 178.54,
+        "angle_quality": 88.54,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "9"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244539517,
+          -22.779967436
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 10,
+        "angle": 178.4,
+        "angle_quality": 88.4,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "10"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244510181,
+          -22.779920582
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 11,
+        "angle": 178.41,
+        "angle_quality": 88.41,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "11"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244507378,
+          -22.779915815
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 12,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "12"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244466306,
+          -22.7798413
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 13,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "13"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244640354,
+          -22.779745368
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 14,
+        "angle": 183.19,
+        "angle_quality": 86.81,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "14"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244680091,
+          -22.779817461
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 15,
+        "angle": 182.91,
+        "angle_quality": 87.09,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "15"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244706619,
+          -22.779859831
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 16,
+        "angle": 182.8,
+        "angle_quality": 87.2,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "16"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244735548,
+          -22.779901202
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 17,
+        "angle": 183.42,
+        "angle_quality": 86.58,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "17"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244766528,
+          -22.779941196
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 18,
+        "angle": 182.27,
+        "angle_quality": 87.73,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "18"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244812479,
+          -22.779993722
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 19,
+        "angle": 182.18,
+        "angle_quality": 87.82,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "19"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244861201,
+          -22.780045147
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 20,
+        "angle": 182.22,
+        "angle_quality": 87.78,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "20"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244911783,
+          -22.780094615
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 21,
+        "angle": 182.36,
+        "angle_quality": 87.64,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "21"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.244950331,
+          -22.780129503
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 22,
+        "angle": 181.22,
+        "angle_quality": 88.78,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "22"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.245020612,
+          -22.78018803
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 23,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "23"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.245133022,
+          -22.780277641
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909148313",
+        "road_name": "INT_03 -> G_02",
+        "vertex_index": 24,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "24"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.24500914,
+          -22.78043304
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1461909398142",
+        "road_name": "G_18 -> INT_07",
+        "vertices": 9
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.256974947,
+              -22.809015678
+            ],
+            [
+              119.257206171,
+              -22.808991092
+            ],
+            [
+              119.257462877,
+              -22.80896098
+            ],
+            [
+              119.25748603,
+              -22.809158362
+            ],
+            [
+              119.257228789,
+              -22.809188537
+            ],
+            [
+              119.256996804,
+              -22.809213209
+            ],
+            [
+              119.256927826,
+              -22.809221739
+            ],
+            [
+              119.256903438,
+              -22.809024506
+            ],
+            [
+              119.256974947,
+              -22.809015678
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909398142",
+        "road_name": "G_18 -> INT_07",
+        "vertex_index": 1,
+        "angle": 180.62,
+        "angle_quality": 89.38,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.257206171,
+          -22.808991092
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909398142",
+        "road_name": "G_18 -> INT_07",
+        "vertex_index": 2,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.257462877,
+          -22.80896098
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909398142",
+        "road_name": "G_18 -> INT_07",
+        "vertex_index": 3,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.25748603,
+          -22.809158362
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909398142",
+        "road_name": "G_18 -> INT_07",
+        "vertex_index": 4,
+        "angle": 179.38,
+        "angle_quality": 89.38,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "4"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.257228789,
+          -22.809188537
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909398142",
+        "road_name": "G_18 -> INT_07",
+        "vertex_index": 5,
+        "angle": 180.98,
+        "angle_quality": 89.02,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "5"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.256996804,
+          -22.809213209
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909398142",
+        "road_name": "G_18 -> INT_07",
+        "vertex_index": 6,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "6"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.256927826,
+          -22.809221739
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1461909398142",
+        "road_name": "G_18 -> INT_07",
+        "vertex_index": 7,
+        "angle": 89.99,
+        "angle_quality": 0.01,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "7"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.256903438,
+          -22.809024506
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1486053580458",
+        "road_name": "I27 -> I5",
+        "vertices": 9
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.231964482,
+              -22.793753178
+            ],
+            [
+              119.232153784,
+              -22.793980289
+            ],
+            [
+              119.232192652,
+              -22.794028926
+            ],
+            [
+              119.232037358,
+              -22.79415294
+            ],
+            [
+              119.232000458,
+              -22.794106732
+            ],
+            [
+              119.231811442,
+              -22.793879964
+            ],
+            [
+              119.23172628,
+              -22.793775277
+            ],
+            [
+              119.231880452,
+              -22.793649871
+            ],
+            [
+              119.231964482,
+              -22.793753178
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486053580458",
+        "road_name": "I27 -> I5",
+        "vertex_index": 1,
+        "angle": 178.82,
+        "angle_quality": 88.82,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.232153784,
+          -22.793980289
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486053580458",
+        "road_name": "I27 -> I5",
+        "vertex_index": 2,
+        "angle": 89.98,
+        "angle_quality": 0.02,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.232192652,
+          -22.794028926
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486053580458",
+        "road_name": "I27 -> I5",
+        "vertex_index": 3,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.232037358,
+          -22.79415294
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486053580458",
+        "road_name": "I27 -> I5",
+        "vertex_index": 4,
+        "angle": 181.2,
+        "angle_quality": 88.8,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "4"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.232000458,
+          -22.794106732
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486053580458",
+        "road_name": "I27 -> I5",
+        "vertex_index": 5,
+        "angle": 179.32,
+        "angle_quality": 89.32,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "5"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.231811442,
+          -22.793879964
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486053580458",
+        "road_name": "I27 -> I5",
+        "vertex_index": 6,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "6"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.23172628,
+          -22.793775277
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486053580458",
+        "road_name": "I27 -> I5",
+        "vertex_index": 7,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "7"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.231880452,
+          -22.793649871
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1462761807904",
+        "road_name": "INT_20 -> BYPASS",
+        "vertices": 5
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.254094296,
+              -22.808840986
+            ],
+            [
+              119.254292418,
+              -22.808856579
+            ],
+            [
+              119.254290993,
+              -22.808874684
+            ],
+            [
+              119.254092871,
+              -22.808859091
+            ],
+            [
+              119.254094296,
+              -22.808840986
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462761807904",
+        "road_name": "INT_20 -> BYPASS",
+        "vertex_index": 1,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.254292418,
+          -22.808856579
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462761807904",
+        "road_name": "INT_20 -> BYPASS",
+        "vertex_index": 2,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.254290993,
+          -22.808874684
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462761807904",
+        "road_name": "INT_20 -> BYPASS",
+        "vertex_index": 3,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.254092871,
+          -22.808859091
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1462762458503",
+        "road_name": "C2 -> GA3",
+        "vertices": 14
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.283011494,
+              -22.808157481
+            ],
+            [
+              119.283014121,
+              -22.808156433
+            ],
+            [
+              119.283014607,
+              -22.80815756
+            ],
+            [
+              119.282963886,
+              -22.808179458
+            ],
+            [
+              119.282916549,
+              -22.808202516
+            ],
+            [
+              119.282824177,
+              -22.808254332
+            ],
+            [
+              119.282726949,
+              -22.808081006
+            ],
+            [
+              119.282755314,
+              -22.808064131
+            ],
+            [
+              119.282822788,
+              -22.808027251
+            ],
+            [
+              119.2828789,
+              -22.807999797
+            ],
+            [
+              119.282935833,
+              -22.807975104
+            ],
+            [
+              119.282941012,
+              -22.807973038
+            ],
+            [
+              119.282943527,
+              -22.807972116
+            ],
+            [
+              119.283011494,
+              -22.808157481
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762458503",
+        "road_name": "C2 -> GA3",
+        "vertex_index": 1,
+        "angle": 91.58,
+        "angle_quality": 1.58,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.283014121,
+          -22.808156433
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762458503",
+        "road_name": "C2 -> GA3",
+        "vertex_index": 2,
+        "angle": 90.02,
+        "angle_quality": 0.02,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.283014607,
+          -22.80815756
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762458503",
+        "road_name": "C2 -> GA3",
+        "vertex_index": 3,
+        "angle": 182.62,
+        "angle_quality": 87.38,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.282963886,
+          -22.808179458
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762458503",
+        "road_name": "C2 -> GA3",
+        "vertex_index": 4,
+        "angle": 183.32,
+        "angle_quality": 86.68,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "4"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.282916549,
+          -22.808202516
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762458503",
+        "road_name": "C2 -> GA3",
+        "vertex_index": 5,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "5"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.282824177,
+          -22.808254332
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762458503",
+        "road_name": "C2 -> GA3",
+        "vertex_index": 6,
+        "angle": 91.46,
+        "angle_quality": 1.46,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "6"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.282726949,
+          -22.808081006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762458503",
+        "road_name": "C2 -> GA3",
+        "vertex_index": 7,
+        "angle": 177.91,
+        "angle_quality": 87.91,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "7"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.282755314,
+          -22.808064131
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762458503",
+        "road_name": "C2 -> GA3",
+        "vertex_index": 8,
+        "angle": 177.41,
+        "angle_quality": 87.41,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "8"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.282822788,
+          -22.808027251
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762458503",
+        "road_name": "C2 -> GA3",
+        "vertex_index": 9,
+        "angle": 177.38,
+        "angle_quality": 87.38,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "9"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.2828789,
+          -22.807999797
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762458503",
+        "road_name": "C2 -> GA3",
+        "vertex_index": 10,
+        "angle": 178.3,
+        "angle_quality": 88.3,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "10"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.282935833,
+          -22.807975104
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762458503",
+        "road_name": "C2 -> GA3",
+        "vertex_index": 11,
+        "angle": 178.38,
+        "angle_quality": 88.38,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "11"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.282941012,
+          -22.807973038
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762458503",
+        "road_name": "C2 -> GA3",
+        "vertex_index": 12,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "12"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.282943527,
+          -22.807972116
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1462762463610",
+        "road_name": "GA7 -> GA3",
+        "vertices": 10
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.282990038,
+              -22.808392137
+            ],
+            [
+              119.282942977,
+              -22.808382969
+            ],
+            [
+              119.282980977,
+              -22.808187901
+            ],
+            [
+              119.282990111,
+              -22.808189126
+            ],
+            [
+              119.282996367,
+              -22.808190247
+            ],
+            [
+              119.283034253,
+              -22.808198294
+            ],
+            [
+              119.283041647,
+              -22.808200163
+            ],
+            [
+              119.283063021,
+              -22.80820645
+            ],
+            [
+              119.283006945,
+              -22.808397109
+            ],
+            [
+              119.282990038,
+              -22.808392137
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762463610",
+        "road_name": "GA7 -> GA3",
+        "vertex_index": 1,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.282942977,
+          -22.808382969
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762463610",
+        "road_name": "GA7 -> GA3",
+        "vertex_index": 2,
+        "angle": 93.38,
+        "angle_quality": 3.38,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.282980977,
+          -22.808187901
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762463610",
+        "road_name": "GA7 -> GA3",
+        "vertex_index": 3,
+        "angle": 177.48,
+        "angle_quality": 87.48,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.282990111,
+          -22.808189126
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762463610",
+        "road_name": "GA7 -> GA3",
+        "vertex_index": 4,
+        "angle": 178.17,
+        "angle_quality": 88.17,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "4"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.282996367,
+          -22.808190247
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762463610",
+        "road_name": "GA7 -> GA3",
+        "vertex_index": 5,
+        "angle": 177.81,
+        "angle_quality": 87.81,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "5"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.283034253,
+          -22.808198294
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762463610",
+        "road_name": "GA7 -> GA3",
+        "vertex_index": 6,
+        "angle": 177.79,
+        "angle_quality": 87.79,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "6"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.283041647,
+          -22.808200163
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762463610",
+        "road_name": "GA7 -> GA3",
+        "vertex_index": 7,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "7"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.283063021,
+          -22.80820645
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762463610",
+        "road_name": "GA7 -> GA3",
+        "vertex_index": 8,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "8"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.283006945,
+          -22.808397109
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1462762470917",
+        "road_name": "IN17 -> GA7",
+        "vertices": 5
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.282983156,
+              -22.808440765
+            ],
+            [
+              119.283159398,
+              -22.808532603
+            ],
+            [
+              119.283141796,
+              -22.808566382
+            ],
+            [
+              119.282965554,
+              -22.808474544
+            ],
+            [
+              119.282983156,
+              -22.808440765
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762470917",
+        "road_name": "IN17 -> GA7",
+        "vertex_index": 1,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.283159398,
+          -22.808532603
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762470917",
+        "road_name": "IN17 -> GA7",
+        "vertex_index": 2,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.283141796,
+          -22.808566382
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1462762470917",
+        "road_name": "IN17 -> GA7",
+        "vertex_index": 3,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.282965554,
+          -22.808474544
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertices": 48
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.22782754,
+              -22.791416595
+            ],
+            [
+              119.227653545,
+              -22.791387082
+            ],
+            [
+              119.227550587,
+              -22.791366706
+            ],
+            [
+              119.227229728,
+              -22.791297304
+            ],
+            [
+              119.227002576,
+              -22.791245699
+            ],
+            [
+              119.22688248,
+              -22.791215562
+            ],
+            [
+              119.226705454,
+              -22.791166528
+            ],
+            [
+              119.226638849,
+              -22.791146728
+            ],
+            [
+              119.226595915,
+              -22.791132802
+            ],
+            [
+              119.226431277,
+              -22.791071538
+            ],
+            [
+              119.226235215,
+              -22.790993878
+            ],
+            [
+              119.225969006,
+              -22.790883907
+            ],
+            [
+              119.225769053,
+              -22.790799048
+            ],
+            [
+              119.225610007,
+              -22.790727649
+            ],
+            [
+              119.225504023,
+              -22.79067704
+            ],
+            [
+              119.225450075,
+              -22.790649065
+            ],
+            [
+              119.225445135,
+              -22.790646316
+            ],
+            [
+              119.225362908,
+              -22.790597449
+            ],
+            [
+              119.225280056,
+              -22.790544368
+            ],
+            [
+              119.225214942,
+              -22.790499538
+            ],
+            [
+              119.225210789,
+              -22.790496512
+            ],
+            [
+              119.225108948,
+              -22.790418225
+            ],
+            [
+              119.225044724,
+              -22.790364986
+            ],
+            [
+              119.224906255,
+              -22.790244622
+            ],
+            [
+              119.225036634,
+              -22.790094632
+            ],
+            [
+              119.225174244,
+              -22.79021425
+            ],
+            [
+              119.225231538,
+              -22.790261793
+            ],
+            [
+              119.225329871,
+              -22.790337385
+            ],
+            [
+              119.225388756,
+              -22.790377987
+            ],
+            [
+              119.225465898,
+              -22.790427474
+            ],
+            [
+              119.225544234,
+              -22.790474029
+            ],
+            [
+              119.225591207,
+              -22.790498442
+            ],
+            [
+              119.225692493,
+              -22.790546837
+            ],
+            [
+              119.225847643,
+              -22.79061651
+            ],
+            [
+              119.226045326,
+              -22.790700411
+            ],
+            [
+              119.22631042,
+              -22.79080992
+            ],
+            [
+              119.226503485,
+              -22.790886382
+            ],
+            [
+              119.226663152,
+              -22.790945774
+            ],
+            [
+              119.22669596,
+              -22.790956359
+            ],
+            [
+              119.226934609,
+              -22.791023777
+            ],
+            [
+              119.227047693,
+              -22.79105215
+            ],
+            [
+              119.227272247,
+              -22.79110317
+            ],
+            [
+              119.227591756,
+              -22.79117228
+            ],
+            [
+              119.227688136,
+              -22.791191376
+            ],
+            [
+              119.227859167,
+              -22.791220392
+            ],
+            [
+              119.228177225,
+              -22.791270766
+            ],
+            [
+              119.228146137,
+              -22.791467054
+            ],
+            [
+              119.22782754,
+              -22.791416595
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 1,
+        "angle": 178.43,
+        "angle_quality": 88.43,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227653545,
+          -22.791387082
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 2,
+        "angle": 178.99,
+        "angle_quality": 88.99,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227550587,
+          -22.791366706
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 3,
+        "angle": 179.41,
+        "angle_quality": 89.41,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227229728,
+          -22.791297304
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 4,
+        "angle": 178.71,
+        "angle_quality": 88.71,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "4"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227002576,
+          -22.791245699
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 5,
+        "angle": 178.6,
+        "angle_quality": 88.6,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "5"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.22688248,
+          -22.791215562
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 6,
+        "angle": 178.93,
+        "angle_quality": 88.93,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "6"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226705454,
+          -22.791166528
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 7,
+        "angle": 178.58,
+        "angle_quality": 88.58,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "7"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226638849,
+          -22.791146728
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 8,
+        "angle": 177.56,
+        "angle_quality": 87.56,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "8"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226595915,
+          -22.791132802
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 9,
+        "angle": 178.8,
+        "angle_quality": 88.8,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "9"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226431277,
+          -22.791071538
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 10,
+        "angle": 179.16,
+        "angle_quality": 89.16,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "10"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226235215,
+          -22.790993878
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 11,
+        "angle": 179.45,
+        "angle_quality": 89.45,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "11"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225969006,
+          -22.790883907
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 12,
+        "angle": 178.82,
+        "angle_quality": 88.82,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "12"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225769053,
+          -22.790799048
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 13,
+        "angle": 178.65,
+        "angle_quality": 88.65,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "13"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225610007,
+          -22.790727649
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 14,
+        "angle": 178.12,
+        "angle_quality": 88.12,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "14"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225504023,
+          -22.79067704
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 15,
+        "angle": 178.31,
+        "angle_quality": 88.31,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "15"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225450075,
+          -22.790649065
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 16,
+        "angle": 178.37,
+        "angle_quality": 88.37,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "16"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225445135,
+          -22.790646316
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 17,
+        "angle": 178.08,
+        "angle_quality": 88.08,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "17"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225362908,
+          -22.790597449
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 18,
+        "angle": 178.1,
+        "angle_quality": 88.1,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "18"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225280056,
+          -22.790544368
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 19,
+        "angle": 178.47,
+        "angle_quality": 88.47,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "19"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225214942,
+          -22.790499538
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 20,
+        "angle": 178.53,
+        "angle_quality": 88.53,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "20"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225210789,
+          -22.790496512
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 21,
+        "angle": 177.89,
+        "angle_quality": 87.89,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "21"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225108948,
+          -22.790418225
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 22,
+        "angle": 178.66,
+        "angle_quality": 88.66,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "22"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225044724,
+          -22.790364986
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 23,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "23"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.224906255,
+          -22.790244622
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 24,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "24"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225036634,
+          -22.790094632
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 25,
+        "angle": 181.31,
+        "angle_quality": 88.69,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "25"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225174244,
+          -22.79021425
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 26,
+        "angle": 182.14,
+        "angle_quality": 87.86,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "26"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225231538,
+          -22.790261793
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 27,
+        "angle": 182.96,
+        "angle_quality": 87.04,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "27"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225329871,
+          -22.790337385
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 28,
+        "angle": 181.91,
+        "angle_quality": 88.09,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "28"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225388756,
+          -22.790377987
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 29,
+        "angle": 181.96,
+        "angle_quality": 88.04,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "29"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225465898,
+          -22.790427474
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 30,
+        "angle": 183.26,
+        "angle_quality": 86.74,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "30"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225544234,
+          -22.790474029
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 31,
+        "angle": 181.92,
+        "angle_quality": 88.08,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "31"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225591207,
+          -22.790498442
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 32,
+        "angle": 181.36,
+        "angle_quality": 88.64,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "32"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225692493,
+          -22.790546837
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 33,
+        "angle": 181.19,
+        "angle_quality": 88.81,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "33"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225847643,
+          -22.79061651
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 34,
+        "angle": 180.55,
+        "angle_quality": 89.45,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "34"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226045326,
+          -22.790700411
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 35,
+        "angle": 180.84,
+        "angle_quality": 89.16,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "35"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.22631042,
+          -22.79080992
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 36,
+        "angle": 181.2,
+        "angle_quality": 88.8,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "36"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226503485,
+          -22.790886382
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 37,
+        "angle": 182.52,
+        "angle_quality": 87.48,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "37"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226663152,
+          -22.790945774
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 38,
+        "angle": 182.11,
+        "angle_quality": 87.89,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "38"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.22669596,
+          -22.790956359
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 39,
+        "angle": 181.69,
+        "angle_quality": 88.31,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "39"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226934609,
+          -22.791023777
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 40,
+        "angle": 181.28,
+        "angle_quality": 88.72,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "40"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227047693,
+          -22.79105215
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 41,
+        "angle": 180.6,
+        "angle_quality": 89.4,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "41"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227272247,
+          -22.79110317
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 42,
+        "angle": 181.0,
+        "angle_quality": 89.0,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "42"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227591756,
+          -22.79117228
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 43,
+        "angle": 181.58,
+        "angle_quality": 88.42,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "43"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227688136,
+          -22.791191376
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 44,
+        "angle": 180.63,
+        "angle_quality": 89.37,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "44"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227859167,
+          -22.791220392
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 45,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "45"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.228177225,
+          -22.791270766
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054848393",
+        "road_name": "GATE_28 -> GATE_16",
+        "vertex_index": 46,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "46"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.228146137,
+          -22.791467054
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertices": 52
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.224944782,
+              -22.790307401
+            ],
+            [
+              119.225012839,
+              -22.790358465
+            ],
+            [
+              119.225157805,
+              -22.790470481
+            ],
+            [
+              119.225203811,
+              -22.790502777
+            ],
+            [
+              119.225313545,
+              -22.79057232
+            ],
+            [
+              119.225470772,
+              -22.790666259
+            ],
+            [
+              119.225621226,
+              -22.79075069
+            ],
+            [
+              119.225772019,
+              -22.790824168
+            ],
+            [
+              119.226225536,
+              -22.791027448
+            ],
+            [
+              119.226466161,
+              -22.791137467
+            ],
+            [
+              119.226535539,
+              -22.791167143
+            ],
+            [
+              119.2266409,
+              -22.791208406
+            ],
+            [
+              119.226801516,
+              -22.791265365
+            ],
+            [
+              119.226983117,
+              -22.791310745
+            ],
+            [
+              119.227074235,
+              -22.791329644
+            ],
+            [
+              119.22720358,
+              -22.791351284
+            ],
+            [
+              119.227357563,
+              -22.791373753
+            ],
+            [
+              119.227509965,
+              -22.791392111
+            ],
+            [
+              119.227736606,
+              -22.791415493
+            ],
+            [
+              119.227839216,
+              -22.791426798
+            ],
+            [
+              119.227941324,
+              -22.791442589
+            ],
+            [
+              119.228147686,
+              -22.791478463
+            ],
+            [
+              119.228113648,
+              -22.791674261
+            ],
+            [
+              119.227908162,
+              -22.791638539
+            ],
+            [
+              119.227815487,
+              -22.791624132
+            ],
+            [
+              119.227488513,
+              -22.791589687
+            ],
+            [
+              119.227330097,
+              -22.791570585
+            ],
+            [
+              119.227173858,
+              -22.791547786
+            ],
+            [
+              119.227039544,
+              -22.791525337
+            ],
+            [
+              119.226937664,
+              -22.791504229
+            ],
+            [
+              119.226821994,
+              -22.791476318
+            ],
+            [
+              119.226747473,
+              -22.791456698
+            ],
+            [
+              119.226741204,
+              -22.791454823
+            ],
+            [
+              119.226697823,
+              -22.791440247
+            ],
+            [
+              119.22657243,
+              -22.791394984
+            ],
+            [
+              119.226461636,
+              -22.791351632
+            ],
+            [
+              119.226384636,
+              -22.791318715
+            ],
+            [
+              119.226144002,
+              -22.791208689
+            ],
+            [
+              119.225881577,
+              -22.791091702
+            ],
+            [
+              119.225689028,
+              -22.791004754
+            ],
+            [
+              119.225531582,
+              -22.790928082
+            ],
+            [
+              119.225475342,
+              -22.790897784
+            ],
+            [
+              119.22537,
+              -22.790837555
+            ],
+            [
+              119.225210492,
+              -22.790742253
+            ],
+            [
+              119.225095447,
+              -22.790669386
+            ],
+            [
+              119.225039019,
+              -22.790629837
+            ],
+            [
+              119.22497677,
+              -22.790582868
+            ],
+            [
+              119.224891559,
+              -22.790515911
+            ],
+            [
+              119.224827214,
+              -22.790467631
+            ],
+            [
+              119.224759306,
+              -22.790418176
+            ],
+            [
+              119.224876302,
+              -22.790257528
+            ],
+            [
+              119.224944782,
+              -22.790307401
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 1,
+        "angle": 179.19,
+        "angle_quality": 89.19,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225012839,
+          -22.790358465
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 2,
+        "angle": 182.62,
+        "angle_quality": 87.38,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225157805,
+          -22.790470481
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 3,
+        "angle": 182.7,
+        "angle_quality": 87.3,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225203811,
+          -22.790502777
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 4,
+        "angle": 181.51,
+        "angle_quality": 88.49,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "4"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225313545,
+          -22.79057232
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 5,
+        "angle": 181.56,
+        "angle_quality": 88.44,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "5"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225470772,
+          -22.790666259
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 6,
+        "angle": 183.32,
+        "angle_quality": 86.68,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "6"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225621226,
+          -22.79075069
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 7,
+        "angle": 181.84,
+        "angle_quality": 88.16,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "7"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225772019,
+          -22.790824168
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 8,
+        "angle": 179.57,
+        "angle_quality": 89.57,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "8"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226225536,
+          -22.791027448
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 9,
+        "angle": 181.41,
+        "angle_quality": 88.59,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "9"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226466161,
+          -22.791137467
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 10,
+        "angle": 181.77,
+        "angle_quality": 88.23,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "10"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226535539,
+          -22.791167143
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 11,
+        "angle": 181.86,
+        "angle_quality": 88.14,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "11"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.2266409,
+          -22.791208406
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 12,
+        "angle": 185.5,
+        "angle_quality": 84.5,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "12"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226801516,
+          -22.791265365
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 13,
+        "angle": 182.31,
+        "angle_quality": 87.69,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "13"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226983117,
+          -22.791310745
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 14,
+        "angle": 182.22,
+        "angle_quality": 87.78,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "14"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227074235,
+          -22.791329644
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 15,
+        "angle": 181.2,
+        "angle_quality": 88.8,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "15"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.22720358,
+          -22.791351284
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 16,
+        "angle": 181.43,
+        "angle_quality": 88.57,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "16"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227357563,
+          -22.791373753
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 17,
+        "angle": 180.98,
+        "angle_quality": 89.02,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "17"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227509965,
+          -22.791392111
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 18,
+        "angle": 179.6,
+        "angle_quality": 89.6,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "18"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227736606,
+          -22.791415493
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 19,
+        "angle": 177.5,
+        "angle_quality": 87.5,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "19"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227839216,
+          -22.791426798
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 20,
+        "angle": 178.93,
+        "angle_quality": 88.93,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "20"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227941324,
+          -22.791442589
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 21,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "21"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.228147686,
+          -22.791478463
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 22,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "22"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.228113648,
+          -22.791674261
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 23,
+        "angle": 181.03,
+        "angle_quality": 88.97,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "23"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227908162,
+          -22.791638539
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 24,
+        "angle": 182.82,
+        "angle_quality": 87.18,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "24"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227815487,
+          -22.791624132
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 25,
+        "angle": 179.14,
+        "angle_quality": 89.14,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "25"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227488513,
+          -22.791589687
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 26,
+        "angle": 178.57,
+        "angle_quality": 88.57,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "26"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227330097,
+          -22.791570585
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 27,
+        "angle": 178.81,
+        "angle_quality": 88.81,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "27"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227173858,
+          -22.791547786
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 28,
+        "angle": 177.78,
+        "angle_quality": 87.78,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "28"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.227039544,
+          -22.791525337
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 29,
+        "angle": 178.14,
+        "angle_quality": 88.14,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "29"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226937664,
+          -22.791504229
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 30,
+        "angle": 178.82,
+        "angle_quality": 88.82,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "30"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226821994,
+          -22.791476318
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 31,
+        "angle": 178.1,
+        "angle_quality": 88.1,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "31"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226747473,
+          -22.791456698
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 32,
+        "angle": 178.08,
+        "angle_quality": 88.08,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "32"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226741204,
+          -22.791454823
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 33,
+        "angle": 178.72,
+        "angle_quality": 88.72,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "33"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226697823,
+          -22.791440247
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 34,
+        "angle": 178.48,
+        "angle_quality": 88.48,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "34"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.22657243,
+          -22.791394984
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 35,
+        "angle": 178.22,
+        "angle_quality": 88.22,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "35"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226461636,
+          -22.791351632
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 36,
+        "angle": 178.57,
+        "angle_quality": 88.57,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "36"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226384636,
+          -22.791318715
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 37,
+        "angle": 180.54,
+        "angle_quality": 89.46,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "37"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.226144002,
+          -22.791208689
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 38,
+        "angle": 179.72,
+        "angle_quality": 89.72,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "38"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225881577,
+          -22.791091702
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 39,
+        "angle": 178.34,
+        "angle_quality": 88.34,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "39"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225689028,
+          -22.791004754
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 40,
+        "angle": 177.65,
+        "angle_quality": 87.65,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "40"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225531582,
+          -22.790928082
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 41,
+        "angle": 178.55,
+        "angle_quality": 88.55,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "41"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225475342,
+          -22.790897784
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 42,
+        "angle": 178.9,
+        "angle_quality": 88.9,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "42"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.22537,
+          -22.790837555
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 43,
+        "angle": 178.51,
+        "angle_quality": 88.51,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "43"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225210492,
+          -22.790742253
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 44,
+        "angle": 177.32,
+        "angle_quality": 87.32,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "44"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225095447,
+          -22.790669386
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 45,
+        "angle": 177.99,
+        "angle_quality": 87.99,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "45"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.225039019,
+          -22.790629837
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 46,
+        "angle": 178.88,
+        "angle_quality": 88.88,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "46"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.22497677,
+          -22.790582868
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 47,
+        "angle": 181.28,
+        "angle_quality": 88.72,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "47"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.224891559,
+          -22.790515911
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 48,
+        "angle": 180.82,
+        "angle_quality": 89.18,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "48"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.224827214,
+          -22.790467631
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 49,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "49"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.224759306,
+          -22.790418176
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1486054851067",
+        "road_name": "GATE_16 -> GATE_28",
+        "vertex_index": 50,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "50"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.224876302,
+          -22.790257528
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertices": 24
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.222315272,
+              -22.814826275
+            ],
+            [
+              119.222404321,
+              -22.814808387
+            ],
+            [
+              119.222455656,
+              -22.814794769
+            ],
+            [
+              119.222507102,
+              -22.814778832
+            ],
+            [
+              119.222556248,
+              -22.814760906
+            ],
+            [
+              119.222603462,
+              -22.814740424
+            ],
+            [
+              119.222649992,
+              -22.814716969
+            ],
+            [
+              119.222682126,
+              -22.814698629
+            ],
+            [
+              119.222780635,
+              -22.814871231
+            ],
+            [
+              119.22274627,
+              -22.814890845
+            ],
+            [
+              119.222741743,
+              -22.814893275
+            ],
+            [
+              119.222690362,
+              -22.814919176
+            ],
+            [
+              119.22268518,
+              -22.814921603
+            ],
+            [
+              119.222632625,
+              -22.814944402
+            ],
+            [
+              119.22262713,
+              -22.814946594
+            ],
+            [
+              119.222568251,
+              -22.814967942
+            ],
+            [
+              119.222512512,
+              -22.814985208
+            ],
+            [
+              119.222452345,
+              -22.815001256
+            ],
+            [
+              119.222446436,
+              -22.815002632
+            ],
+            [
+              119.222351302,
+              -22.815021742
+            ],
+            [
+              119.222345048,
+              -22.815022792
+            ],
+            [
+              119.222297942,
+              -22.815029163
+            ],
+            [
+              119.222271309,
+              -22.81483222
+            ],
+            [
+              119.222315272,
+              -22.814826275
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 1,
+        "angle": 183.5,
+        "angle_quality": 86.5,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222404321,
+          -22.814808387
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 2,
+        "angle": 182.35,
+        "angle_quality": 87.65,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222455656,
+          -22.814794769
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 3,
+        "angle": 182.83,
+        "angle_quality": 87.17,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222507102,
+          -22.814778832
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 4,
+        "angle": 183.41,
+        "angle_quality": 86.59,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "4"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222556248,
+          -22.814760906
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 5,
+        "angle": 183.3,
+        "angle_quality": 86.7,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "5"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222603462,
+          -22.814740424
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 6,
+        "angle": 182.96,
+        "angle_quality": 87.04,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "6"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222649992,
+          -22.814716969
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 7,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "7"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222682126,
+          -22.814698629
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 8,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "8"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222780635,
+          -22.814871231
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 9,
+        "angle": 178.51,
+        "angle_quality": 88.51,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "9"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.22274627,
+          -22.814890845
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 10,
+        "angle": 178.53,
+        "angle_quality": 88.53,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "10"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222741743,
+          -22.814893275
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 11,
+        "angle": 178.34,
+        "angle_quality": 88.34,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "11"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222690362,
+          -22.814919176
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 12,
+        "angle": 178.36,
+        "angle_quality": 88.36,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "12"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.22268518,
+          -22.814921603
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 13,
+        "angle": 178.3,
+        "angle_quality": 88.3,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "13"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222632625,
+          -22.814944402
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 14,
+        "angle": 178.18,
+        "angle_quality": 88.18,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "14"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.22262713,
+          -22.814946594
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 15,
+        "angle": 177.28,
+        "angle_quality": 87.28,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "15"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222568251,
+          -22.814967942
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 16,
+        "angle": 177.72,
+        "angle_quality": 87.72,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "16"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222512512,
+          -22.814985208
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 17,
+        "angle": 178.17,
+        "angle_quality": 88.17,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "17"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222452345,
+          -22.815001256
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 18,
+        "angle": 178.25,
+        "angle_quality": 88.25,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "18"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222446436,
+          -22.815002632
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 19,
+        "angle": 178.17,
+        "angle_quality": 88.17,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "19"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222351302,
+          -22.815021742
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 20,
+        "angle": 178.17,
+        "angle_quality": 88.17,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "20"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222345048,
+          -22.815022792
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 21,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "21"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222297942,
+          -22.815029163
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056657853",
+        "road_name": "D6 -> I23",
+        "vertex_index": 22,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "22"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222271309,
+          -22.81483222
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1523056659995",
+        "road_name": "I23 -> I21",
+        "vertices": 9
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.222927261,
+              -22.813727092
+            ],
+            [
+              119.222915694,
+              -22.813492986
+            ],
+            [
+              119.222910089,
+              -22.813313904
+            ],
+            [
+              119.223108728,
+              -22.813307705
+            ],
+            [
+              119.223114231,
+              -22.81348408
+            ],
+            [
+              119.223125746,
+              -22.813717116
+            ],
+            [
+              119.223129509,
+              -22.813788361
+            ],
+            [
+              119.22293105,
+              -22.813798843
+            ],
+            [
+              119.222927261,
+              -22.813727092
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056659995",
+        "road_name": "I23 -> I21",
+        "vertex_index": 1,
+        "angle": 178.96,
+        "angle_quality": 88.96,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222915694,
+          -22.813492986
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056659995",
+        "road_name": "I23 -> I21",
+        "vertex_index": 2,
+        "angle": 89.99,
+        "angle_quality": 0.01,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222910089,
+          -22.813313904
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056659995",
+        "road_name": "I23 -> I21",
+        "vertex_index": 3,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.223108728,
+          -22.813307705
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056659995",
+        "road_name": "I23 -> I21",
+        "vertex_index": 4,
+        "angle": 181.04,
+        "angle_quality": 88.96,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "4"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.223114231,
+          -22.81348408
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056659995",
+        "road_name": "I23 -> I21",
+        "vertex_index": 5,
+        "angle": 180.19,
+        "angle_quality": 89.81,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "5"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.223125746,
+          -22.813717116
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056659995",
+        "road_name": "I23 -> I21",
+        "vertex_index": 6,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "6"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.223129509,
+          -22.813788361
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056659995",
+        "road_name": "I23 -> I21",
+        "vertex_index": 7,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "7"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.22293105,
+          -22.813798843
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1523056664577",
+        "road_name": "I23 -> I30",
+        "vertices": 7
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.223002221,
+              -22.815176494
+            ],
+            [
+              119.223005474,
+              -22.815213961
+            ],
+            [
+              119.222807483,
+              -22.815231138
+            ],
+            [
+              119.222804331,
+              -22.815194802
+            ],
+            [
+              119.222778047,
+              -22.814916481
+            ],
+            [
+              119.222975902,
+              -22.814897796
+            ],
+            [
+              119.223002221,
+              -22.815176494
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056664577",
+        "road_name": "I23 -> I30",
+        "vertex_index": 1,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.223005474,
+          -22.815213961
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056664577",
+        "road_name": "I23 -> I30",
+        "vertex_index": 2,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222807483,
+          -22.815231138
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056664577",
+        "road_name": "I23 -> I30",
+        "vertex_index": 3,
+        "angle": 180.44,
+        "angle_quality": 89.56,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222804331,
+          -22.815194802
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056664577",
+        "road_name": "I23 -> I30",
+        "vertex_index": 4,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "4"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222778047,
+          -22.814916481
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056664577",
+        "road_name": "I23 -> I30",
+        "vertex_index": 5,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "5"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222975902,
+          -22.814897796
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1523056666806",
+        "road_name": "I30 -> I23",
+        "vertices": 7
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.223001512,
+              -22.815036159
+            ],
+            [
+              119.222991687,
+              -22.814900043
+            ],
+            [
+              119.223189906,
+              -22.814885735
+            ],
+            [
+              119.223199704,
+              -22.815021483
+            ],
+            [
+              119.223212519,
+              -22.815193106
+            ],
+            [
+              119.223014336,
+              -22.815207904
+            ],
+            [
+              119.223001512,
+              -22.815036159
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056666806",
+        "road_name": "I30 -> I23",
+        "vertex_index": 1,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.222991687,
+          -22.814900043
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056666806",
+        "road_name": "I30 -> I23",
+        "vertex_index": 2,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.223189906,
+          -22.814885735
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056666806",
+        "road_name": "I30 -> I23",
+        "vertex_index": 3,
+        "angle": 180.14,
+        "angle_quality": 89.86,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.223199704,
+          -22.815021483
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056666806",
+        "road_name": "I30 -> I23",
+        "vertex_index": 4,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "4"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.223212519,
+          -22.815193106
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1523056666806",
+        "road_name": "I30 -> I23",
+        "vertex_index": 5,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "5"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.223014336,
+          -22.815207904
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertices": 40
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.205997494,
+              -22.804529162
+            ],
+            [
+              119.206137455,
+              -22.804405862
+            ],
+            [
+              119.20620414,
+              -22.804344512
+            ],
+            [
+              119.206241207,
+              -22.80430713
+            ],
+            [
+              119.206432582,
+              -22.804105022
+            ],
+            [
+              119.206506476,
+              -22.804024083
+            ],
+            [
+              119.206552938,
+              -22.803969704
+            ],
+            [
+              119.206689294,
+              -22.803797813
+            ],
+            [
+              119.206743367,
+              -22.803725796
+            ],
+            [
+              119.20677273,
+              -22.80368396
+            ],
+            [
+              119.206789858,
+              -22.803656627
+            ],
+            [
+              119.206816065,
+              -22.803610281
+            ],
+            [
+              119.206897376,
+              -22.80346753
+            ],
+            [
+              119.20693881,
+              -22.803389993
+            ],
+            [
+              119.206968494,
+              -22.803328688
+            ],
+            [
+              119.206986232,
+              -22.803284158
+            ],
+            [
+              119.207018883,
+              -22.803184659
+            ],
+            [
+              119.207207711,
+              -22.803246623
+            ],
+            [
+              119.207174099,
+              -22.803349049
+            ],
+            [
+              119.207167479,
+              -22.803367949
+            ],
+            [
+              119.207165289,
+              -22.80337362
+            ],
+            [
+              119.20715104,
+              -22.803407399
+            ],
+            [
+              119.20714892,
+              -22.803412082
+            ],
+            [
+              119.207115021,
+              -22.803481911
+            ],
+            [
+              119.207070765,
+              -22.803564658
+            ],
+            [
+              119.206961632,
+              -22.803756604
+            ],
+            [
+              119.206939754,
+              -22.803791688
+            ],
+            [
+              119.206936887,
+              -22.803796007
+            ],
+            [
+              119.206903247,
+              -22.803843849
+            ],
+            [
+              119.20684581,
+              -22.803920287
+            ],
+            [
+              119.206707509,
+              -22.80409463
+            ],
+            [
+              119.206654347,
+              -22.80415687
+            ],
+            [
+              119.206577511,
+              -22.804241008
+            ],
+            [
+              119.206384727,
+              -22.804444604
+            ],
+            [
+              119.206340372,
+              -22.804489224
+            ],
+            [
+              119.206269629,
+              -22.804554277
+            ],
+            [
+              119.206128813,
+              -22.804678329
+            ],
+            [
+              119.206087305,
+              -22.804714795
+            ],
+            [
+              119.205956138,
+              -22.804565495
+            ],
+            [
+              119.205997494,
+              -22.804529162
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 1,
+        "angle": 181.24,
+        "angle_quality": 88.76,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206137455,
+          -22.804405862
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 2,
+        "angle": 182.63,
+        "angle_quality": 87.37,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.20620414,
+          -22.804344512
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 3,
+        "angle": 181.32,
+        "angle_quality": 88.68,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206241207,
+          -22.80430713
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 4,
+        "angle": 181.04,
+        "angle_quality": 88.96,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "4"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206432582,
+          -22.804105022
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 5,
+        "angle": 181.88,
+        "angle_quality": 88.12,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "5"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206506476,
+          -22.804024083
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 6,
+        "angle": 182.09,
+        "angle_quality": 87.91,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "6"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206552938,
+          -22.803969704
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 7,
+        "angle": 181.52,
+        "angle_quality": 88.48,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "7"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206689294,
+          -22.803797813
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 8,
+        "angle": 181.84,
+        "angle_quality": 88.16,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "8"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206743367,
+          -22.803725796
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 9,
+        "angle": 182.99,
+        "angle_quality": 87.01,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "9"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.20677273,
+          -22.80368396
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 10,
+        "angle": 182.59,
+        "angle_quality": 87.41,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "10"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206789858,
+          -22.803656627
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 11,
+        "angle": 179.82,
+        "angle_quality": 89.82,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "11"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206816065,
+          -22.803610281
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 12,
+        "angle": 181.55,
+        "angle_quality": 88.45,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "12"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206897376,
+          -22.80346753
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 13,
+        "angle": 182.28,
+        "angle_quality": 87.72,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "13"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.20693881,
+          -22.803389993
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 14,
+        "angle": 184.12,
+        "angle_quality": 85.88,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "14"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206968494,
+          -22.803328688
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 15,
+        "angle": 183.55,
+        "angle_quality": 86.45,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "15"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206986232,
+          -22.803284158
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 16,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "16"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.207018883,
+          -22.803184659
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 17,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "17"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.207207711,
+          -22.803246623
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 18,
+        "angle": 178.86,
+        "angle_quality": 88.86,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "18"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.207174099,
+          -22.803349049
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 19,
+        "angle": 178.19,
+        "angle_quality": 88.19,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "19"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.207167479,
+          -22.803367949
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 20,
+        "angle": 178.24,
+        "angle_quality": 88.24,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "20"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.207165289,
+          -22.80337362
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 21,
+        "angle": 178.52,
+        "angle_quality": 88.52,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "21"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.20715104,
+          -22.803407399
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 22,
+        "angle": 178.46,
+        "angle_quality": 88.46,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "22"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.20714892,
+          -22.803412082
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 23,
+        "angle": 177.76,
+        "angle_quality": 87.76,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "23"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.207115021,
+          -22.803481911
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 24,
+        "angle": 178.52,
+        "angle_quality": 88.52,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "24"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.207070765,
+          -22.803564658
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 25,
+        "angle": 177.67,
+        "angle_quality": 87.67,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "25"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206961632,
+          -22.803756604
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 26,
+        "angle": 178.37,
+        "angle_quality": 88.37,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "26"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206939754,
+          -22.803791688
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 27,
+        "angle": 178.46,
+        "angle_quality": 88.46,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "27"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206936887,
+          -22.803796007
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 28,
+        "angle": 178.19,
+        "angle_quality": 88.19,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "28"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206903247,
+          -22.803843849
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 29,
+        "angle": 178.5,
+        "angle_quality": 88.5,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "29"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.20684581,
+          -22.803920287
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 30,
+        "angle": 177.92,
+        "angle_quality": 87.92,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "30"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206707509,
+          -22.80409463
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 31,
+        "angle": 178.1,
+        "angle_quality": 88.1,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "31"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206654347,
+          -22.80415687
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 32,
+        "angle": 178.97,
+        "angle_quality": 88.97,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "32"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206577511,
+          -22.804241008
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 33,
+        "angle": 178.61,
+        "angle_quality": 88.61,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "33"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206384727,
+          -22.804444604
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 34,
+        "angle": 177.43,
+        "angle_quality": 87.43,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "34"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206340372,
+          -22.804489224
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 35,
+        "angle": 178.78,
+        "angle_quality": 88.78,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "35"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206269629,
+          -22.804554277
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 36,
+        "angle": 179.92,
+        "angle_quality": 89.92,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "36"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206128813,
+          -22.804678329
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 37,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "37"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.206087305,
+          -22.804714795
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1559608945626",
+        "road_name": "GATE_51 -> I43",
+        "vertex_index": 38,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "38"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.205956138,
+          -22.804565495
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertices": 18
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.403325292,
+              -22.951711885
+            ],
+            [
+              119.403343949,
+              -22.951816295
+            ],
+            [
+              119.403369397,
+              -22.951937479
+            ],
+            [
+              119.40348833,
+              -22.952428737
+            ],
+            [
+              119.403550798,
+              -22.952672871
+            ],
+            [
+              119.403594948,
+              -22.95282847
+            ],
+            [
+              119.403639266,
+              -22.952974084
+            ],
+            [
+              119.403449141,
+              -22.953031948
+            ],
+            [
+              119.403404018,
+              -22.952883625
+            ],
+            [
+              119.403358586,
+              -22.952723386
+            ],
+            [
+              119.403295375,
+              -22.952476323
+            ],
+            [
+              119.403222201,
+              -22.952176754
+            ],
+            [
+              119.403175811,
+              -22.951982461
+            ],
+            [
+              119.403149148,
+              -22.951855671
+            ],
+            [
+              119.403129465,
+              -22.951745775
+            ],
+            [
+              119.40312324,
+              -22.951706086
+            ],
+            [
+              119.403319593,
+              -22.951675406
+            ],
+            [
+              119.403325292,
+              -22.951711885
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertex_index": 1,
+        "angle": 181.73,
+        "angle_quality": 88.27,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.403343949,
+          -22.951816295
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertex_index": 2,
+        "angle": 181.75,
+        "angle_quality": 88.25,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.403369397,
+          -22.951937479
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertex_index": 3,
+        "angle": 180.74,
+        "angle_quality": 89.26,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.40348833,
+          -22.952428737
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertex_index": 4,
+        "angle": 181.49,
+        "angle_quality": 88.51,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "4"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.403550798,
+          -22.952672871
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertex_index": 5,
+        "angle": 181.09,
+        "angle_quality": 88.91,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "5"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.403594948,
+          -22.95282847
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertex_index": 6,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "6"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.403639266,
+          -22.952974084
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertex_index": 7,
+        "angle": 89.99,
+        "angle_quality": 0.01,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "7"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.403449141,
+          -22.953031948
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertex_index": 8,
+        "angle": 178.91,
+        "angle_quality": 88.91,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "8"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.403404018,
+          -22.952883625
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertex_index": 9,
+        "angle": 178.52,
+        "angle_quality": 88.52,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "9"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.403358586,
+          -22.952723386
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertex_index": 10,
+        "angle": 179.38,
+        "angle_quality": 89.38,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "10"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.403295375,
+          -22.952476323
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertex_index": 11,
+        "angle": 179.7,
+        "angle_quality": 89.7,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "11"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.403222201,
+          -22.952176754
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertex_index": 12,
+        "angle": 178.45,
+        "angle_quality": 88.45,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "12"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.403175811,
+          -22.951982461
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertex_index": 13,
+        "angle": 178.28,
+        "angle_quality": 88.28,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "13"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.403149148,
+          -22.951855671
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertex_index": 14,
+        "angle": 178.76,
+        "angle_quality": 88.76,
+        "marker-color": "#FF0000",
+        "marker-size": "small",
+        "marker-symbol": "14"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.403129465,
+          -22.951745775
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertex_index": 15,
+        "angle": 89.97,
+        "angle_quality": 0.03,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "15"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.40312324,
+          -22.951706086
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1695337934971",
+        "road_name": "INT_37 -> INT_36",
+        "vertex_index": 16,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "16"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.403319593,
+          -22.951675406
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1740615014007",
+        "road_name": "INT_147 -> Z9",
+        "vertices": 5
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.779124638,
+              -22.802858466
+            ],
+            [
+              119.77920391,
+              -22.802762285
+            ],
+            [
+              119.779286388,
+              -22.802830262
+            ],
+            [
+              119.779207116,
+              -22.802926444
+            ],
+            [
+              119.779124638,
+              -22.802858466
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1740615014007",
+        "road_name": "INT_147 -> Z9",
+        "vertex_index": 1,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.77920391,
+          -22.802762285
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1740615014007",
+        "road_name": "INT_147 -> Z9",
+        "vertex_index": 2,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.779286388,
+          -22.802830262
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1740615014007",
+        "road_name": "INT_147 -> Z9",
+        "vertex_index": 3,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.779207116,
+          -22.802926444
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1740615016317",
+        "road_name": "Z9 -> INT_147",
+        "vertices": 5
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.779190522,
+              -22.802937584
+            ],
+            [
+              119.779111372,
+              -22.803033865
+            ],
+            [
+              119.779033169,
+              -22.802969576
+            ],
+            [
+              119.779112319,
+              -22.802873295
+            ],
+            [
+              119.779190522,
+              -22.802937584
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1740615016317",
+        "road_name": "Z9 -> INT_147",
+        "vertex_index": 1,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.779111372,
+          -22.803033865
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1740615016317",
+        "road_name": "Z9 -> INT_147",
+        "vertex_index": 2,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.779033169,
+          -22.802969576
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1740615016317",
+        "road_name": "Z9 -> INT_147",
+        "vertex_index": 3,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.779112319,
+          -22.802873295
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1740615019054",
+        "road_name": "INT_146 -> MIX26",
+        "vertices": 5
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.778495271,
+              -22.803509823
+            ],
+            [
+              119.778570292,
+              -22.803410291
+            ],
+            [
+              119.778615219,
+              -22.803444153
+            ],
+            [
+              119.778540198,
+              -22.803543686
+            ],
+            [
+              119.778495271,
+              -22.803509823
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1740615019054",
+        "road_name": "INT_146 -> MIX26",
+        "vertex_index": 1,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.778570292,
+          -22.803410291
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1740615019054",
+        "road_name": "INT_146 -> MIX26",
+        "vertex_index": 2,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.778615219,
+          -22.803444153
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1740615019054",
+        "road_name": "INT_146 -> MIX26",
+        "vertex_index": 3,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.778540198,
+          -22.803543686
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "road_polygon",
+        "road_id": "1740615021092",
+        "road_name": "MIX26 -> INT_146",
+        "vertices": 5
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              119.778497204,
+              -22.80357714
+            ],
+            [
+              119.778421173,
+              -22.803675903
+            ],
+            [
+              119.778378928,
+              -22.803643381
+            ],
+            [
+              119.77845496,
+              -22.803544618
+            ],
+            [
+              119.778497204,
+              -22.80357714
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1740615021092",
+        "road_name": "MIX26 -> INT_146",
+        "vertex_index": 1,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.778421173,
+          -22.803675903
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1740615021092",
+        "road_name": "MIX26 -> INT_146",
+        "vertex_index": 2,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.778378928,
+          -22.803643381
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "vertex",
+        "road_id": "1740615021092",
+        "road_name": "MIX26 -> INT_146",
+        "vertex_index": 3,
+        "angle": 90.0,
+        "angle_quality": 0.0,
+        "marker-color": "#00FF00",
+        "marker-size": "small",
+        "marker-symbol": "3"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.77845496,
+          -22.803544618
+        ]
+      }
+    }
+  ]
+}

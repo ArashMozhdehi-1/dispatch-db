@@ -1,0 +1,24 @@
+﻿Id,EnumTypeId,Idx,Description,Abbreviation,Flags
+248,21,0,*,*,0
+249,21,1,Truck,Truck,513
+250,21,2,Shovel,SHovel,8706
+251,21,3,Dump,DUmp,24584
+252,21,4,Crusher,CRusher,8200
+253,21,5,Stockpile,STockpile,57356
+254,21,6,Blast,Blast,40964
+255,21,7,Workshop,WOrkshop,8208
+256,21,8,Shiftchange,SHIFtchange,8208
+257,21,9,Call Point,CAll Point,16
+258,21,10,Pit,PIt,16
+259,21,11,Region,REgion,16
+260,21,12,Drill,DRill,672
+261,21,13,Dozer,DOzer,544
+262,21,14,Grader,GRAder,544
+263,21,15,Wheel Dozer,WDozer,544
+264,21,16,Aux Crusher,ACrush,96
+265,21,17,Foreman,Foreman,544
+266,21,18,Water Truck,WTruck,544
+267,21,19,Utility Vehicle,Util,544
+268,21,20,Man Bus,Bus,288
+269,21,21,Generic Auxil,AUxil,544
+1131,21,22,Fuelbay,FB,1056

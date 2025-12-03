@@ -1,0 +1,31 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements from parent Dispatch DB
+COPY requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy Dispatch source code, data, SQL, and config
+COPY src/ ./src/
+COPY Dataset/ ./Dataset/
+COPY sql/ ./sql/
+COPY config/ ./config/
+
+# Create logs directory
+RUN mkdir -p logs
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV DOCKER_MODE=true
+
+# Default command - run Dispatch ETL
+CMD ["python", "src/app/run_etl.py"]
+
