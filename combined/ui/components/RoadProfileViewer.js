@@ -454,7 +454,7 @@ export default function RoadProfileViewer({ roadId, onClose }) {
               <input
                 type="text"
                 placeholder="lane_id"
-                value={newSegment.lane_id || `road_${roadId}_0_forward`}
+                value={newSegment.lane_id || `${roadId}`}
                 onChange={(e) => setNewSegment({ ...newSegment, lane_id: e.target.value })}
                 style={{ padding: '6px', borderRadius: '4px', border: '1px solid #555', background: '#222', color: '#fff' }}
               />
@@ -481,7 +481,7 @@ export default function RoadProfileViewer({ roadId, onClose }) {
               />
               <button
                 onClick={() => {
-                  const laneDefault = newSegment.lane_id || `road_${roadId}_0_forward`;
+                  const laneDefault = newSegment.lane_id || `${roadId}`;
                   setNewSegment({ ...newSegment, lane_id: laneDefault });
                   handleAdd();
                 }}
@@ -629,7 +629,7 @@ export default function RoadProfileViewer({ roadId, onClose }) {
               <h3 style={{ margin: 0, color: '#4ECDC4' }}>Slope Segments</h3>
               <button
                 onClick={() => {
-                  const firstLane = conditions.length > 0 ? conditions[0].lane_id : `road_${roadId}_0_forward`;
+                  const firstLane = conditions.length > 0 ? conditions[0].lane_id : `${roadId}`;
                   setNewSegment({ 
                     lane_id: firstLane, 
                     start_measure: '', 
@@ -1002,7 +1002,6 @@ export default function RoadProfileViewer({ roadId, onClose }) {
     </div>
   );
 }
-
 
 
 

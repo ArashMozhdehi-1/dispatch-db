@@ -68,6 +68,7 @@ export default function useTurnPathManager(cesiumViewerRef, centerPoints = []) {
   const getSelectedSourceRoad = () => selectedSourceRoadRef.current;
   const getSelectedDestinationRoad = () => selectedDestinationRoadRef.current;
 
+  // Reset selection state (Fixed: Initialized before use)
   // Reset selection state (use refs so Cesium handlers always see latest selection)
   const resetSelection = useCallback(() => {
     const restoreEntityMaterial = (entity) => {
@@ -103,6 +104,7 @@ export default function useTurnPathManager(cesiumViewerRef, centerPoints = []) {
       }
     };
 
+    // Use refs to ensure we restore whatever is currently selected
     restoreAll(selectedSourceRoadRef.current);
     restoreAll(selectedDestinationRoadRef.current);
 
@@ -130,9 +132,12 @@ export default function useTurnPathManager(cesiumViewerRef, centerPoints = []) {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
+        // If dialog is open, close it
         if (isDialogOpen) {
           closeDialog();
-        } else if (computedPath) {
+        }
+        // If a path is computed (even after dialog closed), clear it
+        else if (computedPath) {
           resetSelection();
         }
       }
@@ -142,7 +147,7 @@ export default function useTurnPathManager(cesiumViewerRef, centerPoints = []) {
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
-  }, [isDialogOpen, computedPath]); // resetSelection closed over safely
+  }, [isDialogOpen, computedPath]); // resetSelection is closed over, safe because definition is above
 
   // Find shared intersection between two roads (using side-center markers)
   const findSharedIntersection = async (roadId1, roadId2, segId1, segId2) => {
@@ -393,147 +398,639 @@ export default function useTurnPathManager(cesiumViewerRef, centerPoints = []) {
 
       // If we already have a source and we're still in selecting_source, block double-click
       if (step === 'selecting_source' && selectedSourceRoadRef.current) {
-        console.log('[Turn Path] Source already selected');
-        return;
-      }
-
-      const Cesium = window.Cesium;
-
-      // Extract road/segment IDs
-      const roadId =
-        getEntityProperty(clickedEntity, 'road_oid') ||
-        getEntityProperty(clickedEntity, 'road_id') ||
-        getEntityProperty(clickedEntity, 'roadId') ||
-        getEntityProperty(clickedEntity, 'road_oid_int') ||
-        getEntityProperty(clickedEntity, 'roadOid');
-
-      const segmentId =
-        getEntityProperty(clickedEntity, 'segment_id') ||
-        getEntityProperty(clickedEntity, 'lane_id') ||
-        getEntityProperty(clickedEntity, 'parent_lane_id');
-
-      const name =
-        getEntityProperty(clickedEntity, 'road_name') ||
-        getEntityProperty(clickedEntity, 'name') ||
-        `road_${roadId}`;
-
-      if (!roadId) {
-        console.log('[Turn Path] Clicked entity has no road_id');
-        return;
-      }
-
-      // If selecting source
-      if (step === 'selecting_source') {
-        highlightEntities(clickedEntity, Cesium.Color.GREEN);
-        selectedSourceRoadRef.current = {
-          road_id: roadId,
-          segment_id: segmentId,
-          name,
-          entity: clickedEntity,
-          connections: extractRoadConnections(clickedEntity),
-        };
-        setSelectedSourceRoad(selectedSourceRoadRef.current);
+        console.log('[Turn Path] Source already selected, waiting for destination');
         setCurrentStep('selecting_destination');
         return;
       }
 
-      // If selecting destination
-      if (step === 'selecting_destination') {
-        // prevent same road
-        if (String(roadId) === String(selectedSourceRoadRef.current?.road_id)) {
-          alert('Please pick a different road as destination.');
+      const getProp = (key) =>
+        clickedEntity.properties?.[key]?.getValue?.() ?? clickedEntity.properties?.[key];
+
+      const category = getProp('category');
+      const roadNameRaw =
+        getProp('name') ||
+        getProp('road_name') ||
+        getProp('display_name') ||
+        getProp('roadName');
+      const rawRoadId =
+        getProp('road_id') ??
+        getProp('roadId') ??
+        getProp('road_oid') ??
+        getProp('road_oid_int') ??
+        getProp('roadOid');
+      const laneId =
+        getProp('lane_id') ??
+        getProp('laneId');
+      const parentLaneId =
+        getProp('parent_lane_id') ??
+        getProp('parentLaneId');
+      let derivedRoadId = null;
+      if (!rawRoadId && laneId && typeof laneId === 'string') {
+        const m = laneId.match(/road[_-]?(\d+)/i);
+        if (m && m[1]) derivedRoadId = m[1];
+      }
+      const logicalRoadId = rawRoadId ?? parentLaneId ?? laneId ?? derivedRoadId;
+      const segmentId =
+        getProp('segment_id') ??
+        getProp('segmentId') ??
+        getProp('_oid_') ??
+        getProp('oid') ??
+        getProp('id');
+
+      console.log('[Turn Path] Entity properties:', {
+        category,
+        roadName: roadNameRaw,
+        rawRoadId,
+        laneId,
+        parentLaneId,
+        logicalRoadId,
+        hasPolygon: !!clickedEntity.polygon,
+        hasPolyline: !!clickedEntity.polyline,
+        hasCorridor: !!clickedEntity.corridor,
+      });
+
+      const categoryLower = category ? category.toString().toLowerCase() : '';
+      const isRoadLike =
+        categoryLower.includes('road') || categoryLower.includes('dispatch_segment') || categoryLower.includes('segment');
+
+      if (!isRoadLike || !logicalRoadId) {
+        console.log('[Turn Path] Clicked entity is not a road or missing logicalRoadId, ignoring');
+        return;
+      }
+
+      const viewer = cesiumViewerRef.current;
+      const allEntities = viewer?.entities?.values || [];
+      const getEntityGroupId = (ent) => {
+        const props = ent.properties;
+        if (!props) return null;
+        const getVal = (key) => {
+          const v = props[key];
+          return v && typeof v.getValue === 'function' ? v.getValue() : v;
+        };
+        const entRawRoadId =
+          getVal('road_id') ??
+          getVal('roadId') ??
+          getVal('road_oid') ??
+          getVal('road_oid_int') ??
+          getVal('roadOid') ??
+          getVal('rawRoadId') ??
+          getVal('rawRoadID');
+        const entParentLaneId =
+          getVal('parent_lane_id') ??
+          getVal('parentLaneId');
+        const entLaneId =
+          getVal('lane_id') ??
+          getVal('laneId');
+        return entRawRoadId ?? entParentLaneId ?? entLaneId ?? null;
+      };
+
+      const matchingEntities = allEntities.filter((ent) => {
+        const matchId = getEntityGroupId(ent);
+        return matchId && logicalRoadId && String(matchId) === String(logicalRoadId);
+      });
+      console.log('[Turn Path] Matching entities count:', matchingEntities.length);
+
+      const highlightEntities = (entities, color) => {
+        entities.forEach((ent) => {
+          if (ent.polygon) {
+            ent._originalMaterial = ent._originalMaterial || ent.polygon.material;
+            ent.polygon.material = color.withAlpha(0.5);
+            ent.polygon.outline = true;
+            ent.polygon.outlineColor = window.Cesium.Color.WHITE.withAlpha(0.8);
+            ent.polygon.outlineWidth = 1.5;
+          } else if (ent.corridor) {
+            ent._originalMaterial = ent._originalMaterial || ent.corridor.material;
+            ent.corridor.material = color.withAlpha(0.5);
+            ent.corridor.outline = true;
+            ent.corridor.outlineColor = window.Cesium.Color.WHITE.withAlpha(0.8);
+            ent.corridor.outlineWidth = 1.5;
+          } else if (ent.polyline) {
+            ent._originalMaterial = ent._originalMaterial || ent.polyline.material;
+            ent._originalWidth = ent._originalWidth || ent.polyline.width;
+            ent.polyline.material = color.withAlpha(0.9);
+            ent.polyline.width = Math.max(ent.polyline.width || 1, 8);
+          }
+        });
+      };
+
+      if (step === 'selecting_source') {
+        console.log('[Turn Path] Selected source road:', roadNameRaw, logicalRoadId);
+
+        const connections = extractRoadConnections(clickedEntity);
+        const newSource = {
+          name: roadNameRaw || `Road ${logicalRoadId}`,
+          road_id: logicalRoadId,
+          raw_road_id: rawRoadId || null,
+          lane_id: laneId || null,
+          parent_lane_id: parentLaneId || null,
+          segment_id: segmentId,
+          entity: clickedEntity,
+          entities: matchingEntities.length ? matchingEntities : [clickedEntity],
+          connections,
+          center_point: getNearestCenterPoint(logicalRoadId),
+        };
+
+        selectedSourceRoadRef.current = newSource;
+        setSelectedSourceRoad(newSource);
+
+        highlightEntities(newSource.entities, window.Cesium.Color.GREEN);
+
+        setCurrentStep('selecting_destination');
+      } else if (step === 'selecting_destination') {
+        const sourceRoad = selectedSourceRoadRef.current;
+        if (sourceRoad && String(sourceRoad.road_id) === String(logicalRoadId)) {
+          console.log('[Turn Path] Cannot select same road as source and destination');
           return;
         }
 
-        highlightEntities(clickedEntity, Cesium.Color.RED);
-        selectedDestinationRoadRef.current = {
-          road_id: roadId,
-          segment_id: segmentId,
-          name,
-          entity: clickedEntity,
-          connections: extractRoadConnections(clickedEntity),
-        };
-        setSelectedDestinationRoad(selectedDestinationRoadRef.current);
+        console.log('[Turn Path] Selected destination road:', roadNameRaw, logicalRoadId);
 
-        // Compute
-        computeTurnPath(selectedSourceRoadRef.current, selectedDestinationRoadRef.current);
+        const connections = extractRoadConnections(clickedEntity);
+        const newDestination = {
+          name: roadNameRaw || `Road ${logicalRoadId}`,
+          road_id: logicalRoadId,
+          raw_road_id: rawRoadId || null,
+          lane_id: laneId || null,
+          parent_lane_id: parentLaneId || null,
+          segment_id: segmentId,
+          entity: clickedEntity,
+          entities: matchingEntities.length ? matchingEntities : [clickedEntity],
+          connections,
+          center_point: getNearestCenterPoint(logicalRoadId),
+        };
+
+        setSelectedDestinationRoad(newDestination);
+
+        highlightEntities(newDestination.entities, window.Cesium.Color.RED);
+
+        computeTurnPath(sourceRoad, newDestination);
       }
     },
-    [computeTurnPath]
+    [cesiumViewerRef, computeTurnPath]
   );
 
-  const highlightEntities = (entity, color) => {
-    const Cesium = window.Cesium;
-    const apply = (ent) => {
-      if (ent.polygon) {
-        if (!ent._originalMaterial) ent._originalMaterial = ent.polygon.material;
-        ent.polygon.material = color.withAlpha(0.25);
-        ent.polygon.outline = true;
-        ent.polygon.outlineColor = Cesium.Color.WHITE.withAlpha(0.9);
-      }
-      if (ent.polyline) {
-        if (!ent._originalMaterial) ent._originalMaterial = ent.polyline.material;
-        if (!ent._originalWidth) ent._originalWidth = ent.polyline.width;
-        ent.polyline.material = color.withAlpha(0.9);
-        ent.polyline.width = (ent.polyline.width || 2) * 1.6;
-      }
-      if (ent.corridor) {
-        if (!ent._originalMaterial) ent._originalMaterial = ent.corridor.material;
-        ent.corridor.material = color.withAlpha(0.35);
-        ent.corridor.outlineColor = Cesium.Color.WHITE.withAlpha(0.8);
-      }
-    };
-
-    if (entity._sourceForTurnPath) {
-      // already processed
-      apply(entity);
-      return;
-    }
-
-    apply(entity);
-    entity._sourceForTurnPath = true;
-  };
-
+  // Open dialog and start workflow
   const openDialog = () => {
     setIsDialogOpen(true);
     setCurrentStep('profile');
   };
 
+  // Close dialog and clean up
   const closeDialog = () => {
+    resetSelection();
     setIsDialogOpen(false);
-    if (currentStep !== 'showing_path') {
-      resetSelection();
+    setCurrentStep('profile');
+  };
+
+  // Start road selection process
+  const startSelection = (config) => {
+    console.log('[Turn Path] startSelection called with config:', config);
+
+    pathConfigRef.current = config;
+    setPathConfig(config);
+
+    console.log('[Turn Path] Setting currentStep to: selecting_source');
+    currentStepRef.current = 'selecting_source';
+    setCurrentStep('selecting_source');
+    console.log('[Turn Path] currentStep should now be: selecting_source');
+  };
+
+  const pathEntitiesRef = useRef([]);
+
+  // ----------- VALIDATION HELPERS -----------
+
+  const isFiniteNumber = (v) => {
+    return typeof v === 'number' && Number.isFinite(v);
+  };
+
+  const positionsAreFinite = (positions, label) => {
+    if (!positions || positions.length === 0) {
+      console.warn(`[Turn Path] ${label}: empty positions, skipping.`);
+      return false;
+    }
+
+    for (let i = 0; i < positions.length; i++) {
+      const p = positions[i];
+      if (
+        !p ||
+        !isFiniteNumber(p.x) ||
+        !isFiniteNumber(p.y) ||
+        !isFiniteNumber(p.z)
+      ) {
+        console.warn(
+          `[Turn Path] ${label}: invalid position at index ${i}, skipping polygon.`,
+          p
+        );
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const safeAddPolygon = (viewer, positions, label, style = {}) => {
+    if (!positionsAreFinite(positions, label)) {
+      return null;
+    }
+
+    try {
+      return viewer.entities.add({
+        polygon: {
+          hierarchy: new window.Cesium.PolygonHierarchy(positions),
+          material: window.Cesium.Color.YELLOW.withAlpha(0.3),
+          outline: true,
+          outlineColor: window.Cesium.Color.YELLOW,
+          heightReference: window.Cesium.HeightReference.RELATIVE_TO_GROUND,
+        },
+        ...style,
+      });
+    } catch (e) {
+      console.error(`[Turn Path] Error adding polygon for ${label}:`, e);
+      return null;
     }
   };
 
-  const startSelection = (config) => {
-    console.log('[Turn Path] startSelection called with config:', config);
-    setPathConfig(config);
-    setIsDialogOpen(false);
-    setCurrentStep('selecting_source');
+  const safeDegreesArrayToPositions = (degrees, label) => {
+    if (!Array.isArray(degrees) || degrees.length < 6) {
+      console.warn(
+        `[Turn Path] ${label}: not enough coords for polygon (need at least 3 points).`,
+        degrees
+      );
+      return undefined;
+    }
+
+    for (let i = 0; i < degrees.length; i++) {
+      if (!isFiniteNumber(degrees[i])) {
+        console.warn(
+          `[Turn Path] ${label}: non-finite degree value at index ${i}:`,
+          degrees[i]
+        );
+        return undefined;
+      }
+    }
+
+    try {
+      const positions = window.Cesium.Cartesian3.fromDegreesArray(degrees);
+      if (!positionsAreFinite(positions, `${label} (after fromDegreesArray)`)) {
+        return undefined;
+      }
+      return positions;
+    } catch (e) {
+      console.warn(`[Turn Path] ${label}: fromDegreesArray failed:`, e);
+      return undefined;
+    }
   };
 
+  // Clear existing path entities
+  const clearPathEntities = () => {
+    const viewer = cesiumViewerRef.current;
+    if (!viewer) return;
+
+    console.log('[Turn Path] clearPathEntities called - FORCE REMOVING ALL turn path entities');
+
+    // 1. Remove entities we tracked
+    if (pathEntitiesRef.current.length > 0) {
+      pathEntitiesRef.current.forEach((entity) => {
+        try {
+          viewer.entities.remove(entity);
+        } catch (e) {
+          console.warn('[Turn Path] Error removing entity:', e);
+        }
+      });
+      pathEntitiesRef.current = [];
+    }
+
+    // 2. SAFETY NET: Scan ALL entities for our categories and remove them
+    // This handles cases where hot-reload lost the ref but entities remain on map
+    const toRemove = [];
+    const knownCategories = ['turn_path_swept', 'turn_path_envelope', 'turn_path_centreline', 'swept_path', 'vehicle_envelope'];
+
+    try {
+      viewer.entities.values.forEach((entity) => {
+        const cat = entity.properties?.category?.getValue?.() || entity.properties?.category;
+        const layer = entity.properties?.turn_layer?.getValue?.() || entity.properties?.turn_layer;
+
+        if (knownCategories.includes(cat) || knownCategories.includes(layer)) {
+          toRemove.push(entity);
+        }
+      });
+
+      if (toRemove.length > 0) {
+        console.log(`[Turn Path] Found ${toRemove.length} stranded entities to remove.`);
+        toRemove.forEach(e => viewer.entities.remove(e));
+      }
+    } catch (e) {
+      console.warn('[Turn Path] Error scanning entities for cleanup:', e);
+    }
+
+    if (viewer.scene) {
+      viewer.scene.requestRender();
+    }
+  };
+
+  // Helper to simplify positions to prevent Cesium tessellation issues
+  // (We'll keep this as an extra optimization step before rendering centerlines)
+  const simplifyPositions = (positions, tolerance = 1.0) => {
+    if (!positions || positions.length < 2) return positions;
+
+    const simplified = [positions[0]];
+
+    for (let i = 1; i < positions.length; i++) {
+      const prev = simplified[simplified.length - 1];
+      const curr = positions[i];
+
+      // Check for strictly identical points (prevent degenerate segments)
+      if (window.Cesium.Cartesian3.equalsEpsilon(prev, curr, window.Cesium.Math.EPSILON7)) {
+        continue;
+      }
+
+      const dx = curr.x - prev.x;
+      const dy = curr.y - prev.y;
+      const dz = curr.z - prev.z;
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (dist > tolerance) {
+        simplified.push(curr);
+      }
+    }
+
+    if (simplified.length < 2 && positions.length >= 2) {
+      // Fallback: at least return start and end if invalid
+      return [positions[0], positions[positions.length - 1]];
+    }
+    return simplified;
+  };
+
+  // Pick the best available centreline WKT
+  const chooseCenterlineWkt = (path) => {
+    if (!path) return '';
+    return path.wkt || path.smooth_wkt || path.raw_wkt || '';
+  };
+
+  // --- small helper: unwrap {geometry_geojson} or raw geometry ---
+  const toPolygonGeom = (wrapper, label) => {
+    if (!wrapper) return null;
+
+    // If it's already a geometry (from some other path), just use it
+    if (wrapper.type === 'Polygon' && Array.isArray(wrapper.coordinates)) {
+      return wrapper;
+    }
+
+    const geom =
+      wrapper.geometry_geojson ||
+      wrapper.geometry || // just in case you change the backend later
+      null;
+
+    if (!geom || geom.type !== 'Polygon' || !Array.isArray(geom.coordinates)) {
+      console.warn(`[Turn Path] ${label}: invalid polygon geom`, wrapper);
+      return null;
+    }
+    return geom;
+  };
+
+  // Helper to get vehicle details for label
+  const getVehicleMetadata = (config) => {
+    if (!config) return null;
+    if (config.custom_vehicle_profile) {
+      return {
+        width: config.custom_vehicle_profile.vehicle_width_m,
+        buffer: config.custom_vehicle_profile.side_buffer_m,
+        name: config.custom_vehicle_profile.name || 'Custom Vehicle'
+      };
+    }
+    // For predefined, we might need to look up in vehicleProfiles if we had the ID, 
+    // but pathConfig usually has the flattened parameters if it was constructed properly.
+    if (config.vehicle_profile_id && vehicleProfiles[config.vehicle_profile_id]) {
+      const p = vehicleProfiles[config.vehicle_profile_id];
+      return {
+        width: p.vehicle_width_m,
+        buffer: p.side_buffer_m || 0.5,
+        name: p.name
+      };
+    }
+    return {
+      width: '?',
+      buffer: '?',
+      name: 'Vehicle'
+    };
+  };
+
+  // Centerline-only rendering; no backend polygons available, so we derive a corridor locally.
+  const drawVehicleCorridorFromCenterline = (viewer, path, clearance, entities) => {
+    if (!path) return;
+    const lineWkt = chooseCenterlineWkt(path);
+    if (!lineWkt) return;
+
+    const match = lineWkt.match(/LINESTRING\s*\((.+)\)/i);
+    if (!match) return;
+
+    const coordsDeg = [];
+    for (const pair of match[1].split(',')) {
+      const parts = pair.trim().split(/\s+/);
+      if (parts.length < 2) continue;
+      const lon = Number(parts[0]);
+      const lat = Number(parts[1]);
+      if (!isFiniteNumber(lon) || !isFiniteNumber(lat)) continue;
+      coordsDeg.push(lon, lat);
+    }
+    if (coordsDeg.length < 4) return; // need at least 2 points
+
+    // Convert to Cartesian for offsetting
+    const positions = window.Cesium.Cartesian3.fromDegreesArray(coordsDeg);
+    if (!positionsAreFinite(positions, 'corridor_positions')) return;
+
+    // Determine half width (vehicle width + buffers) / 2
+    const widthMeters = Math.max(2.0, (clearance?.vehicle_width_with_buffer_m || 8.0) * 0.6); // tighter to keep inside road
+    const half = widthMeters / 2.0;
+
+    // Build left/right offsets using simple 2D perpendicular in ENU at each vertex
+    const ellipsoid = window.Cesium.Ellipsoid.WGS84;
+    const leftPts = [];
+    const rightPts = [];
+
+    for (let i = 0; i < positions.length; i++) {
+      const p = positions[i];
+      // Determine forward vector
+      const pNext = positions[Math.min(i + 1, positions.length - 1)];
+      const pPrev = positions[Math.max(i - 1, 0)];
+      const dir = new window.Cesium.Cartesian3();
+      window.Cesium.Cartesian3.subtract(pNext, pPrev, dir);
+      if (window.Cesium.Cartesian3.magnitude(dir) < 1e-3) continue;
+      window.Cesium.Cartesian3.normalize(dir, dir);
+
+      // Up vector at this point
+      const up = ellipsoid.geodeticSurfaceNormal(p, new window.Cesium.Cartesian3());
+      // Left = up x dir
+      const left = new window.Cesium.Cartesian3();
+      window.Cesium.Cartesian3.cross(up, dir, left);
+      window.Cesium.Cartesian3.normalize(left, left);
+
+      const leftOffset = window.Cesium.Cartesian3.multiplyByScalar(left, half, new window.Cesium.Cartesian3());
+      const rightOffset = window.Cesium.Cartesian3.multiplyByScalar(left, -half, new window.Cesium.Cartesian3());
+
+      const leftPoint = window.Cesium.Cartesian3.add(p, leftOffset, new window.Cesium.Cartesian3());
+      const rightPoint = window.Cesium.Cartesian3.add(p, rightOffset, new window.Cesium.Cartesian3());
+
+      leftPts.push(leftPoint);
+      rightPts.push(rightPoint);
+    }
+
+    if (leftPts.length < 2 || rightPts.length < 2) return;
+
+    // Build polygon: left side forward, right side backward to close
+    const polygonPositions = [...leftPts, ...rightPts.reverse()];
+    if (!positionsAreFinite(polygonPositions, 'corridor_polygon')) return;
+
+    try {
+      // Raise slightly above ground and disable depth test so it always draws on top
+      const raisedPositions = polygonPositions.map(p => {
+        const carto = window.Cesium.Cartographic.fromCartesian(p);
+        return window.Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, (carto.height || 0) + 3.0);
+      });
+
+      const entity = viewer.entities.add({
+        polygon: {
+          hierarchy: new window.Cesium.PolygonHierarchy(raisedPositions),
+          material: window.Cesium.Color.GREEN.withAlpha(0.65),
+          outline: true,
+          outlineColor: window.Cesium.Color.WHITE.withAlpha(0.9),
+          outlineWidth: 2.5,
+          heightReference: window.Cesium.HeightReference.NONE,
+          perPositionHeight: true,
+          classificationType: window.Cesium.ClassificationType.BOTH,
+          zIndex: 999999,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+        name: 'Turn Path Envelope (derived polygon)',
+        properties: {
+          category: 'turn_path_envelope',
+          turn_layer: 'vehicle_envelope',
+        },
+      });
+      entities.push(entity);
+    } catch (e) {
+      console.warn('[Turn Path] Failed to create derived polygon envelope:', e);
+    }
+  };
+
+  const drawSafePathPolyline = (viewer, path, entities) => {
+    if (!path) return;
+
+    const lineWkt = chooseCenterlineWkt(path);
+    if (!lineWkt || typeof lineWkt !== 'string') {
+      console.warn('[Turn Path] no centreline WKT to draw', path);
+      return;
+    }
+
+    const match = lineWkt.match(/LINESTRING\s*\((.+)\)/i);
+    if (!match) {
+      console.warn('[Turn Path] centreline WKT is not a LINESTRING:', lineWkt.slice(0, 120));
+      return;
+    }
+
+    const coords = [];
+    for (const pair of match[1].split(',')) {
+      const parts = pair.trim().split(/\s+/);
+      if (parts.length < 2) continue;
+      const lon = Number(parts[0]);
+      const lat = Number(parts[1]);
+      if (!isFiniteNumber(lon) || !isFiniteNumber(lat)) continue;
+      coords.push(lon, lat);
+    }
+
+    if (coords.length < 2) {
+      console.warn('[Turn Path] centreline coords too short');
+      return;
+    }
+
+    const positions = safeDegreesArrayToPositions(coords, 'path_polyline');
+    if (!positionsAreFinite(positions, 'path_polyline')) return;
+    const simplified = simplifyPositions(positions, 0.1);
+    if (!simplified || simplified.length < 2) return;
+
+    try {
+      const entity = viewer.entities.add({
+        polyline: {
+          positions: simplified,
+          width: 3,
+          material: window.Cesium.Color.CYAN.withAlpha(0.9),
+          clampToGround: true,
+          zIndex: 400,
+        },
+        name: 'Turn Path Centreline',
+        properties: {
+          category: 'turn_path_centreline',
+          turn_layer: 'path',
+        },
+      });
+      entities.push(entity);
+    } catch (e) {
+      console.error('[Turn Path] Failed to create centreline entity:', e);
+    }
+  };
+
+
+  // Render the computed path
+  const renderPath = (pathData) => {
+    if (!cesiumViewerRef.current || !pathData) return;
+
+    // Aggressively clear old entities first
+    clearPathEntities();
+
+    const viewer = cesiumViewerRef.current;
+    const entities = [];
+    pathEntitiesRef.current = entities;
+
+    const { status, path, clearance } = pathData;
+    if (status !== 'ok') return;
+
+    // Skip centreline; only draw derived envelope polygon
+    drawVehicleCorridorFromCenterline(viewer, path, clearance, entities);
+
+    if (entities.length > 0) {
+      try {
+        viewer.flyTo(entities, {
+          duration: 1.5,
+          offset: new window.Cesium.HeadingPitchRange(
+            window.Cesium.Math.toRadians(0),
+            window.Cesium.Math.toRadians(-90),
+            0
+          ),
+        });
+      } catch (e) {
+        console.warn('[Turn Path] Error flying to entities:', e);
+      }
+    }
+  };
+
+  // Effect to render computed path
+  useEffect(() => {
+    if (computedPath) {
+      renderPath(computedPath);
+    } else {
+      clearPathEntities();
+    }
+  }, [computedPath]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      clearPathEntities();
+    };
+  }, []);
+
   return {
-    // dialog
     isDialogOpen,
+    currentStep,
+    getCurrentStep,
+    getSelectedSourceRoad,
+    vehicleProfiles,
+    selectedSourceRoad,
+    selectedDestinationRoad,
+    computedPath,
+    warning,
     openDialog,
     closeDialog,
     startSelection,
-    currentStep,
-    getCurrentStep,
-    // selection
-    selectedSourceRoad,
-    selectedDestinationRoad,
-    getSelectedSourceRoad,
-    getSelectedDestinationRoad,
     handleMapClick,
-    // data
-    vehicleProfiles,
-    // path
-    computedPath,
-    warning,
     resetSelection,
   };
 }
-
-

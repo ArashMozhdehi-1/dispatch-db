@@ -257,5 +257,3 @@ function MenuItem({ icon, label, description, checked, onSelect }) {
     </div>
   );
 }
-
-

@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
 // Copied from Frontrunner to keep measurement behavior identical
-function useMeasurementTool(cesiumViewerRef) {
+export const useMeasurementTool = (cesiumViewerRef) => {
   const [measurementMode, setMeasurementMode] = useState(null);
   const [measurementPoints, setMeasurementPoints] = useState([]);
 
@@ -131,9 +131,8 @@ function useMeasurementTool(cesiumViewerRef) {
           color: window.Cesium.Color.WHITE,
           outlineColor: window.Cesium.Color.CYAN,
           outlineWidth: 4,
-          heightReference: window.Cesium.HeightReference.NONE,
+          heightReference: window.Cesium.HeightReference.CLAMP_TO_GROUND,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          scaleByDistance: new window.Cesium.NearFarScalar(1.5e2, 1.2, 8.0e6, 0.6),
         }
       });
       measurementEntitiesRef.current.push(pointEntity);
@@ -342,7 +341,6 @@ function useMeasurementTool(cesiumViewerRef) {
         outlineWidth: 4,
         style: window.Cesium.LabelStyle.FILL_AND_OUTLINE,
         verticalOrigin: window.Cesium.VerticalOrigin.CENTER,
-        horizontalOrigin: window.Cesium.HorizontalOrigin.CENTER,
         pixelOffset: new window.Cesium.Cartesian2(0, -25),
         backgroundColor: window.Cesium.Color.BLACK.withAlpha(0.9),
         backgroundPadding: new window.Cesium.Cartesian2(10, 6),
@@ -406,13 +404,10 @@ function useMeasurementTool(cesiumViewerRef) {
     measurementModeRef.current = null;
     setMeasurementMode(null);
 
-    if (viewer.scene) {
-      viewer.scene.requestRender();
-      setTimeout(() => {
-        if (viewer.scene) viewer.scene.requestRender();
-      }, 50);
-    }
+    viewer.scene?.requestRender();
   }, [cesiumViewerRef, removePreviewEntities, setCanvasTooltip]);
+
+  const getMeasurementMode = useCallback(() => measurementModeRef.current, []);
 
   return {
     measurementMode,
@@ -421,12 +416,11 @@ function useMeasurementTool(cesiumViewerRef) {
     cancelMeasurement,
     addMeasurementPoint,
     clearMeasurements,
+    getMeasurementMode,
     updatePreviewLine,
     finalizeAreaMeasurement,
-    getMeasurementMode: () => measurementModeRef.current,
   };
-}
+};
 
 export default useMeasurementTool;
-
 

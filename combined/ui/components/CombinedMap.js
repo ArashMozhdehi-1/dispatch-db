@@ -7,6 +7,7 @@ import TurnPathStatusBanner from './TurnPathStatusBanner';
 import useTurnPathManager from './useTurnPathManager';
 import useMeasurementTool from './useMeasurementTool';
 import RoadProfileViewer from './RoadProfileViewer';
+import SpeedManagementViewer from './SpeedManagementViewer';
 
 // Color palette and helpers
 const DISPATCH_LOCATION_COLOR_MAP = {
@@ -237,7 +238,8 @@ const formatTooltipContent = (entity) => {
     const category = getProp('category');
 
     if (category === 'dispatch_segment') {
-        items.push(`--- DISPATCH SEGMENT ---`);
+        const source = (getProp('source') || 'Segment').toString().toUpperCase();
+        items.push(`--- ${source} SEGMENT ---`);
         if (getProp('road_id')) items.push(`ROAD ID: ${getProp('road_id')}`);
         if (getProp('lane_id')) items.push(`LANE ID: ${getProp('lane_id')}`);
         if (getProp('length_m')) items.push(`LENGTH: ${Math.round(getProp('length_m'))} m`);
@@ -276,6 +278,7 @@ export default function DispatchCesiumMap() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogData, setDialogData] = useState(null);
     const [showProfileViewer, setShowProfileViewer] = useState(false);
+    const [showSpeedManagement, setShowSpeedManagement] = useState(false);
     const [selectedRoadId, setSelectedRoadId] = useState(null);
     // Data
     const [locations, setLocations] = useState([]);
@@ -2118,33 +2121,59 @@ export default function DispatchCesiumMap() {
 
                         {/* Content */}
                         <div style={{ overflowY: 'auto', flex: 1, paddingRight: '6px' }}>
-                            {/* Show View Profile button for road segments */}
-                            {dialogData.category === 'dispatch_segment' && dialogData.allProperties.road_id && (
+                            {/* Show View Profile and Speed Management buttons for road segments */}
+                            {(dialogData.category === 'dispatch_segment' || dialogData.category === 'frontrunner_segment') && dialogData.allProperties.road_id && (
                                 <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: 'rgba(52, 152, 219, 0.1)', borderRadius: '6px', border: '1px solid rgba(52, 152, 219, 0.3)' }}>
-                                    <button
-                                        onClick={() => {
-                                            setDialogOpen(false);
-                                            setSelectedRoadId(dialogData.allProperties.road_id);
-                                            setShowProfileViewer(true);
-                                        }}
-                                        style={{
-                                            width: '100%',
-                                            background: '#4ECDC4',
-                                            color: 'white',
-                                            border: 'none',
-                                            padding: '12px',
-                                            borderRadius: '6px',
-                                            cursor: 'pointer',
-                                            fontWeight: 'bold',
-                                            fontSize: '14px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '8px'
-                                        }}
-                                    >
-                                        📊 View Profile
-                                    </button>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <button
+                                            onClick={() => {
+                                                setDialogOpen(false);
+                                                setSelectedRoadId(dialogData.allProperties.road_id);
+                                                setShowProfileViewer(true);
+                                            }}
+                                            style={{
+                                                flex: 1,
+                                                background: '#4ECDC4',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '12px',
+                                                borderRadius: '6px',
+                                                cursor: 'pointer',
+                                                fontWeight: 'bold',
+                                                fontSize: '14px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '8px'
+                                            }}
+                                        >
+                                            📊 View Profile
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setDialogOpen(false);
+                                                setSelectedRoadId(dialogData.allProperties.road_id);
+                                                setShowSpeedManagement(true);
+                                            }}
+                                            style={{
+                                                flex: 1,
+                                                background: '#E67E22',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '12px',
+                                                borderRadius: '6px',
+                                                cursor: 'pointer',
+                                                fontWeight: 'bold',
+                                                fontSize: '14px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '8px'
+                                            }}
+                                        >
+                                            🚗 Speed Management
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
@@ -2177,6 +2206,15 @@ export default function DispatchCesiumMap() {
                     }}
                 />
             )}
+            {showSpeedManagement && selectedRoadId && (
+                <SpeedManagementViewer
+                    roadId={selectedRoadId}
+                    onClose={() => {
+                        setShowSpeedManagement(false);
+                        setSelectedRoadId(null);
+                    }}
+                />
+            )}
             <style dangerouslySetInnerHTML={{
                 __html: `
                 .cesium-viewer-bottom, .cesium-viewer-cesiumWidgetContainer .cesium-widget-credits,
@@ -2188,4 +2226,3 @@ export default function DispatchCesiumMap() {
         </>
     );
 }
-

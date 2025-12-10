@@ -70,6 +70,7 @@ services:
       DB_PASSWORD: ${COMBINED_DB_PASSWORD:-combined_password}
     depends_on:
       - db
+
 volumes:
   combined_pgdata:
   combined_geoserver_data:

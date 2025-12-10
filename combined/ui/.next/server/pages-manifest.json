@@ -1,9 +1,10 @@
 {
+  "/_document": "pages/_document.js",
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
-  "/_document": "pages/_document.js",
+  "/api/combined-map-data": "pages/api/combined-map-data.js",
   "/": "pages/index.js",
   "/api/vehicle-profiles": "pages/api/vehicle-profiles.js",
   "/api/intersection_center_points": "pages/api/intersection_center_points.js",
-  "/api/combined-map-data": "pages/api/combined-map-data.js"
+  "/api/road-speed-limits": "pages/api/road-speed-limits.js"
 }

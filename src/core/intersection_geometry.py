@@ -847,3 +847,94 @@ def build_intersection_polygons(
         print(f"Built {len(result)} nice intersection polygons")
 
     return result
+
+            eps = max(1.0, min(10.0, line.length * 0.05))
+            s0 = max(0.0, s_base - eps)
+            s1 = min(line.length, s_base + eps)
+
+            p0 = line.interpolate(s0)
+            p1 = line.interpolate(s1)
+
+            vx = p1.x - p0.x
+            vy = p1.y - p0.y
+            norm = math.hypot(vx, vy)
+
+            if norm == 0.0:
+                # Fallback: use vector from intersection centre to base_pt
+                vx = base_pt.x - center_local.x
+                vy = base_pt.y - center_local.y
+                norm = math.hypot(vx, vy)
+
+            if norm == 0.0:
+                # Completely degenerate, skip this branch
+                continue
+
+            # Normalized branch direction
+            vx /= norm
+            vy /= norm
+
+            # Left-hand normal (perpendicular) to the branch direction
+            nx = -vy
+            ny = vx
+
+            # --- 3) Generate ONLY left/right road-centre points ---
+            cx, cy = base_pt.x, base_pt.y
+
+            left_pt = Point(cx + nx * lane_offset, cy + ny * lane_offset)
+            right_pt = Point(cx - nx * lane_offset, cy - ny * lane_offset)
+
+            # two centres of the road, 0.3 * road_width_m to each side
+            branch_points_info.append(
+                {"geom": left_pt, "road_id": road_id, "side": "left"}
+            )
+            branch_points_info.append(
+                {"geom": right_pt, "road_id": road_id, "side": "right"}
+            )
+
+        # ------------------------------------------------------------------
+        # Re-assign each branch centre to the physically closest road line.
+        # This fixes cases where the centre was computed from one road's
+        # slice but ends up closer to the opposite approach.
+        # ------------------------------------------------------------------
+        if branch_points_info and nearby_roads:
+            road_lines = [
+                (e["row"].get("road_id"), e["line"])
+                for e in nearby_roads
+                if e["row"].get("road_id") is not None
+            ]
+            max_snap_dist = 0.75 * road_width_m  # e.g. ~22.5 m for 30 m roads
+
+            for info in branch_points_info:
+                pt = info["geom"]
+
+                best_rid = info.get("road_id")
+                best_dist = float("inf")
+
+                for rid, ln in road_lines:
+                    d = pt.distance(ln)
+                    if d < best_dist:
+                        best_dist = d
+                        best_rid = rid
+
+                if best_rid is not None and best_dist <= max_snap_dist:
+                    info["road_id"] = best_rid
+
+        poly_wgs84 = _to_wgs84_geom(poly_local)
+        branch_centers_wgs = []
+        for info in branch_points_info:
+            pt_wgs = _to_wgs84_geom(info["geom"])
+            branch_centers_wgs.append({
+                "road_id": info.get("road_id"),
+                "side": info.get("side", "unknown"),
+                "geometry": mapping(pt_wgs)
+            })
+
+        out = dict(inter)
+        out["nice_geometry"] = mapping(poly_wgs84)
+        out["branch_centers"] = branch_centers_wgs
+        result.append(out)
+
+    if debug:
+        print(f"Built {len(result)} nice intersection polygons")
+
+    return result
