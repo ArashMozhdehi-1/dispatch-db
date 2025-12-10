@@ -82,28 +82,22 @@ else
   echo "frontrunner.dump not found; skipping."
 fi
 
-# Apply combined views (optional; safe if present)
-# Note: This may have errors due to missing PostGIS functions, but we continue anyway
-if [ -f /sql/build_combined_tables.sql ]; then
-  echo "Applying build_combined_tables.sql ..."
-  ( psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f /sql/build_combined_tables.sql 2>&1 ) || echo "build_combined_tables.sql had errors (expected)"
+# Skip build_combined_tables.sql - it has errors and 99_manual_setup.sql does everything
+# if [ -f /sql/build_combined_tables.sql ]; then
+#   echo "Applying build_combined_tables.sql ..."
+#   ( psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f /sql/build_combined_tables.sql 2>&1 ) || echo "build_combined_tables.sql had errors (expected)"
+# fi
+
+# Apply manual setup (creates all tables and speed management)
+if [ -f /sql/99_manual_setup.sql ]; then
+  echo "Applying manual setup (creating all tables, speed management, and clipping roads)..."
+  psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f /sql/99_manual_setup.sql
 fi
 
 # Apply combined views (requires combined_data tables already built)
 if [ -f /sql/combined_views.sql ]; then
   echo "Applying combined_views.sql ..."
   ( psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f /sql/combined_views.sql 2>&1 ) || echo "combined_views.sql had errors (expected)"
-fi
-
-# Apply manual setup (creates missing tables and speed management)
-# This script properly creates all tables that build_combined_tables.sql failed to create
-echo "DEBUG: About to check for 99_manual_setup.sql"
-if [ -f /sql/99_manual_setup.sql ]; then
-  echo "DEBUG: File exists, applying manual setup..."
-  psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f /sql/99_manual_setup.sql
-  echo "DEBUG: Manual setup completed"
-else
-  echo "DEBUG: File /sql/99_manual_setup.sql NOT FOUND"
 fi
 
 echo "Import finished."

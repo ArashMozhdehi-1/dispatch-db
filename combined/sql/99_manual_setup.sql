@@ -186,3 +186,7 @@ INSERT INTO combined_data.road_speed_limits (road_id, lane_id, series_id, max_sp
 (5859678, 'road_5859678_0_forward', 2, 40.00, 0, 2000)
 ON CONFLICT DO NOTHING;
 
+-- Note: Road clipping is done separately by start.bat after this script completes
+-- This ensures tables are created first, then clipped
+-- See: 98_clip_roads_at_intersections.sql
+

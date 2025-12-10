@@ -1,0 +1,164 @@
+╔═══════════════════════════════════════════════════════════════╗
+║              QUICK COMMAND REFERENCE                          ║
+╚═══════════════════════════════════════════════════════════════╝
+
+FIRST TIME SETUP
+─────────────────────────────────────────────────────────────────
+Windows:    .\start.bat
+Linux:      ./start.sh
+
+This does EVERYTHING automatically!
+
+
+IF SETUP FAILS - RUN FIX SCRIPT
+─────────────────────────────────────────────────────────────────
+Windows:    .\fix.ps1
+Linux:      ./fix.sh
+
+Interactive menu to fix common issues.
+
+
+MANUAL RECOVERY COMMANDS
+─────────────────────────────────────────────────────────────────
+
+1️⃣  Re-run full setup (if tables are broken):
+   docker exec combined_db psql -U combined_user -d combined -f /sql/99_manual_setup.sql
+
+2️⃣  Re-run road clipping (if roads still under intersections):
+   docker exec combined_db psql -U combined_user -d combined -f /sql/98_clip_roads_at_intersections.sql
+
+3️⃣  Drop all tables and start fresh:
+   docker exec combined_db psql -U combined_user -d combined -c "DROP SCHEMA IF EXISTS combined_data CASCADE; CREATE SCHEMA combined_data;"
+   docker exec combined_db psql -U combined_user -d combined -f /sql/99_manual_setup.sql
+   docker exec combined_db psql -U combined_user -d combined -f /sql/98_clip_roads_at_intersections.sql
+
+4️⃣  Complete fresh install (deletes ALL data):
+   docker compose down -v
+   docker compose up -d
+   # Wait 30 seconds for importer to finish
+   docker exec combined_db psql -U combined_user -d combined -f /sql/99_manual_setup.sql
+   docker exec combined_db psql -U combined_user -d combined -f /sql/98_clip_roads_at_intersections.sql
+
+
+VERIFY DATA
+─────────────────────────────────────────────────────────────────
+docker exec combined_db psql -U combined_user -d combined -c "
+  SELECT 'Lane Segments' as item, COUNT(*) as count 
+  FROM combined_data.lane_segments WHERE geometry IS NOT NULL
+  UNION ALL
+  SELECT 'Roads', COUNT(*) 
+  FROM combined_data.roads WHERE centerline IS NOT NULL OR geometry IS NOT NULL
+  UNION ALL
+  SELECT 'Intersections', COUNT(*) 
+  FROM combined_data.intersections
+  UNION ALL
+  SELECT 'Infrastructure', COUNT(*) 
+  FROM combined_data.infrastructure
+  UNION ALL
+  SELECT 'Speed Limits', COUNT(*) 
+  FROM combined_data.road_speed_limits;
+"
+
+Expected results:
+  Lane Segments:  ~10,702
+  Roads:          ~2,919
+  Intersections:  716
+  Infrastructure: 1,031
+  Speed Limits:   20
+
+
+DOCKER COMMANDS
+─────────────────────────────────────────────────────────────────
+Start:          docker compose up -d
+Stop:           docker compose down
+Restart:        docker compose restart
+Restart UI:     docker compose restart ui
+Logs (UI):      docker compose logs -f ui
+Logs (DB):      docker compose logs -f db
+Status:         docker compose ps
+
+
+DATABASE ACCESS
+─────────────────────────────────────────────────────────────────
+Interactive shell:
+  docker exec -it combined_db psql -U combined_user -d combined
+
+Run a query:
+  docker exec combined_db psql -U combined_user -d combined -c "SELECT COUNT(*) FROM combined_data.roads;"
+
+Run a SQL file:
+  docker exec combined_db psql -U combined_user -d combined -f /sql/yourfile.sql
+
+
+USEFUL QUERIES
+─────────────────────────────────────────────────────────────────
+
+Check roads still overlapping intersections:
+  SELECT COUNT(*) 
+  FROM combined_data.lane_segments ls 
+  JOIN combined_data.intersections i ON ST_Intersects(ls.geometry, i.geometry) 
+  WHERE ls.source = 'dispatch' AND i.source = 'dispatch' 
+    AND ST_Length(ST_Intersection(ls.geometry, i.geometry)::geography) > 0.5;
+
+Check average lane lengths by source:
+  SELECT source, 
+         COUNT(*) as lanes, 
+         ROUND(AVG(length_m)::numeric, 2) as avg_length_m 
+  FROM combined_data.lane_segments 
+  WHERE geometry IS NOT NULL 
+  GROUP BY source;
+
+List all speed limits:
+  SELECT r.road_name, vs.model_name, rsl.max_speed_kmh, rsl.from_measure, rsl.to_measure
+  FROM combined_data.road_speed_limits rsl
+  JOIN combined_data.roads r ON rsl.road_id = r.road_id
+  JOIN combined_data.vehicle_series vs ON rsl.series_id = vs.series_id
+  ORDER BY r.road_name, vs.model_name;
+
+
+TROUBLESHOOTING
+─────────────────────────────────────────────────────────────────
+
+Port already in use:
+  # Find what's using the port
+  netstat -ano | findstr :3004    (Windows)
+  lsof -i :3004                   (Linux)
+  
+  # Change port in docker-compose.yml if needed
+
+UI not loading:
+  docker compose restart ui
+  docker compose logs -f ui
+
+Database connection issues:
+  docker compose restart db
+  docker compose logs -f db
+
+Roads still under intersections:
+  ./fix.ps1 (Windows) or ./fix.sh (Linux)
+  Choose option 2 (Re-run road clipping)
+
+
+ACCESS URLS
+─────────────────────────────────────────────────────────────────
+Map UI:      http://localhost:3004
+GeoServer:   http://localhost:8080/geoserver
+Database:    localhost:5432
+             User: combined_user
+             Pass: combined_password
+             DB:   combined
+
+
+TRANSFER TO LINUX
+─────────────────────────────────────────────────────────────────
+From Windows:
+  .\transfer_to_linux.ps1 user@linux-server
+
+Or manually:
+  scp -r "D:\Dispatch DB\combined" user@linux-server:~/dispatch-db/
+
+On Linux:
+  cd ~/dispatch-db/combined
+  chmod +x start.sh fix.sh
+  ./start.sh
+

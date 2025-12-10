@@ -30,7 +30,8 @@ export default async function handler(req, res) {
               source,
               COALESCE(is_closed, FALSE) AS is_closed,
               ST_AsGeoJSON(centerline) AS centerline_geojson
-       FROM combined_data.roads`
+       FROM combined_data.roads
+       WHERE centerline IS NOT NULL OR geometry IS NOT NULL`
     );
 
     // Lane-level geometry (similar to dispatch GraphQL segments)
@@ -41,7 +42,8 @@ export default async function handler(req, res) {
               direction,
               length_m,
               ST_AsGeoJSON(geometry) AS geometry_geojson
-       FROM combined_data.lane_segments`
+       FROM combined_data.lane_segments
+       WHERE geometry IS NOT NULL`
     );
 
     const intersections = await client.query(

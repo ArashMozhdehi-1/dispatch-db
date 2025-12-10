@@ -55,13 +55,24 @@ while ($importerRunning) {
 
 # Run the manual setup script
 Write-Host ""
-Write-Host "Loading speed management tables..." -ForegroundColor Yellow
-docker exec combined_db psql -U combined_user -d combined -f /sql/99_manual_setup.sql | Out-Null
+Write-Host "Loading all tables and speed management..." -ForegroundColor Yellow
+docker exec combined_db psql -U combined_user -d combined -f /sql/99_manual_setup.sql 2>&1 | Out-Null
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "Speed management tables loaded!" -ForegroundColor Green
+    Write-Host "Tables and speed management loaded!" -ForegroundColor Green
 } else {
-    Write-Host "Warning: Speed management setup had issues (this might be OK)" -ForegroundColor Yellow
+    Write-Host "Warning: Setup had issues (this might be OK)" -ForegroundColor Yellow
+}
+
+# Clip Dispatch roads at intersections (leave Frontrunner untouched)
+Write-Host ""
+Write-Host "Clipping Dispatch roads at intersections..." -ForegroundColor Yellow
+docker exec combined_db psql -U combined_user -d combined -f /sql/98_clip_roads_at_intersections.sql 2>&1 | Out-Null
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Road clipping complete!" -ForegroundColor Green
+} else {
+    Write-Host "Warning: Road clipping had issues" -ForegroundColor Yellow
 }
 
 # Verify the setup
