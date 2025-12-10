@@ -2147,7 +2147,7 @@ export default function DispatchCesiumMap() {
                                                 gap: '8px'
                                             }}
                                         >
-                                            📊 View Profile
+                                            View Profile
                                         </button>
                                         <button
                                             onClick={() => {
@@ -2171,7 +2171,7 @@ export default function DispatchCesiumMap() {
                                                 gap: '8px'
                                             }}
                                         >
-                                            🚗 Speed Management
+                                            Speed Management
                                         </button>
                                     </div>
                                 </div>

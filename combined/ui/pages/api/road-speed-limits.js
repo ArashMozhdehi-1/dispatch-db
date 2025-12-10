@@ -141,7 +141,7 @@ export default async function handler(req, res) {
       res.status(500).json({ error: error.message });
     }
   } else if (req.method === 'PUT') {
-    const { speed_limit_id, max_speed_kmh, from_measure, to_measure } = req.body;
+    const { speed_limit_id, series_id, max_speed_kmh, from_measure, to_measure } = req.body;
     
     if (!speed_limit_id || max_speed_kmh === undefined) {
       return res.status(400).json({ error: 'speed_limit_id and max_speed_kmh are required' });
@@ -153,8 +153,9 @@ export default async function handler(req, res) {
         SET max_speed_kmh = $1,
             from_measure = COALESCE($2, from_measure),
             to_measure = $3,
+            series_id = COALESCE($4, series_id),
             last_modified = CURRENT_TIMESTAMP
-        WHERE speed_limit_id = $4
+        WHERE speed_limit_id = $5
         RETURNING *
       `;
       
@@ -162,6 +163,7 @@ export default async function handler(req, res) {
         max_speed_kmh,
         from_measure,
         to_measure,
+        series_id,
         speed_limit_id
       ]);
       

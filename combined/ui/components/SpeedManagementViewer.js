@@ -62,6 +62,7 @@ export default function SpeedManagementViewer({ roadId, onClose }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           speed_limit_id: speedLimit.speed_limit_id,
+          series_id: speedLimit.series_id ? parseInt(speedLimit.series_id) : null,
           max_speed_kmh: parseFloat(speedLimit.max_speed_kmh),
           from_measure: speedLimit.from_measure ? parseFloat(speedLimit.from_measure) : null,
           to_measure: toMeasure
@@ -300,12 +301,39 @@ export default function SpeedManagementViewer({ roadId, onClose }) {
                            style={{ width: '80px', padding: '4px', borderRadius: '4px', backgroundColor: '#2c3e50', color: 'white', border: '1px solid #34495e' }}
                          />
                        ) : (
-                         Number(Math.max(sl.to_measure || 0, totalRoadLength)).toFixed(2)
+                         sl.to_measure ? Number(Math.min(sl.to_measure, totalRoadLength)).toFixed(2) : Number(totalRoadLength).toFixed(2)
                        )}
                      </td>
-                    <td style={{ padding: '10px' }}>
-                      <div style={{ fontWeight: 'bold' }}>{sl.manufacturer} {sl.model_name}</div>
-                    </td>
+                     <td style={{ padding: '10px' }}>
+                       {editingId === sl.speed_limit_id ? (
+                         <select
+                           value={sl.series_id}
+                           onChange={(e) => {
+                             const updated = speedLimits.map(s => 
+                               s.speed_limit_id === sl.speed_limit_id 
+                                 ? { 
+                                   ...s, 
+                                   series_id: e.target.value,
+                                   // Update display values
+                                   manufacturer: vehicleModels.find(vm => vm.series_id == e.target.value)?.manufacturer,
+                                   model_name: vehicleModels.find(vm => vm.series_id == e.target.value)?.model_name
+                                 }
+                                 : s
+                             );
+                             setSpeedLimits(updated);
+                           }}
+                           style={{ padding: '4px 8px', borderRadius: '4px', backgroundColor: '#2c3e50', color: 'white', border: '1px solid #34495e' }}
+                         >
+                           {vehicleModels.map(vm => (
+                             <option key={vm.series_id} value={vm.series_id}>
+                               {vm.manufacturer} {vm.model_name}
+                             </option>
+                           ))}
+                         </select>
+                       ) : (
+                         <div style={{ fontWeight: 'bold' }}>{sl.manufacturer} {sl.model_name}</div>
+                       )}
+                     </td>
                     <td style={{ padding: '10px' }}>
                       {editingId === sl.speed_limit_id ? (
                         <input
