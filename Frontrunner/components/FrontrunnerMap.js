@@ -98,6 +98,8 @@ const FrontrunnerMap = ({ onMapReady }) => {
         
         window.Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlOTQxZDQ5Zi00NmI1LTQwOGItYmVjYi0zMTI3NTQ2ZDNiYTQiLCJpZCI6MjUzNzM3LCJpYXQiOjE3MzE4NDE5NDd9.oEJnH2EuD-bX-EzYXCrL_QHAQ6Xj6fB6JYGE4yoqTW4';
 
+        const creditsDiv = document.getElementById('cesium-credits');
+
         const viewer = new window.Cesium.Viewer(mapContainer.current, {
           terrain: window.Cesium.Terrain.fromWorldTerrain(),
           baseLayerPicker: false,
@@ -107,6 +109,8 @@ const FrontrunnerMap = ({ onMapReady }) => {
           timeline: false,
           animation: false,
           navigationHelpButton: false,
+          navigationInstructionsInitiallyVisible: false,
+          creditContainer: creditsDiv || undefined,
           requestRenderMode: true,
           maximumRenderTimeChange: Infinity
         });
@@ -210,6 +214,19 @@ const FrontrunnerMap = ({ onMapReady }) => {
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />
+      <div
+        id="cesium-credits"
+        style={{
+          position: 'absolute',
+          bottom: '8px',
+          left: '8px',
+          fontSize: '11px',
+          color: '#aaa',
+          opacity: 0.7,
+          pointerEvents: 'none',
+          zIndex: 10
+        }}
+      />
       {loading && (
         <div style={{
           position: 'absolute',

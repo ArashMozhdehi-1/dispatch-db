@@ -168,8 +168,3 @@ try {
 }
 
 module.exports = { typeDefs };
-
-  typeDefs = '';
-}
-
-module.exports = { typeDefs };

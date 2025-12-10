@@ -259,13 +259,27 @@ const ConsolidatedPolygonMap = ({ showDispatchData = false, showFrontrunnerData 
 
     const handler = new window.Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
 
+    const pickClampedPosition = (pos) => {
+      const Cesium = window.Cesium;
+      const ellipsoid = viewer.scene.globe.ellipsoid;
+      let cartesian =
+        viewer.camera.pickEllipsoid(pos, ellipsoid) ||
+        viewer.scene.pickPosition(pos);
+      if (!cartesian) {
+        const ray = viewer.camera.getPickRay(pos);
+        if (ray) cartesian = viewer.scene.globe.pick(ray, viewer.scene);
+      }
+      if (!cartesian) return null;
+      const carto = ellipsoid.cartesianToCartographic(cartesian);
+      return Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, 0.0);
+    };
+
     // LEFT CLICK: add measurement point (distance or area)
     handler.setInputAction((click) => {
       if (!measurementTool.measurementMode) return;
-
-      const pickedPosition = viewer.scene.pickPosition(click.position);
-      if (window.Cesium.defined(pickedPosition)) {
-        measurementTool.addMeasurementPoint(pickedPosition);
+      const clamped = pickClampedPosition(click.position);
+      if (clamped) {
+        measurementTool.addMeasurementPoint(clamped);
       }
     }, window.Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
@@ -278,12 +292,8 @@ const ConsolidatedPolygonMap = ({ showDispatchData = false, showFrontrunnerData 
     handler.setInputAction((movement) => {
       if (!measurementTool.measurementMode) return;
 
-      const pickedPosition = viewer.scene.pickPosition(movement.endPosition);
-      if (window.Cesium.defined(pickedPosition)) {
-        measurementTool.updatePreviewLine(pickedPosition);
-      } else {
-        measurementTool.updatePreviewLine(null);
-      }
+      const clamped = pickClampedPosition(movement.endPosition);
+      measurementTool.updatePreviewLine(clamped || null);
     }, window.Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
     return () => {
@@ -584,8 +594,8 @@ const ConsolidatedPolygonMap = ({ showDispatchData = false, showFrontrunnerData 
       right: 20px;
       background: rgba(50, 50, 50, 0.92);
       color: white;
-      padding: 10px 14px;
-      border-radius: 8px;
+      padding: 12px 16px;
+      border-radius: 9px;
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 12px;
       font-weight: 400;
@@ -593,10 +603,10 @@ const ConsolidatedPolygonMap = ({ showDispatchData = false, showFrontrunnerData 
       backdrop-filter: blur(12px);
       border: none;
       z-index: 1000;
-      min-width: 140px;
+      min-width: 160px;
       text-align: left;
       display: block;
-      line-height: 1.3;
+      line-height: 1.35;
     `;
     document.body.appendChild(coordDisplay);
     console.log('[Coordinate Tracker] Coordinate box created and added to DOM');
@@ -1242,8 +1252,13 @@ const ConsolidatedPolygonMap = ({ showDispatchData = false, showFrontrunnerData 
             return;
           }
 
-          if (category === 'turn_path' || getStyleRole(entity) === 'turn_path') {
-            entity.show = true;
+          // PRESERVE TURN PATH ENTITIES
+          // These are managed by useTurnPathManager and should NOT be hidden by map toggles
+          if (category === 'turn_path' || category?.startsWith('turn_path_') || getStyleRole(entity)?.startsWith('turn_path')) {
+            if (entity.show !== true) {
+              // console.log('[Visibility] Restoring visibility for turn path entity:', category, entity.name);
+              entity.show = true;
+            }
             return;
           }
 
@@ -1527,121 +1542,16 @@ const ConsolidatedPolygonMap = ({ showDispatchData = false, showFrontrunnerData 
     entity.polygon.outlineColor = outlineColor;
   };
 
+  // [REMOVED] Duplicate Turn Path Rendering Logic
+  // This useEffect previously manually constructed a "Green LIME" polygon 
+  // based on vehicle width. This caused the "Fat Green Polygon" bug.
+  // Rendering is now exclusively handled by useTurnPathManager.js 
+  // which draws the correct WHITE HAIRLINE.
   useEffect(() => {
-    const viewer = cesiumViewerRef.current;
-    if (!viewer || !window?.Cesium) return;
-
-    const cleanup = () => clearTurnPathOverlay(viewer);
-    const pathResult = turnPathManager.computedPath;
-    const coords =
-      pathResult?.path?.smooth_geojson?.coordinates ||
-      pathResult?.path?.geojson?.coordinates;
-
-    if (!pathResult || !coords || coords.length < 2) {
-      cleanup();
-      return;
-    }
-
-    cleanup();
-
-    // Get vehicle width (default to 7.3m for Komatsu 830E)
-    const vehicleWidth = pathResult.vehicle?.vehicle_width_m || 7.3;
-    const halfWidth = vehicleWidth / 2.0;
-
-    // Create corridor positions (elevated above ground)
-    const centerPositions = coords.map(coord =>
-      window.Cesium.Cartesian3.fromDegrees(coord[0], coord[1], 5) // 5m above ground
-    );
-
-    // Build corridor polygon by offsetting perpendicular to path
-    const corridorPositions = [];
-
-    for (let i = 0; i < centerPositions.length; i++) {
-      const current = centerPositions[i];
-      let forward;
-
-      if (i < centerPositions.length - 1) {
-        forward = window.Cesium.Cartesian3.subtract(
-          centerPositions[i + 1],
-          current,
-          new window.Cesium.Cartesian3()
-        );
-      } else {
-        forward = window.Cesium.Cartesian3.subtract(
-          current,
-          centerPositions[i - 1],
-          new window.Cesium.Cartesian3()
-        );
-      }
-
-      window.Cesium.Cartesian3.normalize(forward, forward);
-
-      // Get perpendicular (right) vector
-      const up = window.Cesium.Cartesian3.normalize(current, new window.Cesium.Cartesian3());
-      const right = window.Cesium.Cartesian3.cross(forward, up, new window.Cesium.Cartesian3());
-      window.Cesium.Cartesian3.normalize(right, right);
-
-      // Offset left and right by half vehicle width
-      const leftOffset = window.Cesium.Cartesian3.multiplyByScalar(right, -halfWidth, new window.Cesium.Cartesian3());
-      const rightOffset = window.Cesium.Cartesian3.multiplyByScalar(right, halfWidth, new window.Cesium.Cartesian3());
-
-      const leftPoint = window.Cesium.Cartesian3.add(current, leftOffset, new window.Cesium.Cartesian3());
-      const rightPoint = window.Cesium.Cartesian3.add(current, rightOffset, new window.Cesium.Cartesian3());
-
-      // Store for building polygon
-      if (i === 0) {
-        corridorPositions.push(leftPoint);
-      } else {
-        corridorPositions.unshift(rightPoint);
-        corridorPositions.push(leftPoint);
-      }
-    }
-
-    // Close the polygon
-    if (corridorPositions.length > 0) {
-      corridorPositions.push(corridorPositions[0]);
-    }
-
-    // Use green color for the corridor
-    const color = window.Cesium.Color.LIME;
-
-    const pathEntity = viewer.entities.add({
-      name: `Turn Path: ${pathResult.from_road_id} → ${pathResult.to_road_id}`,
-      polygon: {
-        hierarchy: new window.Cesium.PolygonHierarchy(corridorPositions),
-        material: color.withAlpha(0.7),
-        outline: true,
-        outlineColor: window.Cesium.Color.DARKGREEN,
-        outlineWidth: 2,
-        height: 5, // 5m above ground
-        heightReference: window.Cesium.HeightReference.RELATIVE_TO_GROUND
-      },
-      properties: {
-        category: 'turn_path',
-        style_role: 'turn_path',
-        intersection_name: pathResult.intersection_name,
-        clearance_ok: pathResult.clearance?.vehicle_envelope_ok ?? null,
-        outside_area_sqm: pathResult.clearance?.outside_area_sqm ?? null,
-        path_length_m: pathResult.path?.length_m ?? null,
-        vehicle_width_m: vehicleWidth
-      }
-    });
-
-    const intersectionEntity = highlightIntersectionEntity(viewer, pathResult.intersection_name);
-    turnPathOverlayRef.current = { pathEntity, intersectionEntity };
-
-    if (centerPositions.length > 1) {
-      const boundingSphere = window.Cesium.BoundingSphere.fromPoints(centerPositions);
-      viewer.camera.flyToBoundingSphere(boundingSphere, {
-        duration: 1.6,
-        offset: new window.Cesium.HeadingPitchRange(0, -0.6, Math.max(boundingSphere.radius * 2.2, 150))
-      });
-    }
-
-    return () => {
-      cleanup();
-    };
-  }, [turnPathManager.computedPath]);
+    // Intentional no-op to prevent duplicate rendering
+    // The previous code here watched turnPathManager.computedPath 
+    // and drew a conflicting polygon.
+  }, []);
 
   const applyIntersectionThemeToEntity = (entity) => {
     if (!window.Cesium) return;
@@ -2567,14 +2477,17 @@ const ConsolidatedPolygonMap = ({ showDispatchData = false, showFrontrunnerData 
         const cesiumCSS = document.createElement('link');
         cesiumCSS.rel = 'stylesheet';
         cesiumCSS.type = 'text/css';
-        cesiumCSS.href = 'https://cesium.com/downloads/cesiumjs/releases/1.126/Build/Cesium/Widgets/widgets.css';
+        cesiumCSS.href = 'https://unpkg.com/cesium@1.126.0/Build/Cesium/Widgets/widgets.css';
         document.head.appendChild(cesiumCSS);
       }
+
+      // Set base URL for Cesium to load assets/workers correctly from unpkg
+      window.CESIUM_BASE_URL = 'https://unpkg.com/cesium@1.126.0/Build/Cesium/';
 
       if (!window.Cesium) {
         await new Promise((resolve, reject) => {
           const script = document.createElement('script');
-          script.src = 'https://cesium.com/downloads/cesiumjs/releases/1.126/Build/Cesium/Cesium.js';
+          script.src = 'https://unpkg.com/cesium@1.126.0/Build/Cesium/Cesium.js';
           script.onload = () => {
             // console.log('[Consolidated Map] Cesium loaded');
             resolve();
@@ -2637,6 +2550,8 @@ const ConsolidatedPolygonMap = ({ showDispatchData = false, showFrontrunnerData 
 
       const initialProvider = getImageryProvider(baseLayer);
 
+      const creditsDiv = document.getElementById('cesium-credits');
+
       const cesiumViewer = new window.Cesium.Viewer(mapContainer.current, {
         baseLayerPicker: false,
         geocoder: false,
@@ -2649,6 +2564,8 @@ const ConsolidatedPolygonMap = ({ showDispatchData = false, showFrontrunnerData 
         fullscreenButton: false,
         vrButton: false,
         selectionIndicator: false,
+        navigationInstructionsInitiallyVisible: false,
+        creditContainer: creditsDiv || undefined,
         terrainProvider: new window.Cesium.EllipsoidTerrainProvider(),
         imageryProvider: initialProvider,
         shouldAnimate: false,
@@ -2682,47 +2599,6 @@ const ConsolidatedPolygonMap = ({ showDispatchData = false, showFrontrunnerData 
 
       cesiumViewer.scene.requestRender();
 
-      setTimeout(() => {
-        if (cesiumViewer.creditContainer) {
-          cesiumViewer.creditContainer.style.display = 'none';
-          cesiumViewer.creditContainer.innerHTML = '';
-        }
-        if (cesiumViewer.bottomContainer) {
-          cesiumViewer.bottomContainer.style.display = 'none';
-        }
-        try {
-          const widget = cesiumViewer._cesiumWidget;
-          if (widget && widget._creditContainer) {
-            widget._creditContainer.style.display = 'none';
-            widget._creditContainer.innerHTML = '';
-          }
-        } catch (e) { }
-        if (mapContainer.current) {
-          const allLinks = mapContainer.current.querySelectorAll('a[href*="cesium.com"]');
-          allLinks.forEach(link => link.style.display = 'none');
-        }
-
-        const style = document.createElement('style');
-        style.textContent = `
-          .cesium-viewer-bottom,
-          .cesium-viewer-cesiumWidgetContainer .cesium-widget-credits,
-          .cesium-viewer-cesiumLogoContainer,
-          .cesium-credit-logoContainer,
-          .cesium-credit-expand-link,
-          .cesium-viewer-creditTextContainer {
-            display: none !important;
-          }
-          a[href*="cesium.com"],
-          a[href*="cesiumion.com"] {
-            display: none !important;
-          }
-          .cesium-widget-credits {
-            display: none !important;
-          }
-        `;
-        document.head.appendChild(style);
-      }, 100);
-
       cesiumViewerRef.current = cesiumViewer;
       isInitializing.current = false;
       setMapLoaded(true);
@@ -2746,19 +2622,16 @@ const ConsolidatedPolygonMap = ({ showDispatchData = false, showFrontrunnerData 
 
           if (currentMeasurementMode) {
             console.log('[ConsolidatedMap] Measurement mode active, getting cartesian position');
-            // Try multiple methods to get the cartesian position
-            let cartesian = cesiumViewer.scene.pickPosition(movement.position);
+
+            const ellipsoid = cesiumViewer.scene.globe.ellipsoid;
+            let cartesian =
+              // Prefer ellipsoid pick (works reliably in 2D)
+              cesiumViewer.camera.pickEllipsoid(movement.position, ellipsoid) ||
+              // Then try depth-based pick
+              cesiumViewer.scene.pickPosition(movement.position);
 
             if (!cartesian) {
-              // Fallback: pick from ellipsoid
-              cartesian = cesiumViewer.camera.pickEllipsoid(
-                movement.position,
-                cesiumViewer.scene.globe.ellipsoid
-              );
-            }
-
-            if (!cartesian) {
-              // Last resort: use camera position + ray intersection
+              // Last resort: ray/terrain pick
               const ray = cesiumViewer.camera.getPickRay(movement.position);
               if (ray) {
                 cartesian = cesiumViewer.scene.globe.pick(ray, cesiumViewer.scene);
@@ -2766,8 +2639,15 @@ const ConsolidatedPolygonMap = ({ showDispatchData = false, showFrontrunnerData 
             }
 
             if (cartesian) {
-              console.log('[ConsolidatedMap] Adding measurement point at:', cartesian);
-              measurementTool.addMeasurementPoint(cartesian);
+              // Clamp to ground (height = 0) to avoid camera-height artifacts
+              const carto = ellipsoid.cartesianToCartographic(cartesian);
+              const clamped = window.Cesium.Cartesian3.fromRadians(
+                carto.longitude,
+                carto.latitude,
+                0.0
+              );
+              console.log('[ConsolidatedMap] Adding measurement point at:', clamped);
+              measurementTool.addMeasurementPoint(clamped);
             } else {
               console.warn('[ConsolidatedMap] Failed to get cartesian position for measurement');
             }
@@ -6158,9 +6038,21 @@ const ConsolidatedPolygonMap = ({ showDispatchData = false, showFrontrunnerData 
             addedCount++;
           }
         } else if (geometry.type === 'Polygon' && geometry.coordinates && geometry.coordinates[0]) {
-          const positions = geometry.coordinates[0].map(coord =>
-            window.Cesium.Cartesian3.fromDegrees(coord[0], coord[1], 0) // 2D FLAT
-          );
+          const positions = [];
+          geometry.coordinates[0].forEach(coord => {
+            if (coord && Array.isArray(coord) && coord.length >= 2) {
+              const lon = parseFloat(coord[0]);
+              const lat = parseFloat(coord[1]);
+              if (!isNaN(lon) && !isNaN(lat)) {
+                positions.push(window.Cesium.Cartesian3.fromDegrees(lon, lat, 0)); // 2D FLAT
+              }
+            }
+          });
+
+          if (positions.length < 3) {
+            errorCount++;
+            return;
+          }
 
           const polygon = cesiumViewer.entities.add({
             polygon: {
@@ -6284,8 +6176,14 @@ const ConsolidatedPolygonMap = ({ showDispatchData = false, showFrontrunnerData 
           const positions = [];
           if (geometry.type === 'Polygon' && geometry.coordinates[0]) {
             geometry.coordinates[0].forEach(coord => {
-              // Always use z=0 for base positions, height will be set via heightReference
-              positions.push(window.Cesium.Cartesian3.fromDegrees(coord[0], coord[1], 0));
+              if (coord && Array.isArray(coord) && coord.length >= 2) {
+                const lon = parseFloat(coord[0]);
+                const lat = parseFloat(coord[1]);
+                if (!isNaN(lon) && !isNaN(lat)) {
+                  // Always use z=0 for base positions, height will be set via heightReference
+                  positions.push(window.Cesium.Cartesian3.fromDegrees(lon, lat, 0));
+                }
+              }
             });
           }
           if (positions.length === 0) {
@@ -7029,6 +6927,20 @@ const ConsolidatedPolygonMap = ({ showDispatchData = false, showFrontrunnerData 
           height: '100%',
           margin: 0,
           padding: 0
+        }}
+      />
+      {/* Dedicated credit container to keep Cesium credits out of the way */}
+      <div
+        id="cesium-credits"
+        style={{
+          position: 'absolute',
+          bottom: '8px',
+          left: '8px',
+          fontSize: '11px',
+          color: '#aaa',
+          opacity: 0.7,
+          pointerEvents: 'none',
+          zIndex: 10
         }}
       />
       {mapLoaded && (

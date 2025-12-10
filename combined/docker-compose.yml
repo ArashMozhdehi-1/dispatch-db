@@ -1,0 +1,75 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgis/postgis:15-3.3
+    container_name: combined_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${COMBINED_DB_NAME:-combined}
+      POSTGRES_USER: ${COMBINED_DB_USER:-combined_user}
+      POSTGRES_PASSWORD: ${COMBINED_DB_PASSWORD:-combined_password}
+    ports:
+      - "${COMBINED_DB_PORT:-3005}:5432"
+    volumes:
+      - combined_pgdata:/var/lib/postgresql/data
+      - ./dumps:/dumps:ro
+      - ./sql:/sql:ro
+
+  geoserver:
+    image: kartoza/geoserver:2.24.0
+    container_name: combined_geoserver
+    restart: unless-stopped
+    environment:
+      GEOSERVER_DATA_DIR: /opt/geoserver/data_dir
+      GEOSERVER_ADMIN_PASSWORD: ${GEOSERVER_ADMIN_PASSWORD:-geoserver}
+    ports:
+      - "${GEOSERVER_PORT:-8083}:8080"
+    volumes:
+      - combined_geoserver_data:/opt/geoserver/data_dir
+    depends_on:
+      - db
+
+  importer:
+    build:
+      context: ./import
+      dockerfile: Dockerfile
+    container_name: combined_importer
+    restart: "no"
+    depends_on:
+      - db
+    volumes:
+      - ./dumps:/dumps:ro
+      - ./sql:/sql:ro
+    environment:
+      COMBINED_DB_HOST: db
+      COMBINED_DB_PORT: 5432
+      COMBINED_DB_NAME: ${COMBINED_DB_NAME:-combined}
+      COMBINED_DB_USER: ${COMBINED_DB_USER:-combined_user}
+      COMBINED_DB_PASSWORD: ${COMBINED_DB_PASSWORD:-combined_password}
+      COMBINED_DB_ADMIN_DB: ${COMBINED_DB_ADMIN_DB:-postgres}
+
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    container_name: combined_ui
+    working_dir: /app
+    volumes:
+      - ./ui:/app
+      - /app/node_modules
+    command: ["/bin/sh", "-c", "npm install && npm run dev -- --hostname 0.0.0.0 --port 3004"]
+    ports:
+      - "3004:3004"
+    environment:
+      NEXT_PUBLIC_API_BASE: http://localhost:${COMBINED_DB_PORT:-3005}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${COMBINED_DB_NAME:-combined}
+      DB_USER: ${COMBINED_DB_USER:-combined_user}
+      DB_PASSWORD: ${COMBINED_DB_PASSWORD:-combined_password}
+    depends_on:
+      - db
+volumes:
+  combined_pgdata:
+  combined_geoserver_data:

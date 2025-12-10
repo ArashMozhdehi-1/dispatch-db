@@ -4,10 +4,10 @@ import React from 'react';
  * Status banner displayed during measurement operations
  * Shows current mode, progress, and cancel button
  */
-export default function MeasurementStatusBanner({ 
-  measurementMode, 
-  measurementPoints, 
-  onCancel 
+export default function MeasurementStatusBanner({
+  measurementMode,
+  measurementPoints,
+  onCancel
 }) {
   if (!measurementMode) return null;
 

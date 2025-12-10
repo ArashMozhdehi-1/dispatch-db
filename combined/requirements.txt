@@ -1,0 +1,26 @@
+# Mine Position Decryption Requirements
+# Core cryptography libraries
+pycryptodome==3.19.0
+cryptography==41.0.7
+
+# Database connectivity
+psycopg2-binary==2.9.9
+
+# Data processing
+numpy==1.24.3
+pandas==2.0.3
+pyproj==3.6.1
+shapely==2.0.2
+
+# GPU acceleration (optional)
+# Uncomment if you have CUDA-capable GPU
+# cupy-cuda11x==12.2.0  # For CUDA 11.x
+# cupy-cuda12x==12.2.0  # For CUDA 12.x
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0
+
+# Development and testing
+pytest==7.4.3
+pytest-cov==4.1.0

@@ -2,6 +2,9 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Install Python and dependencies for Turn Path API
+RUN apk add --no-cache python3 py3-pip py3-psycopg2
+
 # Copy package files
 COPY package*.json ./
 

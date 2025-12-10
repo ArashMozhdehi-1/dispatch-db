@@ -198,6 +198,7 @@ const typeDefs = gql`
     powerGenerators: [PowerGenerator!]!
     electricalTrucks: [ElectricalTruck!]!
     laneConditions(laneId: String): [LaneCondition!]!
+    laneConditionsByRoad(roadId: Int!): [LaneCondition!]!
     wateringStations: [WateringStation!]!
     speedMonitoring: [SpeedMonitoring!]!
     intersections: [Intersection!]!

@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Script from 'next/script';
+import RoadProfileViewer from './RoadProfileViewer';
+import { randomUUID as uuidv4 } from 'crypto';
+import TopMenuBar from './TopMenuBar';
+import TurnPathDialog from './TurnPathDialog';
+import TurnPathStatusBanner from './TurnPathStatusBanner';
+import useTurnPathManager from './useTurnPathManager';
+import useMeasurementTool from './useMeasurementTool';
 
 // Color palette and helpers
 const DISPATCH_LOCATION_COLOR_MAP = {
@@ -137,36 +144,17 @@ const formatTooltipContent = (entity) => {
     return renderTooltipItems(items, { compact: true });
 };
 
-// Top Menu Bar Component
-const TopMenuBar = () => (
-    <div style={{
-        position: 'fixed', top: 0, left: 0, right: 0, height: '40px',
-        backgroundColor: '#1a252f', borderBottom: '1px solid #2c3e50',
-        display: 'flex', alignItems: 'center', zIndex: 2000,
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
-    }}>
-        {/* <div style={{ padding: '0 16px', color: '#ecf0f1', fontWeight: 600, fontSize: '14px' }}>Dispatch Map</div> */}
-        {['Tools'].map(item => (
-            <div key={item} style={{
-                padding: '0 16px', height: '100%', display: 'flex', alignItems: 'center',
-                color: '#bdc3c7', fontSize: '13px', cursor: 'pointer',
-                borderLeft: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s'
-            }} onMouseEnter={e => e.target.style.background = '#2c3e50'} onMouseLeave={e => e.target.style.background = 'transparent'}>
-                {item}
-            </div>
-        ))}
-    </div>
-);
-
 export default function DispatchCesiumMap() {
     const mapContainer = useRef(null);
     const cesiumViewerRef = useRef(null);
+    const measurementHandlerRef = useRef(null);
     const [mapLoaded, setMapLoaded] = useState(false);
     const [mapError, setMapError] = useState(null);
     const [cesiumLoaded, setCesiumLoaded] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogData, setDialogData] = useState(null);
-
+    const [showProfileViewer, setShowProfileViewer] = useState(false);
+    const [selectedRoadId, setSelectedRoadId] = useState(null);
     // Data
     const [locations, setLocations] = useState([]);
     const [segments, setSegments] = useState([]);
@@ -174,22 +162,76 @@ export default function DispatchCesiumMap() {
     const [wateringStations, setWateringStations] = useState([]);
     const [speedMonitoring, setSpeedMonitoring] = useState([]);
     const [intersections, setIntersections] = useState([]);
+    const [centerPoints, setCenterPoints] = useState([]);
+    const centerPointEntitiesRef = useRef([]);
+
+    const {
+        isDialogOpen: turnDialogOpen,
+        currentStep: turnCurrentStep,           // for UI
+        getCurrentStep: getTurnCurrentStep,     // ref-backed for Cesium handlers
+        selectedSourceRoad: turnSourceRoad,
+        selectedDestinationRoad: turnDestRoad,
+        openDialog: openTurnDialog,
+        closeDialog: closeTurnDialog,
+        startSelection: startTurnSelection,
+        handleMapClick: handleTurnPathClick,
+    } = useTurnPathManager(cesiumViewerRef, centerPoints);
 
     // UI State
     const [roadNetworksExpanded, setRoadNetworksExpanded] = useState(true);
     const [locationTypesExpanded, setLocationTypesExpanded] = useState(true);
     const [baseLayer, setBaseLayer] = useState('night'); // 'night' or 'day'
+    const [measurementMode, setMeasurementMode] = useState('none'); // none | distance | area
 
     // Visibility
     const [showOpenRoads, setShowOpenRoads] = useState(true);
     const [showClosedRoads, setShowClosedRoads] = useState(true);
     const [showIntersections, setShowIntersections] = useState(true);
+    const [showCenterPoints, setShowCenterPoints] = useState(false);
     const [showTrolley, setShowTrolley] = useState(true);
     const [showWatering, setShowWatering] = useState(true);
     const [showSpeed, setShowSpeed] = useState(true);
     const [visibleLocationTypes, setVisibleLocationTypes] = useState(new Set());
 
+    // Frontrunner-style measurement hook
+    const {
+        measurementMode: frMeasurementMode,
+        startMeasurement: frStartMeasurement,
+        cancelMeasurement: frCancelMeasurement,
+        addMeasurementPoint: frAddPoint,
+        clearMeasurements: frClearMeasurements,
+        updatePreviewLine: frUpdatePreview,
+        finalizeAreaMeasurement: frFinalizeArea,
+        getMeasurementMode: frGetMode,
+    } = useMeasurementTool(cesiumViewerRef);
+
+    const recenterView = () => {
+        const viewer = cesiumViewerRef.current;
+        if (!viewer || !window?.Cesium) return;
+        const Cesium = window.Cesium;
+        viewer.camera.flyTo({
+            destination: Cesium.Cartesian3.fromDegrees(148.980202, -23.847083, 5000),
+            orientation: { heading: 0, pitch: Cesium.Math.toRadians(-90), roll: 0 },
+            duration: 0.8,
+        });
+    };
+
     // Computed
+
+    // ---------------------------------------------------------------------
+    // Hide info/tooltip overlays while turn-path selection is active
+    useEffect(() => {
+        const selecting =
+            turnCurrentStep === 'selecting_source' ||
+            turnCurrentStep === 'selecting_destination';
+        if (selecting) {
+            setDialogOpen(false);
+            setDialogData(null);
+            const tooltip = document.getElementById('map-tooltip');
+            if (tooltip) tooltip.style.display = 'none';
+        }
+    }, [turnCurrentStep]);
+    // ---------------------------------------------------------------------
     const locationCounts = useMemo(() => {
         const counts = {};
         locations.forEach(l => counts[resolveDispatchLocationType(l)] = (counts[resolveDispatchLocationType(l)] || 0) + 1);
@@ -200,6 +242,8 @@ export default function DispatchCesiumMap() {
         open: segments.filter(s => !isDispatchSegmentClosed(s)).length,
         closed: segments.filter(s => isDispatchSegmentClosed(s)).length
     }), [segments]);
+
+    const centerPointCount = centerPoints.length;
 
     const toggleLocationType = (type, checked) => {
         const newSet = new Set(visibleLocationTypes);
@@ -231,20 +275,130 @@ export default function DispatchCesiumMap() {
             window.cesiumViewer = viewer;
             setMapLoaded(true);
 
-            // Coordinates
+            // Load center points from backend (intersection_center_points)
+            fetch('/api/intersection_center_points')
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setCenterPoints(data);
+                    }
+                })
+                .catch(err => {
+                    console.warn('Failed to load center points', err?.message || err);
+                });
+
+            // Measurement handlers
+            const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+            measurementHandlerRef.current = handler;
+
+            handler.setInputAction((movement) => {
+                // Turn path selection takes priority if in selecting mode
+                const step = getTurnCurrentStep?.();
+                if (step === 'selecting_source' || step === 'selecting_destination') {
+                    const drill = viewer.scene.drillPick(movement.position);
+                    const picked = (drill && drill[0]) || viewer.scene.pick(movement.position);
+                    if (picked && picked.id) {
+                        handleTurnPathClick(picked.id);
+                        return;
+                    }
+                }
+
+                const mode = frGetMode();
+                if (!mode) return;
+                const ellipsoid = viewer.scene.globe.ellipsoid;
+                let cartesian =
+                    viewer.camera.pickEllipsoid(movement.position, ellipsoid) ||
+                    viewer.scene.pickPosition(movement.position);
+                if (!cartesian) {
+                    const ray = viewer.camera.getPickRay(movement.position);
+                    if (ray) cartesian = viewer.scene.globe.pick(ray, viewer.scene);
+                }
+                if (!cartesian) return;
+                const carto = ellipsoid.cartesianToCartographic(cartesian);
+                const clamped = Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, 0.0);
+                frAddPoint(clamped);
+            }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+            handler.setInputAction((movement) => {
+                const mode = frGetMode();
+                if (mode !== 'distance') return;
+                const ellipsoid = viewer.scene.globe.ellipsoid;
+                let cartesian =
+                    viewer.camera.pickEllipsoid(movement.endPosition, ellipsoid) ||
+                    viewer.scene.pickPosition(movement.endPosition);
+                if (!cartesian) {
+                    frUpdatePreview(null);
+                    return;
+                }
+                const carto = ellipsoid.cartesianToCartographic(cartesian);
+                const clamped = Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, 0.0);
+                frUpdatePreview(clamped);
+            }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+            handler.setInputAction(() => {
+                frFinalizeArea();
+            }, Cesium.ScreenSpaceEventType.RIGHT_CLICK);
+
+            // Coordinates (exact Frontrunner style)
             const coordDisplay = document.createElement('div');
-            coordDisplay.style.cssText = 'position: absolute; bottom: 20px; right: 20px; background: rgba(50, 50, 50, 0.92); color: white; padding: 10px 14px; border-radius: 8px; font-family: sans-serif; font-size: 12px; z-index: 1000; min-width: 140px;';
+            coordDisplay.id = 'mouse-coordinates';
+            coordDisplay.style.cssText = `
+              position: absolute;
+              bottom: 20px;
+              right: 20px;
+              background: rgba(50, 50, 50, 0.92);
+              color: white;
+              padding: 12px 16px;
+              border-radius: 9px;
+              font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+              font-size: 12px;
+              font-weight: 400;
+              box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+              backdrop-filter: blur(12px);
+              border: none;
+              z-index: 1000;
+              min-width: 160px;
+              text-align: left;
+              display: block;
+              line-height: 1.35;
+            `;
             document.body.appendChild(coordDisplay);
-            new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas).setInputAction((m) => {
-                const c = viewer.scene.pickPosition(m.endPosition);
-                if (c) {
-                    const cart = Cesium.Cartographic.fromCartesian(c);
-                    coordDisplay.innerHTML = `Lat: ${Cesium.Math.toDegrees(cart.latitude).toFixed(6)}°<br>Lng: ${Cesium.Math.toDegrees(cart.longitude).toFixed(6)}°`;
+
+            const coordHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+            coordHandler.setInputAction((movement) => {
+                const cartesian = viewer.scene.pickPosition(movement.endPosition);
+                if (Cesium.defined(cartesian)) {
+                    const cart = Cesium.Cartographic.fromCartesian(cartesian);
+                    const lng = Cesium.Math.toDegrees(cart.longitude).toFixed(6);
+                    const lat = Cesium.Math.toDegrees(cart.latitude).toFixed(6);
+                    coordDisplay.innerHTML = `
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span style="color: #a0a0a0; font-weight: 400;">Lat:</span>
+                        <span style="color: white; font-weight: 500; font-variant-numeric: tabular-nums;">${lat}°</span>
+                      </div>
+                      <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #a0a0a0; font-weight: 400;">Lng:</span>
+                        <span style="color: white; font-weight: 500; font-variant-numeric: tabular-nums;">${lng}°</span>
+                      </div>
+                    `;
+                    coordDisplay.style.display = 'block';
                 }
             }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
         } catch (e) { setMapError(e.message); }
 
-        return () => cesiumViewerRef.current?.destroy();
+        return () => {
+            if (measurementHandlerRef.current) {
+                measurementHandlerRef.current.destroy();
+                measurementHandlerRef.current = null;
+            }
+            if (coordHandler && !coordHandler.isDestroyed()) {
+                coordHandler.destroy();
+            }
+            if (coordDisplay && coordDisplay.parentNode) {
+                coordDisplay.remove();
+            }
+            cesiumViewerRef.current?.destroy();
+        };
     }, [cesiumLoaded]);
 
     // Tooltip Handler
@@ -267,6 +421,13 @@ export default function DispatchCesiumMap() {
         viewer.container.appendChild(tooltip);
 
         handler.setInputAction((movement) => {
+            const step = getTurnCurrentStep?.();
+            if (step === 'selecting_source' || step === 'selecting_destination') {
+                tooltip.style.display = 'none';
+                viewer.container.style.cursor = 'default';
+                return;
+            }
+
             const pickedObject = viewer.scene.pick(movement.endPosition);
             if (pickedObject && pickedObject.id && pickedObject.id.properties) {
                 const content = formatTooltipContent(pickedObject.id);
@@ -310,6 +471,17 @@ export default function DispatchCesiumMap() {
         const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
 
         handler.setInputAction((click) => {
+            // Short-circuit to turn-path selection: no info dialog while selecting
+            const step = getTurnCurrentStep?.();
+            if (step === 'selecting_source' || step === 'selecting_destination') {
+                const drill = viewer.scene.drillPick(click.position);
+                const picked = (drill && drill[0]) || viewer.scene.pick(click.position);
+                if (picked && picked.id) {
+                    handleTurnPathClick(picked.id);
+                }
+                return; // always suppress info dialog while selecting
+            }
+
             // Look at *all* primitives under the cursor
             const picked = viewer.scene.drillPick(click.position) || [];
 
@@ -415,6 +587,63 @@ export default function DispatchCesiumMap() {
         };
     }, [mapLoaded]);
 
+    // Center points renderer (magenta markers, like Frontrunner)
+    useEffect(() => {
+        const viewer = cesiumViewerRef.current;
+        if (!viewer || !viewer.entities) return;
+
+        // clear old
+        if (centerPointEntitiesRef.current.length) {
+            centerPointEntitiesRef.current.forEach(e => {
+                try { viewer.entities.remove(e); } catch (_) { }
+            });
+            centerPointEntitiesRef.current = [];
+        }
+
+        if (!showCenterPoints || !Array.isArray(centerPoints)) {
+            viewer.scene?.requestRender();
+            return;
+        }
+
+        const Cesium = window.Cesium;
+        centerPoints.forEach((cp) => {
+            if (cp.lon == null || cp.lat == null) return;
+            const pos = Cesium.Cartesian3.fromDegrees(cp.lon, cp.lat, 2.0);
+            const ent = viewer.entities.add({
+                position: pos,
+                point: {
+                    pixelSize: 25,
+                    color: Cesium.Color.MAGENTA,
+                    outlineColor: Cesium.Color.WHITE,
+                    outlineWidth: 6,
+                    heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+                    disableDepthTestDistance: Number.POSITIVE_INFINITY,
+                    scaleByDistance: new Cesium.NearFarScalar(1.5e2, 3.0, 1.5e7, 1.5),
+                },
+                cylinder: {
+                    length: 2.0,
+                    topRadius: 0.8,
+                    bottomRadius: 0.8,
+                    material: Cesium.Color.MAGENTA.withAlpha(0.9),
+                    outline: true,
+                    outlineColor: Cesium.Color.WHITE,
+                    outlineWidth: 2,
+                    heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+                },
+                properties: {
+                    category: 'road_intersection_center',
+                    road_id: cp.road_id,
+                    intersection_id: cp.intersection_id,
+                    intersection_name: cp.intersection_name,
+                },
+                name: `Center Point ${cp.intersection_name || ''} (${cp.road_id || ''})`,
+            });
+            centerPointEntitiesRef.current.push(ent);
+        });
+
+        viewer.scene?.requestRender();
+    }, [centerPoints, showCenterPoints]);
+
     // Base Layer Logic
     useEffect(() => {
         if (!cesiumViewerRef.current || !window.Cesium) return;
@@ -425,20 +654,43 @@ export default function DispatchCesiumMap() {
         const updateBaseLayer = async () => {
             viewer.imageryLayers.removeAll();
 
-            if (baseLayer === 'day') {
-                try {
-                    const provider = await Cesium.ArcGisMapServerImageryProvider.fromUrl(
-                        'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer'
-                    );
-                    if (!cancelled) {
-                        viewer.imageryLayers.addImageryProvider(provider);
-                    }
-                } catch (error) {
-                    console.error('Failed to load satellite imagery:', error);
-                }
+            let provider;
+            switch (baseLayer) {
+                case 'night':
+                    provider = new Cesium.UrlTemplateImageryProvider({
+                        url: 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                        credit: '© OpenStreetMap contributors, © CARTO'
+                    });
+                    break;
+                case 'day':
+                    provider = new Cesium.UrlTemplateImageryProvider({
+                        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                        credit: '© Esri, DigitalGlobe, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and the GIS User Community'
+                    });
+                    break;
+                case 'topographic':
+                    provider = new Cesium.UrlTemplateImageryProvider({
+                        url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+                        credit: '© OpenTopoMap contributors',
+                        subdomains: ['a', 'b', 'c']
+                    });
+                    break;
+                case 'terrain':
+                    provider = new Cesium.UrlTemplateImageryProvider({
+                        url: 'https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}.png',
+                        credit: '© Stadia Maps © Stamen Design © OpenMapTiles © OpenStreetMap contributors'
+                    });
+                    break;
+                default:
+                    provider = new Cesium.UrlTemplateImageryProvider({
+                        url: 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                        credit: '© OpenStreetMap contributors, © CARTO'
+                    });
             }
 
             if (!cancelled) {
+                viewer.imageryLayers.addImageryProvider(provider);
+                // Ensure base color is dark for night mode or general consistency
                 viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#1a1a2e');
             }
         };
@@ -533,7 +785,7 @@ export default function DispatchCesiumMap() {
                     // first: use next - current
                     Cesium.Cartesian3.subtract(positions[1], cur, direction);
                 } else if (i === n - 1) {
-                    // last: use current - previous  (this was backwards in your code)
+                    // last: use current - previous
                     Cesium.Cartesian3.subtract(cur, positions[n - 2], direction);
                 } else {
                     // middle: average prev and next directions for smoother corners
@@ -541,25 +793,37 @@ export default function DispatchCesiumMap() {
                     const d2 = new Cesium.Cartesian3();
                     Cesium.Cartesian3.subtract(cur, positions[i - 1], d1);
                     Cesium.Cartesian3.subtract(positions[i + 1], cur, d2);
-                    Cesium.Cartesian3.normalize(d1, d1);
-                    Cesium.Cartesian3.normalize(d2, d2);
+                    if (Cesium.Cartesian3.magnitudeSquared(d1) > Cesium.Math.EPSILON10) Cesium.Cartesian3.normalize(d1, d1);
+                    if (Cesium.Cartesian3.magnitudeSquared(d2) > Cesium.Math.EPSILON10) Cesium.Cartesian3.normalize(d2, d2);
                     Cesium.Cartesian3.add(d1, d2, direction);
                 }
 
                 // zero-length safety
-                if (Cesium.Cartesian3.magnitudeSquared(direction) === 0) {
+                if (Cesium.Cartesian3.magnitudeSquared(direction) < Cesium.Math.EPSILON10) {
                     offsetPositions.push(cur);
                     continue;
                 }
 
                 Cesium.Cartesian3.normalize(direction, direction);
+                if (isNaN(direction.x) || isNaN(direction.y) || isNaN(direction.z)) {
+                    offsetPositions.push(cur);
+                    continue;
+                }
 
                 // local "up" (normal to ellipsoid at this point)
                 ellipsoid.geodeticSurfaceNormal(cur, up);
 
                 // right = direction x up  (perpendicular to road, tangent to ground)
                 Cesium.Cartesian3.cross(direction, up, right);
+                if (Cesium.Cartesian3.magnitudeSquared(right) < Cesium.Math.EPSILON10) {
+                    offsetPositions.push(cur);
+                    continue;
+                }
                 Cesium.Cartesian3.normalize(right, right);
+                if (isNaN(right.x) || isNaN(right.y) || isNaN(right.z)) {
+                    offsetPositions.push(cur);
+                    continue;
+                }
 
                 const offset = Cesium.Cartesian3.multiplyByScalar(
                     right,
@@ -567,12 +831,25 @@ export default function DispatchCesiumMap() {
                     new Cesium.Cartesian3()
                 );
 
-                offsetPositions.push(
-                    Cesium.Cartesian3.add(cur, offset, new Cesium.Cartesian3())
-                );
+                const finalPos = Cesium.Cartesian3.add(cur, offset, new Cesium.Cartesian3());
+                if (isNaN(finalPos.x) || isNaN(finalPos.y) || isNaN(finalPos.z)) {
+                    offsetPositions.push(cur);
+                } else {
+                    offsetPositions.push(finalPos);
+                }
             }
 
             return offsetPositions;
+        };
+
+        // Helper: Filter unique positions to prevent zero-length segments
+        const filterUniquePositions = (positions) => {
+            if (!positions || positions.length < 2) return positions;
+            return positions.filter((p, idx) => {
+                if (idx === 0) return true;
+                const prev = positions[idx - 1];
+                return Cesium.Cartesian3.distanceSquared(p, prev) > 0.0001; // 1cm^2 threshold
+            });
         };
 
         // Helper: bearing (heading) of the nearest road segment to a location.
@@ -594,11 +871,16 @@ export default function DispatchCesiumMap() {
                 const coords = g.coordinates;
 
                 for (let i = 0; i < coords.length - 1; i++) {
-                    const [lon1, lat1] = coords[i];
-                    const [lon2, lat2] = coords[i + 1];
+                    const c1Raw = coords[i];
+                    const c2Raw = coords[i + 1];
 
-                    const p1 = Cesium.Cartesian3.fromDegrees(lon1, lat1);
-                    const p2 = Cesium.Cartesian3.fromDegrees(lon2, lat2);
+                    if (!Number.isFinite(c1Raw[0]) || !Number.isFinite(c1Raw[1]) ||
+                        !Number.isFinite(c2Raw[0]) || !Number.isFinite(c2Raw[1])) {
+                        continue;
+                    }
+
+                    const p1 = Cesium.Cartesian3.fromDegrees(c1Raw[0], c1Raw[1]);
+                    const p2 = Cesium.Cartesian3.fromDegrees(c2Raw[0], c2Raw[1]);
 
                     // use segment midpoint as "position" to compare distance
                     const mid = Cesium.Cartesian3.multiplyByScalar(
@@ -613,8 +895,8 @@ export default function DispatchCesiumMap() {
                     // closer -> update bearing
                     minDistance = distSq;
 
-                    const c1 = Cesium.Cartographic.fromDegrees(lon1, lat1);
-                    const c2 = Cesium.Cartographic.fromDegrees(lon2, lat2);
+                    const c1 = Cesium.Cartographic.fromDegrees(c1Raw[0], c1Raw[1]);
+                    const c2 = Cesium.Cartographic.fromDegrees(c2Raw[0], c2Raw[1]);
 
                     const dLon = c2.longitude - c1.longitude;
                     const y = Math.sin(dLon) * Math.cos(c2.latitude);
@@ -629,11 +911,13 @@ export default function DispatchCesiumMap() {
                 }
             });
 
-            return bestBearing;
+            return isNaN(bestBearing) ? 0 : bestBearing;
         };
 
         // Helper: 50m x 50m square polygon, rotated by angleFromEast (radians), in ENU frame
         const computeSquarePolygon = (centerCartesian, sizeMeters, angleFromEast) => {
+            if (isNaN(angleFromEast) || !centerCartesian) return null;
+
             const half = sizeMeters / 2.0;
 
             // ENU (East-North-Up) local frame at the center
@@ -652,7 +936,7 @@ export default function DispatchCesiumMap() {
                 { x: -half, y: half }
             ];
 
-            return baseCorners.map((c) => {
+            const result = baseCorners.map((c) => {
                 // rotate in ENU
                 const rx = c.x * cos - c.y * sin;
                 const ry = c.x * sin + c.y * cos;
@@ -664,21 +948,30 @@ export default function DispatchCesiumMap() {
                     new Cesium.Cartesian3()
                 );
             });
+
+            // Validate result for NaNs
+            for (const p of result) {
+                if (isNaN(p.x) || isNaN(p.y) || isNaN(p.z)) return null;
+            }
+            return result;
         };
 
         // Exact theme (only using the colors now)
         const NIGHT_THEME = {
-            roadSurfaceColor: '#2C2F3A',    // dark grey
+            // Dark asphalt surfaces; edge color carries status
+            roadSurfaceColorOpen: '#2C2F3A',
+            roadSurfaceColorClosed: '#2C2F3A',
             roadSurfaceAlpha: 0.98,
-            roadShoulderColor: '#2C2F3A',
+            roadShoulderColorOpen: '#2C2F3A',
+            roadShoulderColorClosed: '#2C2F3A',
             roadShoulderAlpha: 0.98,
             polygonOutlineColor: '#A0A0A0',
             polygonOutlineAlpha: 0.95,
             polygonOutlineWidth: 2.2,
-            // Intersection styling from ConsolidatedPolygonMap
-            intersectionFillColor: '#FF8C00', // Dark Orange
+            // Intersection styling: red fill, white outline
+            intersectionFillColor: '#E74C3C',
             intersectionFillAlpha: 1.0,
-            intersectionOutlineColor: '#FFFFFF', // White
+            intersectionOutlineColor: '#FFFFFF',
             intersectionOutlineAlpha: 1.0,
         };
 
@@ -707,149 +1000,203 @@ export default function DispatchCesiumMap() {
 
             try {
                 const g = typeof s.geometry === 'string' ? JSON.parse(s.geometry) : s.geometry;
-                if (!g?.coordinates || g.coordinates.length < 2) return;
+                if (!g?.coordinates) return;
 
-                const rawPositions = g.coordinates.map((c) =>
-                    Cesium.Cartesian3.fromDegrees(c[0], c[1])
-                );
+                let allLineStrings = [];
+                if (g.type === 'MultiLineString') {
+                    allLineStrings = g.coordinates;
+                } else if (g.type === 'LineString') {
+                    allLineStrings = [g.coordinates];
+                } else {
+                    return;
+                }
 
-                // Filter duplicates
-                const positions = rawPositions.filter((p, idx) => {
-                    if (idx === 0) return true;
-                    return !Cesium.Cartesian3.equalsEpsilon(
-                        p,
-                        rawPositions[idx - 1],
-                        Cesium.Math.EPSILON7
+                allLineStrings.forEach((coordinates) => {
+                    // Validate coordinates structure
+                    if (!coordinates || !Array.isArray(coordinates) || coordinates.length < 2) return;
+
+                    // Filter invalid coordinates (NaN, etc)
+                    const validCoords = coordinates.filter(c =>
+                        Array.isArray(c) && c.length >= 2 &&
+                        Number.isFinite(c[0]) && Number.isFinite(c[1])
                     );
-                });
 
-                if (positions.length < 2) return;
+                    if (validCoords.length < 2) return;
 
-                // ----- decide which side this lane sits on -----
-                const dir = (s.direction || '').toString().toLowerCase();
-                let dirSign = 0; // 0 = centred (if no direction), +1 = one side, -1 = opposite
-                if (dir.includes('forward')) dirSign = 1;
-                else if (dir.includes('backward')) dirSign = -1;
+                    const rawPositions = validCoords.map((c) =>
+                        Cesium.Cartesian3.fromDegrees(c[0], c[1])
+                    );
 
-                const laneCenterOffset = dirSign * LANE_CENTER_OFFSET_MAG;
+                    // Filter duplicates and points that are too close (within 1cm)
+                    const positions = filterUniquePositions(rawPositions);
 
-                // centreline of this *lane* (shifted left/right from global centreline)
-                const lanePositions =
-                    laneCenterOffset === 0
-                        ? positions
-                        : computeOffsetLine(positions, laneCenterOffset);
+                    if (positions.length < 2) return;
 
-                // Colours
-                const surfaceColor = Cesium.Color
-                    .fromCssColorString(NIGHT_THEME.roadSurfaceColor)
-                    .withAlpha(NIGHT_THEME.roadSurfaceAlpha);
+                    // ----- decide which side this lane sits on -----
+                    const dir = (s.direction || '').toString().toLowerCase();
+                    let dirSign = 0; // 0 = centred (if no direction), +1 = one side, -1 = opposite
+                    if (dir.includes('forward')) dirSign = 1;
+                    else if (dir.includes('backward')) dirSign = -1;
 
-                const shoulderColor = Cesium.Color
-                    .fromCssColorString(NIGHT_THEME.roadShoulderColor)
-                    .withAlpha(NIGHT_THEME.roadShoulderAlpha);
+                    const laneCenterOffset = dirSign * LANE_CENTER_OFFSET_MAG;
 
-                const edgeColor = closed
-                    ? Cesium.Color.fromCssColorString('#FF6B6B')   // red border when closed
-                    : Cesium.Color.fromCssColorString('#FFD700');  // yellow border when open
+                    // centreline of this *lane* (shifted left/right from global centreline)
+                    let lanePositions =
+                        laneCenterOffset === 0
+                            ? positions
+                            : computeOffsetLine(positions, laneCenterOffset);
 
-                const centerlineColor = Cesium.Color.WHITE;
+                    // Final filter to ensure no duplicates after offset calculation
+                    lanePositions = filterUniquePositions(lanePositions);
 
-                // 1. Lane shoulder (full lane width, shifted to its side)
-                viewer.entities.add({
-                    corridor: {
-                        positions: lanePositions,
-                        width: LANE_TOTAL_WIDTH,
-                        material: shoulderColor,
-                        height: 0.0,
-                        cornerType: Cesium.CornerType.MITERED,
-                        outline: false,
-                    },
-                    properties: {
-                        category: 'dispatch_segment',
-                        style_role: 'road_shoulder',
-                        ...s,
-                    },
-                });
+                    // Verify lanePositions after offset calculation
+                    if (!lanePositions || lanePositions.length < 2) return;
 
-                // 2. Lane asphalt surface (slightly narrower)
-                viewer.entities.add({
-                    corridor: {
-                        positions: lanePositions,
-                        width: LANE_SURFACE_WIDTH,
-                        material: surfaceColor,
-                        height: 0.18,
-                        cornerType: Cesium.CornerType.MITERED,
-                        outline: false,
-                    },
-                    properties: {
-                        category: 'dispatch_segment',
-                        style_role: 'road_surface',
-                        ...s,
-                    },
-                });
+                    // Colours: dark fill, edges indicate status (open yellow, closed red)
+                    const surfaceColor = Cesium.Color
+                        .fromCssColorString(closed ? NIGHT_THEME.roadSurfaceColorClosed : NIGHT_THEME.roadSurfaceColorOpen)
+                        .withAlpha(NIGHT_THEME.roadSurfaceAlpha);
 
-                // 3. Centre white line ON THE GLOBAL CENTRELINE (only once per geometry is nice,
-                // but drawing it for every segment is harmless — they overlap exactly)
-                viewer.entities.add({
-                    corridor: {
-                        positions,
-                        width: CENTERLINE_WIDTH,
-                        material: centerlineColor.withAlpha(0.95),
-                        height: 0.2,
-                        cornerType: Cesium.CornerType.MITERED,
-                        outline: false,
-                    },
-                    properties: {
-                        category: 'dispatch_segment',
-                        style_role: 'road_centerline',
-                        ...s,
-                    },
-                });
+                    const shoulderColor = Cesium.Color
+                        .fromCssColorString(closed ? NIGHT_THEME.roadShoulderColorClosed : NIGHT_THEME.roadShoulderColorOpen)
+                        .withAlpha(NIGHT_THEME.roadShoulderAlpha);
 
-                // 4. Edge lines at OUTER edge of each lane
-                const leftEdge = computeOffsetLine(lanePositions, -HALF_LANE_TOTAL_WIDTH);
-                const rightEdge = computeOffsetLine(lanePositions, HALF_LANE_TOTAL_WIDTH);
+                    const edgeColor = closed
+                        ? Cesium.Color.fromCssColorString('#E74C3C')
+                        : Cesium.Color.fromCssColorString('#FFD600');
 
-                [leftEdge, rightEdge].forEach((edgePositions, idx) => {
+                    const centerlineColor = Cesium.Color.WHITE;
+
+                    // 1. Lane shoulder (full lane width, shifted to its side)
                     viewer.entities.add({
-                        polyline: {
-                            positions: edgePositions,
-                            width: NIGHT_THEME.polygonOutlineWidth,
-                            material: edgeColor.withAlpha(NIGHT_THEME.polygonOutlineAlpha),
-                            clampToGround: false,
+                        corridor: {
+                            positions: lanePositions,
+                            width: LANE_TOTAL_WIDTH,
+                            material: shoulderColor,
+                            height: 0.0,
+                            cornerType: Cesium.CornerType.MITERED,
+                            outline: false,
                         },
                         properties: {
                             category: 'dispatch_segment',
-                            style_role: idx === 0 ? 'road_edge_left' : 'road_edge_right',
+                            style_role: 'road_shoulder',
                             ...s,
                         },
                     });
+
+                    // 2. Lane asphalt surface (slightly narrower)
+                    viewer.entities.add({
+                        corridor: {
+                            positions: lanePositions,
+                            width: LANE_SURFACE_WIDTH,
+                            material: surfaceColor,
+                            height: 0.18,
+                            cornerType: Cesium.CornerType.MITERED,
+                            outline: false,
+                        },
+                        properties: {
+                            category: 'dispatch_segment',
+                            style_role: 'road_surface',
+                            ...s,
+                        },
+                    });
+
+                    // 3. Centerline (dashed line)
+                    viewer.entities.add({
+                        polyline: {
+                            positions: lanePositions,
+                            width: CENTERLINE_WIDTH,
+                            material: new Cesium.PolylineDashMaterialProperty({
+                                color: centerlineColor,
+                                dashLength: 16.0,
+                            }),
+                            clampToGround: true,
+                            zIndex: 10,
+                        },
+                        properties: {
+                            category: 'dispatch_segment',
+                            style_role: 'road_centerline',
+                            ...s,
+                        },
+                    });
+
+                    // 4. Edges (solid lines)
+                    // Left edge
+                    const leftEdgeOffset = -HALF_LANE_TOTAL_WIDTH;
+                    let leftEdgePositions = computeOffsetLine(lanePositions, leftEdgeOffset);
+                    leftEdgePositions = filterUniquePositions(leftEdgePositions);
+
+                    if (leftEdgePositions && leftEdgePositions.length >= 2) {
+                        viewer.entities.add({
+                            polyline: {
+                                positions: leftEdgePositions,
+                                width: 2.0,
+                                material: edgeColor,
+                                clampToGround: true,
+                                zIndex: 10,
+                            },
+                            properties: {
+                                category: 'dispatch_segment',
+                                style_role: 'road_edge_left',
+                                ...s,
+                            },
+                        });
+                    }
+
+                    // Right edge
+                    const rightEdgeOffset = HALF_LANE_TOTAL_WIDTH;
+                    let rightEdgePositions = computeOffsetLine(lanePositions, rightEdgeOffset);
+                    rightEdgePositions = filterUniquePositions(rightEdgePositions);
+
+                    if (rightEdgePositions && rightEdgePositions.length >= 2) {
+                        viewer.entities.add({
+                            polyline: {
+                                positions: rightEdgePositions,
+                                width: 2.0,
+                                material: edgeColor,
+                                clampToGround: true,
+                                zIndex: 10,
+                            },
+                            properties: {
+                                category: 'dispatch_segment',
+                                style_role: 'road_edge_right',
+                                ...s,
+                            },
+                        });
+                    }
                 });
-            } catch (e) {
-                console.error('Failed to render segment', s, e);
-            }
+            } catch (e) { console.error('Error rendering segment', s, e); }
         });
 
         // OTHER LAYERS (trolley, intersections, etc.)
         if (showTrolley) {
-            trolleySegments.forEach((t) =>
-                viewer.entities.add({
-                    polyline: {
-                        positions: Cesium.Cartesian3.fromDegreesArray([
-                            t.start_longitude,
-                            t.start_latitude,
-                            t.end_longitude,
-                            t.end_latitude
-                        ]),
-                        width: 5,
-                        material: Cesium.Color.fromCssColorString("#FF6B6B").withAlpha(
-                            0.9
-                        ),
-                        clampToGround: true
-                    },
-                    properties: { category: "dispatch_trolley", ...t }
-                })
-            );
+            trolleySegments.forEach((t) => {
+                try {
+                    if (!Number.isFinite(t.start_longitude) || !Number.isFinite(t.start_latitude) ||
+                        !Number.isFinite(t.end_longitude) || !Number.isFinite(t.end_latitude)) {
+                        return;
+                    }
+
+                    viewer.entities.add({
+                        polyline: {
+                            positions: Cesium.Cartesian3.fromDegreesArray([
+                                t.start_longitude,
+                                t.start_latitude,
+                                t.end_longitude,
+                                t.end_latitude
+                            ]),
+                            width: 5,
+                            material: Cesium.Color.fromCssColorString("#FF6B6B").withAlpha(
+                                0.9
+                            ),
+                            clampToGround: true
+                        },
+                        properties: { category: "dispatch_trolley", ...t }
+                    });
+                } catch (e) {
+                    console.error("Error rendering trolley segment", t, e);
+                }
+            });
         }
 
         if (showIntersections) {
@@ -875,11 +1222,30 @@ export default function DispatchCesiumMap() {
                     polygons.forEach((polyRings, idx) => {
                         // polyRings[0] is exterior. We IGNORE holes (polyRings[1..]) 
                         // to avoid "circles" or artifacts inside the intersection.
-                        if (!polyRings || !polyRings[0]) return;
+                        if (!polyRings || !Array.isArray(polyRings) || !polyRings[0]) return;
 
-                        const hierarchy = new Cesium.PolygonHierarchy(
-                            polyRings[0].map(c => Cesium.Cartesian3.fromDegrees(c[0], c[1]))
+                        // Validate and filter exterior ring coordinates
+                        const validCoords = polyRings[0].filter(c =>
+                            Array.isArray(c) && c.length >= 2 &&
+                            Number.isFinite(c[0]) && Number.isFinite(c[1])
                         );
+
+                        if (validCoords.length < 3) return;
+
+                        const rawPositions = validCoords.map(c => Cesium.Cartesian3.fromDegrees(c[0], c[1]));
+
+                        // Filter duplicates and points that are too close (within 1cm)
+                        const positions = rawPositions.filter((p, idx) => {
+                            if (idx === 0) return true;
+                            const prev = rawPositions[idx - 1];
+                            return Cesium.Cartesian3.distanceSquared(p, prev) > 0.0001; // 1cm^2 threshold
+                        });
+
+                        // Ensure polygon is closed (first and last point match) or has enough points
+                        // Cesium handles unclosed polygons by closing them, but we need at least 3 unique points
+                        if (positions.length < 3) return;
+
+                        const hierarchy = new Cesium.PolygonHierarchy(positions);
 
                         // Holes ignored intentionally.
 
@@ -915,64 +1281,72 @@ export default function DispatchCesiumMap() {
         ]);
 
         locations.forEach((l) => {
-            const type = resolveDispatchLocationType(l);
-            if (!visibleLocationTypes.has(type)) return;
+            try {
+                if (!Number.isFinite(l.latitude) || !Number.isFinite(l.longitude)) return;
 
-            const color = Cesium.Color.fromCssColorString(
-                getDispatchLocationColor(type)
-            );
+                const type = resolveDispatchLocationType(l);
+                if (!visibleLocationTypes.has(type)) return;
 
-            const position = Cesium.Cartesian3.fromDegrees(
-                l.longitude,
-                l.latitude,
-                2.0    // 2m above ground so locations sit clearly above the road surface
-            );
-
-            if (SQUARE_TYPES.has(type.toLowerCase())) {
-                // Find nearest road's bearing
-                const bearingFromNorth = getNearestRoadBearing(l, segments);
-
-                // We want the square PERPENDICULAR to the road.
-                // Our rotation angle is measured from EAST in ENU.
-                // A perpendicular to a heading-from-north `bearing` corresponds to angleFromEast = -bearing.
-                const angleFromEast = -bearingFromNorth;
-
-                // 40m x 40m square
-                const hierarchy = computeSquarePolygon(
-                    position,
-                    40.0,          // size in meters
-                    angleFromEast
+                const color = Cesium.Color.fromCssColorString(
+                    getDispatchLocationColor(type)
                 );
 
-                viewer.entities.add({
-                    polygon: {
-                        hierarchy,
-                        material: color.withAlpha(1.0),   // opaque: fully hide roads underneath
-                        outline: true,
-                        outlineColor: Cesium.Color.WHITE,
-                        perPositionHeight: true           // use the actual heights in hierarchy (≈2m)
-                    },
-                    properties: {
-                        category: "dispatch_location",
-                        ...l
+                const position = Cesium.Cartesian3.fromDegrees(
+                    l.longitude,
+                    l.latitude,
+                    2.0    // 2m above ground so locations sit clearly above the road surface
+                );
+
+                if (SQUARE_TYPES.has(type.toLowerCase())) {
+                    // Find nearest road's bearing
+                    const bearingFromNorth = getNearestRoadBearing(l, segments);
+
+                    // We want the square PERPENDICULAR to the road.
+                    // Our rotation angle is measured from EAST in ENU.
+                    // A perpendicular to a heading-from-north `bearing` corresponds to angleFromEast = -bearing.
+                    const angleFromEast = -bearingFromNorth;
+
+                    // 40m x 40m square
+                    const hierarchy = computeSquarePolygon(
+                        position,
+                        40.0,          // size in meters
+                        angleFromEast
+                    );
+
+                    if (hierarchy && hierarchy.length >= 3) {
+                        viewer.entities.add({
+                            polygon: {
+                                hierarchy,
+                                material: color.withAlpha(1.0),   // opaque: fully hide roads underneath
+                                outline: true,
+                                outlineColor: Cesium.Color.WHITE,
+                                perPositionHeight: true           // use the actual heights in hierarchy (≈2m)
+                            },
+                            properties: {
+                                category: "dispatch_location",
+                                ...l
+                            }
+                        });
                     }
-                });
-            } else {
-                // default point marker, also at height 2m
-                viewer.entities.add({
-                    position,
-                    point: {
-                        pixelSize: 8,
-                        color,
-                        outlineColor: Cesium.Color.WHITE,
-                        outlineWidth: 1,
-                        disableDepthTestDistance: Number.POSITIVE_INFINITY, // <-- always on top
-                    },
-                    properties: {
-                        category: "dispatch_location",
-                        ...l
-                    }
-                });
+                } else {
+                    // default point marker, also at height 2m
+                    viewer.entities.add({
+                        position,
+                        point: {
+                            pixelSize: 8,
+                            color,
+                            outlineColor: Cesium.Color.WHITE,
+                            outlineWidth: 1,
+                            disableDepthTestDistance: Number.POSITIVE_INFINITY, // <-- always on top
+                        },
+                        properties: {
+                            category: "dispatch_location",
+                            ...l
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error("Error rendering location", l, e);
             }
         });
     }, [
@@ -1017,39 +1391,386 @@ export default function DispatchCesiumMap() {
         ).join(' ');
     };
 
+    // --- Measurement helpers (mirror Frontrunner behavior) ---
+    const removePreviewEntities = (viewer) => {
+        if (!viewer) return;
+        const refs = [previewLineEntityRef, previewLabelEntityRef];
+        refs.forEach(ref => {
+            if (ref.current) {
+                try { viewer.entities.remove(ref.current); } catch (_) { }
+                ref.current = null;
+            }
+        });
+        viewer.scene?.requestRender();
+    };
+
+    const clearMeasurements = (viewer) => {
+        if (!viewer) return;
+        measurementEntitiesRef.current.forEach(e => { try { viewer.entities.remove(e); } catch (_) { } });
+        overlayEntitiesRef.current.forEach(e => { try { viewer.entities.remove(e); } catch (_) { } });
+        removePreviewEntities(viewer);
+        measurementEntitiesRef.current = [];
+        overlayEntitiesRef.current = [];
+        measurementPointsRef.current = [];
+        areaLockedRef.current = false;
+        measurementModeRef.current = 'none';
+        setMeasurementMode('none');
+        viewer.scene?.requestRender();
+    };
+
+    const drawDistance = (viewer, points) => {
+        overlayEntitiesRef.current.forEach(e => { try { viewer.entities.remove(e); } catch (_) { } });
+        overlayEntitiesRef.current = [];
+        const positions = points.map(p => p.cartesian);
+        const line = viewer.entities.add({
+            polyline: {
+                positions,
+                width: 4,
+                material: Cesium.Color.WHITE,
+                clampToGround: true,
+            }
+        });
+        measurementEntitiesRef.current.push(line);
+        overlayEntitiesRef.current.push(line);
+
+        const ellipsoid = viewer.scene.globe.ellipsoid;
+        const c1 = ellipsoid.cartesianToCartographic(positions[0]);
+        const c2 = ellipsoid.cartesianToCartographic(positions[1]);
+        const geodesic = new Cesium.EllipsoidGeodesic(c1, c2);
+        const distanceMeters = geodesic.surfaceDistance;
+        const distanceFeet = distanceMeters * 3.28084;
+
+        if (!Number.isFinite(distanceMeters) || distanceMeters < 0.01) {
+            // discard second point
+            const lastPoint = measurementEntitiesRef.current.pop();
+            try { viewer.entities.remove(lastPoint); } catch (_) { }
+            measurementPointsRef.current = [points[0]];
+            viewer.scene?.requestRender();
+            return;
+        }
+
+        const metersText = `${distanceMeters.toFixed(2)} m`;
+        const feetText = `${distanceFeet.toFixed(2)} ft`;
+        const mid = Cesium.Cartesian3.lerp(positions[0], positions[1], 0.5, new Cesium.Cartesian3());
+
+        const label1 = viewer.entities.add({
+            position: mid,
+            label: {
+                text: metersText,
+                font: '22px bold "Arial", sans-serif',
+                fillColor: Cesium.Color.YELLOW,
+                outlineColor: Cesium.Color.BLACK,
+                outlineWidth: 4,
+                style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                verticalOrigin: Cesium.VerticalOrigin.CENTER,
+                horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+                pixelOffset: new Cesium.Cartesian2(0, -30),
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            }
+        });
+        const label2 = viewer.entities.add({
+            position: mid,
+            label: {
+                text: feetText,
+                font: '20px bold "Arial", sans-serif',
+                fillColor: Cesium.Color.WHITE,
+                outlineColor: Cesium.Color.BLACK,
+                outlineWidth: 4,
+                style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                verticalOrigin: Cesium.VerticalOrigin.CENTER,
+                horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+                pixelOffset: new Cesium.Cartesian2(0, 30),
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            }
+        });
+        measurementEntitiesRef.current.push(label1, label2);
+        overlayEntitiesRef.current.push(label1, label2);
+
+        areaLockedRef.current = true;
+        measurementModeRef.current = 'none';
+        setMeasurementMode('none');
+        viewer.scene?.requestRender();
+    };
+
+    const drawAreaPreview = (viewer, points) => {
+        overlayEntitiesRef.current.forEach(e => { try { viewer.entities.remove(e); } catch (_) { } });
+        overlayEntitiesRef.current = [];
+        if (points.length < 2) return;
+        const positions = points.map(p => p.cartesian);
+        const polyline = viewer.entities.add({
+            polyline: {
+                positions,
+                width: 2,
+                material: Cesium.Color.CYAN.withAlpha(0.8),
+                clampToGround: true,
+            }
+        });
+        overlayEntitiesRef.current.push(polyline);
+        viewer.scene?.requestRender();
+    };
+
+    const computeArea = (positions, ellipsoid) => {
+        const origin = positions[0];
+        const enu = Cesium.Transforms.eastNorthUpToFixedFrame(origin, ellipsoid);
+        const inv = Cesium.Matrix4.inverseTransformation(enu, new Cesium.Matrix4());
+        const local = positions.map(p => {
+            const diff = Cesium.Cartesian3.subtract(p, origin, new Cesium.Cartesian3());
+            return Cesium.Matrix4.multiplyByPointAsVector(inv, diff, new Cesium.Cartesian3());
+        });
+        let area = 0;
+        for (let i = 0, j = local.length - 1; i < local.length; j = i++) {
+            area += local[j].x * local[i].y - local[i].x * local[j].y;
+        }
+        return Math.abs(area) * 0.5;
+    };
+
+    const finalizeAreaMeasurement = (viewer) => {
+        const pts = measurementPointsRef.current;
+        if (!viewer || pts.length < 3 || areaLockedRef.current) return;
+        overlayEntitiesRef.current.forEach(e => { try { viewer.entities.remove(e); } catch (_) { } });
+        overlayEntitiesRef.current = [];
+        removePreviewEntities(viewer);
+
+        const positions = pts.map(p => p.cartesian);
+        const poly = viewer.entities.add({
+            polygon: {
+                hierarchy: new Cesium.PolygonHierarchy(positions),
+                material: Cesium.Color.YELLOW.withAlpha(0.25),
+                outline: true,
+                outlineColor: Cesium.Color.YELLOW,
+                outlineWidth: 2,
+            }
+        });
+        measurementEntitiesRef.current.push(poly);
+        overlayEntitiesRef.current.push(poly);
+
+        const ellipsoid = viewer.scene.globe.ellipsoid;
+        const areaSqm = computeArea(positions, ellipsoid);
+        const areaSqft = areaSqm * 10.7639;
+        const centroid = positions.reduce((acc, cur) => Cesium.Cartesian3.add(acc, cur, acc), new Cesium.Cartesian3());
+        Cesium.Cartesian3.multiplyByScalar(centroid, 1 / positions.length, centroid);
+
+        const label = viewer.entities.add({
+            position: centroid,
+            label: {
+                text: `${areaSqm.toFixed(2)} m² / ${areaSqft.toFixed(2)} ft²`,
+                font: '20px bold "Arial", sans-serif',
+                fillColor: Cesium.Color.YELLOW,
+                outlineColor: Cesium.Color.BLACK,
+                outlineWidth: 4,
+                style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                verticalOrigin: Cesium.VerticalOrigin.CENTER,
+                horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+                pixelOffset: new Cesium.Cartesian2(0, -20),
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            }
+        });
+        measurementEntitiesRef.current.push(label);
+        overlayEntitiesRef.current.push(label);
+
+        areaLockedRef.current = true;
+        measurementModeRef.current = 'none';
+        setMeasurementMode('none');
+        viewer.scene?.requestRender();
+    };
+
+    const updatePreviewLine = (viewer, cursorCartesian) => {
+        if (!viewer) return;
+        if (areaLockedRef.current) {
+            removePreviewEntities(viewer);
+            return;
+        }
+        const mode = measurementModeRef.current;
+        const pts = measurementPointsRef.current;
+        if (mode !== 'distance' || pts.length !== 1) {
+            removePreviewEntities(viewer);
+            return;
+        }
+        if (!cursorCartesian) {
+            removePreviewEntities(viewer);
+            return;
+        }
+
+        const first = pts[0].cartesian;
+        removePreviewEntities(viewer);
+
+        previewLineEntityRef.current = viewer.entities.add({
+            polyline: {
+                positions: [first, cursorCartesian],
+                width: 3,
+                material: Cesium.Color.YELLOW.withAlpha(0.8),
+                clampToGround: true,
+            }
+        });
+
+        const ellipsoid = viewer.scene.globe.ellipsoid;
+        const c1 = ellipsoid.cartesianToCartographic(first);
+        const c2 = ellipsoid.cartesianToCartographic(cursorCartesian);
+        const geodesic = new Cesium.EllipsoidGeodesic(c1, c2);
+        const distanceMeters = geodesic.surfaceDistance;
+        const distanceFeet = distanceMeters * 3.28084;
+        const text = `${distanceMeters.toFixed(2)} m / ${distanceFeet.toFixed(2)} ft`;
+
+        const mid = Cesium.Cartesian3.lerp(first, cursorCartesian, 0.5, new Cesium.Cartesian3());
+        previewLabelEntityRef.current = viewer.entities.add({
+            position: mid,
+            label: {
+                text,
+                font: '20px bold \"Arial\", sans-serif',
+                fillColor: Cesium.Color.YELLOW,
+                outlineColor: Cesium.Color.BLACK,
+                outlineWidth: 4,
+                style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                verticalOrigin: Cesium.VerticalOrigin.CENTER,
+                pixelOffset: new Cesium.Cartesian2(0, -25),
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            }
+        });
+        viewer.scene?.requestRender();
+    };
+
+    const addMeasurementPoint = (viewer, cartesian) => {
+        if (!viewer || !cartesian) return;
+        if (areaLockedRef.current) return;
+        const mode = measurementModeRef.current;
+        if (mode === 'none') return;
+
+        const newPoint = { id: uuidv4(), cartesian };
+        const newPoints = [...measurementPointsRef.current, newPoint];
+        measurementPointsRef.current = newPoints;
+
+        const pointEntity = viewer.entities.add({
+            position: cartesian,
+            point: {
+                pixelSize: 12,
+                color: Cesium.Color.WHITE,
+                outlineColor: Cesium.Color.CYAN,
+                outlineWidth: 3,
+                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            }
+        });
+        measurementEntitiesRef.current.push(pointEntity);
+
+        if (mode === 'distance' && newPoints.length === 2) {
+            removePreviewEntities(viewer);
+            drawDistance(viewer, newPoints);
+        } else if (mode === 'area' && newPoints.length >= 2) {
+            drawAreaPreview(viewer, newPoints);
+        }
+    };
+
+    const handleMeasureChange = (mode) => {
+        if (mode === 'clear') {
+            frClearMeasurements();
+            setMeasurementMode('none');
+            return;
+        }
+        frStartMeasurement(mode);
+        setMeasurementMode(mode);
+    };
+
     if (mapError) return <div style={{ color: 'white', padding: 20 }}>Error: {mapError}</div>;
 
     return (
         <>
-            <Script src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js" onLoad={() => setCesiumLoaded(true)} />
-            <TopMenuBar />
-            <div style={{ position: 'relative', width: '100%', height: 'calc(100% - 40px)', marginTop: '40px' }}>
+            <Script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.126.0/Cesium.js" onLoad={() => setCesiumLoaded(true)} />
+            <TopMenuBar
+                onComputePath={() => {
+                    openTurnDialog();
+                }}
+                onMeasureDistance={() => handleMeasureChange('distance')}
+                onMeasureArea={() => handleMeasureChange('area')}
+            />
+            {turnDialogOpen && (
+                <>
+                    <TurnPathStatusBanner
+                        currentStep={turnCurrentStep}
+                        selectedSourceRoad={turnSourceRoad}
+                        selectedDestinationRoad={turnDestRoad}
+                        onCancel={closeTurnDialog}
+                    />
+                    <TurnPathDialog
+                        isOpen={turnDialogOpen}
+                        onClose={closeTurnDialog}
+                        onStartSelection={(config) => {
+                            startTurnSelection(config);
+                        }}
+                        vehicleProfiles={{}}
+                        currentStep={turnCurrentStep}
+                    />
+                </>
+            )}
+            <div style={{ position: 'relative', width: '100%', height: 'calc(100% - 40px)' }}>
                 <div ref={mapContainer} style={{ width: '100%', height: '100%', background: '#1a1a2e' }} />
 
                 {/* Sidebar - Right Side */}
+                {/* Sidebar (copy styling from Frontrunner legend) */}
                 <div style={{
                     position: 'absolute', top: 20, right: 20, width: 300,
-                    background: 'rgba(27, 38, 59, 0.95)', color: 'white',
-                    borderRadius: 8, backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255,255,255,0.1)', maxHeight: 'calc(100vh - 80px)', overflowY: 'auto',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                    backgroundColor: 'rgba(40, 40, 40, 0.75)',
+                    border: '1px solid rgba(120, 120, 120, 0.6)',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
+                    backdropFilter: 'blur(15px)',
+                    zIndex: 1000,
+                    fontFamily: `'Inter','Segoe UI',Arial,sans-serif`,
+                    overflow: 'hidden'
                 }}>
-                    {/* Header */}
                     <div style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        background: '#1a252f', padding: '12px', borderTopLeftRadius: 8, borderTopRightRadius: 8,
-                        borderBottom: '1px solid rgba(255,255,255,0.1)'
+                        backgroundColor: 'rgba(30, 30, 30, 0.8)',
+                        padding: '12px 16px',
+                        borderRadius: '8px 8px 0 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
                     }}>
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <div style={{ width: 16, height: 16, background: '#3498db', borderRadius: 3, marginRight: 10 }} />
-                            <span style={{ fontWeight: 700, fontSize: 14 }}>Dispatch Map</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <button style={{
-                                background: 'rgba(52, 152, 219, 0.2)', border: '1px solid #3498db', borderRadius: 4,
-                                padding: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{
+                                width: '20px',
+                                height: '20px',
+                                backgroundColor: '#3498db',
+                                borderRadius: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
                             }}>
-                                <svg width="16" height="16" viewBox="0 0 16 16">
+                            </div>
+                            <span style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>
+                                Dispatch Map
+                            </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <button
+                                style={{
+                                    backgroundColor: 'rgba(52, 152, 219, 0.3)',
+                                    border: '1px solid rgba(52, 152, 219, 0.5)',
+                                    borderRadius: '4px',
+                                    color: '#3498db',
+                                    cursor: 'pointer',
+                                    padding: '4px 8px',
+                                    fontSize: '12px',
+                                    fontWeight: '500',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    transition: 'all 0.2s'
+                                }}
+                                onClick={recenterView}
+                                onMouseEnter={(e) => {
+                                    e.target.style.backgroundColor = 'rgba(52, 152, 219, 0.5)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.target.style.backgroundColor = 'rgba(52, 152, 219, 0.3)';
+                                }}
+                                title="Recenter map on current data"
+                            >
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 16 16"
+                                    style={{ display: 'inline-block', verticalAlign: 'middle' }}
+                                >
                                     <circle cx="8" cy="8" r="7.5" fill="#000" />
                                     <circle cx="8" cy="8" r="6" fill="none" stroke="#CC5500" strokeWidth="1.5" />
                                     <circle cx="8" cy="8" r="3" fill="#CC5500" />
@@ -1059,62 +1780,106 @@ export default function DispatchCesiumMap() {
                                     <rect x="13" y="7" width="3" height="2" fill="#CC5500" />
                                 </svg>
                             </button>
-                            <span style={{ fontSize: 12, cursor: 'pointer' }}>▼</span>
+                            <div
+                                style={{
+                                    color: 'white',
+                                    fontSize: '16px',
+                                    cursor: 'pointer',
+                                    padding: '4px',
+                                    transition: 'transform 0.2s'
+                                }}
+                            >
+                                ▼
+                            </div>
                         </div>
                     </div>
 
-                    {/* Base Layer Selector */}
                     <div style={{
-                        padding: '12px', borderBottom: '1px solid rgba(120, 120, 120, 0.3)',
+                        padding: '12px',
+                        borderBottom: '1px solid rgba(120, 120, 120, 0.3)',
                         backgroundColor: 'rgba(52, 152, 219, 0.1)'
                     }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontSize: '11px', color: '#bdc3c7', fontWeight: '600' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontSize: '11px',
+                            color: '#bdc3c7',
+                            fontWeight: '600'
+                        }}>
                             Base Layer
                         </label>
                         <select
                             value={baseLayer}
                             onChange={(e) => setBaseLayer(e.target.value)}
                             style={{
-                                width: '100%', padding: '6px 8px', backgroundColor: 'rgba(40, 40, 40, 0.9)',
-                                color: 'white', border: '1px solid rgba(120, 120, 120, 0.4)', borderRadius: '4px',
-                                fontSize: '12px', cursor: 'pointer', outline: 'none'
+                                width: '100%',
+                                padding: '6px 8px',
+                                backgroundColor: 'rgba(40, 40, 40, 0.9)',
+                                color: 'white',
+                                border: '1px solid rgba(120, 120, 120, 0.4)',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                outline: 'none'
                             }}
                         >
                             <option value="night">Night Mode (Dark)</option>
                             <option value="day">Day Mode (Satellite)</option>
+                            <option value="topographic">Topographic</option>
+                            <option value="terrain">Terrain</option>
                         </select>
                     </div>
 
-                    {/* Location Categories (Red) */}
-                    <Section
-                        title="Location Categories" color="#e74c3c" expanded={locationTypesExpanded}
-                        onToggle={() => setLocationTypesExpanded(!locationTypesExpanded)}
-                        count={Object.keys(locationCounts).length}
-                        textColor="#e74c3c" iconColor="#e74c3c" badgeColor="#e74c3c"
-                    >
-                        {Object.entries(locationCounts).sort((a, b) => b[1] - a[1]).map(([type, count]) => (
-                            <LegendItem
-                                key={type} label={`${type} (${count})`} color={getDispatchLocationColor(type)}
-                                checked={visibleLocationTypes.has(type)} onChange={(c) => toggleLocationType(type, c)} type="square"
-                            />
-                        ))}
-                    </Section>
+                    {/* Sections */}
+                    <div style={{
+                        padding: '12px',
+                        color: 'white',
+                        fontSize: '12px',
+                        maxHeight: '320px',
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: 'rgba(120, 120, 120, 0.6) rgba(40, 40, 40, 0.3)'
+                    }}>
+                        <Section
+                            title="Location Categories" color="#e74c3c" expanded={locationTypesExpanded}
+                            onToggle={() => setLocationTypesExpanded(!locationTypesExpanded)}
+                            count={Object.keys(locationCounts).length}
+                            labelColor="#e74c3c"
+                            badgeColor="#e74c3c"
+                        >
+                            {Object.entries(locationCounts).map(([locType, count]) => {
+                                const color = getDispatchLocationColor(locType);
+                                return (
+                                    <LegendItem
+                                        key={locType}
+                                        label={`${locType} (${count})`}
+                                        color={color}
+                                        checked={visibleLocationTypes.has(locType)}
+                                        onChange={(checked) => toggleLocationType(locType, checked)}
+                                        type="location"
+                                    />
+                                );
+                            })}
+                        </Section>
 
-                    {/* Road Networks (Purple Border, Red Text) */}
-                    <Section
-                        title="Road Networks" color="#9B59B6" expanded={roadNetworksExpanded}
-                        onToggle={() => setRoadNetworksExpanded(!roadNetworksExpanded)}
-                        count={roadCounts.open + roadCounts.closed + intersections.length + trolleySegments.length + wateringStations.length + speedMonitoring.length}
-                        textColor="#FF0000" iconColor="#9B59B6" badgeColor="#FF0000"
-                    >
-                        <LegendItem label={`Open Roads (${roadCounts.open})`} color="#FFFF00" checked={showOpenRoads} onChange={setShowOpenRoads} type="square" />
-                        <LegendItem label={`Closed Roads (${roadCounts.closed})`} color="#666666" checked={showClosedRoads} onChange={setShowClosedRoads} type="square" />
-                        <LegendItem label={`Intersections (${intersections.length})`} color="#FF8C00" checked={showIntersections} onChange={setShowIntersections} type="square" />
-                        <LegendItem label={`Trolley Lines (${trolleySegments.length})`} color="#FF6B6B" checked={showTrolley} onChange={setShowTrolley} type="square" />
-                        <LegendItem label={`Watering Stations (${wateringStations.length})`} color="#3498db" checked={showWatering} onChange={setShowWatering} type="square" />
-                        <LegendItem label={`Speed Monitoring (${speedMonitoring.length})`} color="#f1c40f" checked={showSpeed} onChange={setShowSpeed} type="square" />
-                    </Section>
+                        <Section
+                            title="Road Networks"
+                            color="#7a3db8"
+                            expanded={roadNetworksExpanded}
+                            onToggle={() => setRoadNetworksExpanded(!roadNetworksExpanded)}
+                            count={roadCounts.open + roadCounts.closed + intersections.length + centerPointCount}
+                            labelColor="#f4f6fb"
+                            badgeColor="#d32f2f"
+                        >
+                            <LegendItem label={`Intersections (${intersections.length})`} color="#e74c3c" checked={showIntersections} onChange={setShowIntersections} type="road" />
+                            <LegendItem label={`Open Roads (${roadCounts.open})`} color="#FFD600" checked={showOpenRoads} onChange={setShowOpenRoads} type="road" />
+                            <LegendItem label={`Closed Roads (${roadCounts.closed})`} color="#777" checked={showClosedRoads} onChange={setShowClosedRoads} type="road" />
+                            <LegendItem label={`Center Points (${centerPointCount})`} color="#ff6b81" checked={showCenterPoints} onChange={setShowCenterPoints} type="road" />
+                        </Section>
                 </div>
+            </div>
+            {/* Close map wrapper */}
             </div>
             {/* Entity Information Dialog */}
             {dialogOpen && dialogData && (
@@ -1165,6 +1930,35 @@ export default function DispatchCesiumMap() {
 
                         {/* Content */}
                         <div style={{ overflowY: 'auto', flex: 1, paddingRight: '6px' }}>
+                            {/* Show View Profile button for road segments */}
+                            {dialogData.category === 'dispatch_segment' && dialogData.allProperties.road_id && (
+                                <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: 'rgba(52, 152, 219, 0.1)', borderRadius: '6px', border: '1px solid rgba(52, 152, 219, 0.3)' }}>
+                                    <button
+                                        onClick={() => {
+                                            setDialogOpen(false);
+                                            setSelectedRoadId(dialogData.allProperties.road_id);
+                                            setShowProfileViewer(true);
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            background: '#4ECDC4',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '12px',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontWeight: 'bold',
+                                            fontSize: '14px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px'
+                                        }}
+                                    >
+                                        📊 View Profile
+                                    </button>
+                                </div>
+                            )}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
                                 {Object.entries(dialogData.allProperties)
                                     .filter(([key]) => !['linestring', 'polygon', 'geometry', 'geometry_3d', 'propertyNames', 'definitionChanged', '_listeners', 'color', 'style_role'].includes(key) && !key.startsWith('_'))
@@ -1186,6 +1980,16 @@ export default function DispatchCesiumMap() {
                     </div>
                 </div>
             )}
+            {/* Road Profile Viewer */}
+            {showProfileViewer && selectedRoadId && (
+                <RoadProfileViewer
+                    roadId={selectedRoadId}
+                    onClose={() => {
+                        setShowProfileViewer(false);
+                        setSelectedRoadId(null);
+                    }}
+                />
+            )}
             <style dangerouslySetInnerHTML={{
                 __html: `
                 .cesium-viewer-bottom, .cesium-viewer-cesiumWidgetContainer .cesium-widget-credits,
@@ -1198,29 +2002,38 @@ export default function DispatchCesiumMap() {
     );
 }
 
-const Section = ({ title, color, expanded, onToggle, count, children, textColor, iconColor, badgeColor }) => (
-    <div style={{ borderLeft: `3px solid ${color}`, margin: '8px 0' }}>
+const Section = ({ title, color, expanded, onToggle, count, children, labelColor, badgeColor }) => (
+    <div style={{ borderLeft: `3px solid ${color}`, margin: '10px 0', background: '#141a22', borderRadius: 8, overflow: 'hidden', fontSize: '13px' }}>
         <div onClick={onToggle} style={{
-            backgroundColor: `${color}1A`, padding: '8px 12px', cursor: 'pointer',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+            backgroundColor: `${color}26`, padding: '10px 12px', cursor: 'pointer',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            borderBottom: expanded ? '1px solid rgba(255,255,255,0.08)' : 'none'
         }}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{ width: 16, height: 16, backgroundColor: iconColor, borderRadius: 3, marginRight: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }} />
-                <span style={{ color: textColor, fontWeight: 600, fontSize: 13 }}>{title}</span>
-                <div style={{ backgroundColor: badgeColor, color: 'white', borderRadius: 10, padding: '2px 8px', marginLeft: 8, fontSize: 10, fontWeight: 'bold' }}>{count}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 16, height: 16, backgroundColor: color, borderRadius: 3 }} />
+                <span style={{ color: labelColor || '#f4f6fb', fontWeight: 700, fontSize: 13 }}>{title}</span>
+                <div style={{
+                    backgroundColor: badgeColor || color,
+                    color: '#fff',
+                    borderRadius: 999,
+                    padding: '2px 9px',
+                    fontSize: 11,
+                    fontWeight: 'bold',
+                    lineHeight: 1.1
+                }}>{count}</div>
             </div>
-            <span style={{ color: textColor, fontSize: 14 }}>{expanded ? '▼' : '▶'}</span>
+            <span style={{ color: '#e0e6f0', fontSize: 14 }}>{expanded ? '▼' : '▶'}</span>
         </div>
-        {expanded && <div style={{ padding: '8px 12px 8px 32px' }}>{children}</div>}
+        {expanded && <div style={{ padding: '10px 12px 10px 20px', background: '#121821' }}>{children}</div>}
     </div>
 );
 
 const LegendItem = ({ label, color, checked, onChange, type }) => (
-    <div style={{ marginBottom: 6 }}>
-        <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: 12, color: '#bdc3c7' }}>
-            <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} style={{ marginRight: 8, accentColor: color }} />
-            <div style={{ width: 12, height: 12, backgroundColor: color, borderRadius: 2, marginRight: 10 }} />
-            <span style={{ color: 'white', fontWeight: 500 }}>{label}</span>
+    <div style={{ marginBottom: 8 }}>
+        <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: 12, color: '#e6e9f0', gap: 10 }}>
+            <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} style={{ marginRight: 6, accentColor: color, width: 14, height: 14, verticalAlign: 'middle' }} />
+            <div style={{ width: 14, height: 14, backgroundColor: color, borderRadius: 3, boxShadow: '0 0 0 1px rgba(255,255,255,0.15)' }} />
+            <span style={{ color: '#f7f9ff', fontWeight: 600, lineHeight: 1.2 }}>{label}</span>
         </label>
     </div>
 );

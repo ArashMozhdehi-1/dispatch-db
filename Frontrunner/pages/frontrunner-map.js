@@ -18,7 +18,7 @@ export default function FrontrunnerMapPage() {
       </Head>
 
       {/* Switch to Dispatch Button */}
-      <button 
+      <button
         onClick={() => router.push('/dispatch-map')}
         style={{
           position: 'absolute',
@@ -54,7 +54,7 @@ export default function FrontrunnerMapPage() {
         🔄
       </button>
 
-      <ConsolidatedPolygonMap 
+      <ConsolidatedPolygonMap
         showDispatchData={true}
         showFrontrunnerData={true}
         centerOn="frontrunner"
@@ -67,6 +67,17 @@ export default function FrontrunnerMapPage() {
           margin: 0;
           padding: 0;
           overflow: hidden;
+        }
+
+        /* Hide Next.js Dev Toolbar / Indicators */
+        [data-nextjs-toast],
+        [data-nextjs-dialog-overlay],
+        nextjs-portal,
+        #next-dev-toolbar-container {
+          display: none !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
         }
       `}</style>
     </>

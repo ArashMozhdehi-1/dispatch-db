@@ -42,13 +42,13 @@ export default async function handler(req, res) {
         FROM map_road
         ORDER BY from_location_name, to_location_name
       `);
-    
+
       const roads = result.rows.map((row) => {
         const nameParts = [];
         if (row.from_location_name) nameParts.push(row.from_location_name);
         if (row.to_location_name) nameParts.push(row.to_location_name);
         const derivedName = nameParts.length === 2 ? `${nameParts[0]} -> ${nameParts[1]}` : nameParts.join(' ') || row._oid_;
-      
+
         return {
           road_id: row._oid_,
           road_cid: row._cid_,

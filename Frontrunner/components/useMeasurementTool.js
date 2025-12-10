@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
+// Copied from Frontrunner to keep measurement behavior identical
 export const useMeasurementTool = (cesiumViewerRef) => {
   const [measurementMode, setMeasurementMode] = useState(null);
   const [measurementPoints, setMeasurementPoints] = useState([]);
@@ -13,7 +14,6 @@ export const useMeasurementTool = (cesiumViewerRef) => {
   const measurementModeRef = useRef(measurementMode);
   const measurementPointsRef = useRef(measurementPoints);
 
-  // 🔒 when true, area is finalized and NO MORE POINTS are allowed
   const areaLockedRef = useRef(false);
 
   useEffect(() => {
@@ -71,12 +71,12 @@ export const useMeasurementTool = (cesiumViewerRef) => {
     }
     measurementPointsRef.current = [];
     setMeasurementPoints([]);
-    areaLockedRef.current = false;       // 🔓 reset lock
+    areaLockedRef.current = false;
   }, [cesiumViewerRef, removePreviewEntities, setCanvasTooltip]);
 
   const startMeasurement = useCallback((mode) => {
     clearMeasurements();
-    areaLockedRef.current = false;        // 🔓 new session
+    areaLockedRef.current = false;
     measurementModeRef.current = mode;
     setMeasurementMode(mode);
     measurementPointsRef.current = [];
@@ -92,7 +92,7 @@ export const useMeasurementTool = (cesiumViewerRef) => {
     clearMeasurements();
     measurementModeRef.current = null;
     setMeasurementMode(null);
-    areaLockedRef.current = false;        // 🔓
+    areaLockedRef.current = false;
 
     if (viewer && viewer.scene) {
       viewer.scene.requestRender();
@@ -102,16 +102,14 @@ export const useMeasurementTool = (cesiumViewerRef) => {
     }
   }, [clearMeasurements, removePreviewEntities, setCanvasTooltip]);
 
-  // LEFT CLICK: add point (distance OR area)
   const addMeasurementPoint = useCallback((cartesian) => {
     const viewer = cesiumViewerRef.current;
     if (!viewer || !window?.Cesium || !cartesian) return;
 
-    // 🚫 if area is finalized, ignore ALL clicks
     if (areaLockedRef.current) return;
 
     const currentMode = measurementModeRef.current;
-    if (!currentMode) return; // finalized or idle
+    if (!currentMode) return;
 
     const cartographic = window.Cesium.Cartographic.fromCartesian(cartesian);
     const longitude = window.Cesium.Math.toDegrees(cartographic.longitude);
@@ -126,7 +124,6 @@ export const useMeasurementTool = (cesiumViewerRef) => {
 
       measurementPointsRef.current = newPoints;
 
-      // marker
       const pointEntity = viewer.entities.add({
         position: cartesian,
         point: {
@@ -134,8 +131,9 @@ export const useMeasurementTool = (cesiumViewerRef) => {
           color: window.Cesium.Color.WHITE,
           outlineColor: window.Cesium.Color.CYAN,
           outlineWidth: 4,
-          heightReference: window.Cesium.HeightReference.CLAMP_TO_GROUND,
+          heightReference: window.Cesium.HeightReference.NONE,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          scaleByDistance: new window.Cesium.NearFarScalar(1.5e2, 1.2, 8.0e6, 0.6),
         }
       });
       measurementEntitiesRef.current.push(pointEntity);
@@ -143,7 +141,6 @@ export const useMeasurementTool = (cesiumViewerRef) => {
       if (viewer.scene) viewer.scene.requestRender();
 
       if (newPoints.length > 1) {
-        // wipe previous overlays (line/polygon/labels)
         overlayEntitiesRef.current.forEach(e => {
           try { viewer.entities.remove(e); } catch (err) {
             console.warn('[Measurement] Failed to remove overlay entity', err);
@@ -153,7 +150,6 @@ export const useMeasurementTool = (cesiumViewerRef) => {
 
         const positions = newPoints.map(p => p.cartesian);
 
-        // ----- DISTANCE MODE (2 points -> final) -----
         if (currentMode === 'distance' && newPoints.length === 2) {
           removePreviewEntities(viewer);
 
@@ -174,6 +170,21 @@ export const useMeasurementTool = (cesiumViewerRef) => {
           const geodesic = new window.Cesium.EllipsoidGeodesic(c1, c2);
           const distanceMeters = geodesic.surfaceDistance;
           const distanceFeet = distanceMeters * 3.28084;
+
+          if (!Number.isFinite(distanceMeters) || distanceMeters < 0.01) {
+            try { viewer.entities.remove(lineEntity); } catch (_) {}
+            measurementEntitiesRef.current.pop();
+            overlayEntitiesRef.current.pop();
+            const dupPoint = measurementEntitiesRef.current.pop();
+            if (dupPoint) {
+              try { viewer.entities.remove(dupPoint); } catch (_) {}
+            }
+            measurementPointsRef.current = [newPoints[0]];
+            setMeasurementPoints([newPoints[0]]);
+            setCanvasTooltip('Pick a different point');
+            if (viewer.scene) viewer.scene.requestRender();
+            return [newPoints[0]];
+          }
 
           const metersText = `${distanceMeters.toFixed(2)} m`;
           const feetText = `${distanceFeet.toFixed(2)} ft`;
@@ -233,6 +244,10 @@ export const useMeasurementTool = (cesiumViewerRef) => {
 
           setCanvasTooltip(tooltipText);
 
+          areaLockedRef.current = true;
+          measurementModeRef.current = null;
+          setMeasurementMode(null);
+
           if (viewer.scene) {
             viewer.scene.requestRender();
             setTimeout(() => {
@@ -241,7 +256,6 @@ export const useMeasurementTool = (cesiumViewerRef) => {
           }
         }
 
-        // ----- AREA MODE (just update polygon; area is computed on RIGHT CLICK) -----
         else if (currentMode === 'area' && newPoints.length >= 2) {
           const polygonEntity = viewer.entities.add({
             polygon: {
@@ -264,7 +278,6 @@ export const useMeasurementTool = (cesiumViewerRef) => {
     });
   }, [cesiumViewerRef, removePreviewEntities, setCanvasTooltip]);
 
-  // MOVE: preview for distance
   const updatePreviewLine = useCallback((cursorCartesian) => {
     const viewer = cesiumViewerRef.current;
     if (!viewer || !window?.Cesium) {
@@ -272,7 +285,6 @@ export const useMeasurementTool = (cesiumViewerRef) => {
       return;
     }
 
-    // 🚫 if area finalized, no preview
     if (areaLockedRef.current) {
       removePreviewEntities(viewer);
       return;
@@ -342,7 +354,6 @@ export const useMeasurementTool = (cesiumViewerRef) => {
     viewer.scene?.requestRender();
   }, [cesiumViewerRef, removePreviewEntities, setCanvasTooltip]);
 
-  // RIGHT CLICK: finalize area
   const finalizeAreaMeasurement = useCallback(() => {
     const viewer = cesiumViewerRef.current;
     if (!viewer || !window?.Cesium) return;
@@ -351,9 +362,8 @@ export const useMeasurementTool = (cesiumViewerRef) => {
     if (currentMode !== 'area') return;
 
     const points = measurementPointsRef.current;
-    if (!points || points.length < 3) return; // need at least a triangle
+    if (!points || points.length < 3) return;
 
-    // remove any preview junk
     removePreviewEntities(viewer);
 
     const positions = points.map(p => p.cartesian);
@@ -391,7 +401,6 @@ export const useMeasurementTool = (cesiumViewerRef) => {
 
     setCanvasTooltip(`Area: ${areaM2.toFixed(2)} m² (${areaFt2.toFixed(2)} ft²)`);
 
-    // 🔒 lock tool: no more points until startMeasurement() or cancelMeasurements()
     areaLockedRef.current = true;
     measurementModeRef.current = null;
     setMeasurementMode(null);
@@ -410,8 +419,9 @@ export const useMeasurementTool = (cesiumViewerRef) => {
     clearMeasurements,
     getMeasurementMode,
     updatePreviewLine,
-    finalizeAreaMeasurement,   // call on RIGHT_CLICK
+    finalizeAreaMeasurement,
   };
 };
 
 export default useMeasurementTool;
+

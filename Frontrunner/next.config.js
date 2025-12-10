@@ -5,6 +5,9 @@ module.exports = {
     return config;
   },
   transpilePackages: ['mapbox-gl'],
+  // Disable Next.js development indicator
+  // Disable Next.js development indicator
+  devIndicators: false,
 };
 
 

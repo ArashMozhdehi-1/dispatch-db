@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import RoadProfileViewer from './RoadProfileViewer';
 
 
 export default function MapboxComponent() {
@@ -18,6 +19,8 @@ export default function MapboxComponent() {
     const [intersections, setIntersections] = useState([]);
     const [showTrajectoryConfig, setShowTrajectoryConfig] = useState(false);
     const [selectedSegment, setSelectedSegment] = useState(null);
+    const [showRoadDialog, setShowRoadDialog] = useState(false);
+    const [showProfileViewer, setShowProfileViewer] = useState(false);
     const [trajectoryConfig, setTrajectoryConfig] = useState({
       value1: 0,
       value2: 0
@@ -2423,15 +2426,19 @@ export default function MapboxComponent() {
         }
       });
 
-      // Add click handler for trajectory configuration (only for roads 1003 and 1004)
+      // Add click handler for roads
       map.current.on('click', 'segments', (e) => {
         const feature = e.features[0];
         const properties = feature.properties;
         
-        // Check if this is one of our target roads (1003 or 1004)
+        // Check if this is one of our target roads (1003 or 1004) for trajectory config
         if (properties.road_id === 1003 || properties.road_id === 1004) {
           setSelectedSegment(properties);
           setShowTrajectoryConfig(true);
+        } else {
+          // For all other roads, show the road dialog
+          setSelectedSegment(properties);
+          setShowRoadDialog(true);
         }
       });
       
@@ -4975,7 +4982,7 @@ export default function MapboxComponent() {
             }}>
               <span style={{ color: 'white', fontSize: '12px', fontWeight: 'bold' }}>⛏</span>
             </div>
-            <span style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>Mine Map</span>
+            <span style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>Frontrunner - Mine Map</span>
           </div>
           <div 
             id="legend-toggle-arrow"
@@ -5367,6 +5374,105 @@ export default function MapboxComponent() {
                 </button>
               </div>
         </div>
+      )}
+
+      {/* Road Information Dialog */}
+      {showRoadDialog && selectedSegment && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 10002,
+          backgroundColor: 'rgba(30, 30, 30, 0.95)',
+          border: '2px solid rgba(120, 120, 120, 0.6)',
+          borderRadius: '8px',
+          padding: '20px',
+          color: 'white',
+          fontSize: '14px',
+          minWidth: '350px',
+          boxShadow: '0 6px 16px rgba(0, 0, 0, 0.5)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ margin: 0, color: '#4ECDC4' }}>🛣️ Road Information</h3>
+            <button 
+              onClick={() => {
+                setShowRoadDialog(false);
+                setSelectedSegment(null);
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#bdc3c7',
+                fontSize: '18px',
+                cursor: 'pointer'
+              }}
+            >
+              ×
+            </button>
+          </div>
+          
+          <div style={{ marginBottom: '12px', padding: '8px', backgroundColor: 'rgba(52, 152, 219, 0.1)', borderRadius: '4px' }}>
+            <div style={{ color: '#bdc3c7', fontSize: '12px' }}>Road ID:</div>
+            <div style={{ color: 'white', fontWeight: 'bold' }}>{selectedSegment.road_id}</div>
+            {selectedSegment.id && (
+              <>
+                <div style={{ color: '#bdc3c7', fontSize: '12px', marginTop: '4px' }}>Segment ID:</div>
+                <div style={{ color: 'white' }}>{selectedSegment.id}</div>
+              </>
+            )}
+          </div>
+          
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => {
+                setShowRoadDialog(false);
+                setShowProfileViewer(true);
+              }}
+              style={{
+                flex: 1,
+                background: '#4ECDC4',
+                color: 'white',
+                border: 'none',
+                padding: '10px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }}
+            >
+              📊 View Profile
+            </button>
+            <button
+              onClick={() => {
+                setShowRoadDialog(false);
+                setSelectedSegment(null);
+              }}
+              style={{
+                flex: 1,
+                background: '#95a5a6',
+                color: 'white',
+                border: 'none',
+                padding: '10px',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Road Profile Viewer */}
+      {showProfileViewer && selectedSegment && (
+        <RoadProfileViewer
+          roadId={selectedSegment.road_id}
+          onClose={() => {
+            setShowProfileViewer(false);
+            setSelectedSegment(null);
+          }}
+        />
       )}
     </div>
   );

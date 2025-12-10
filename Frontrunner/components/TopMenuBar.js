@@ -4,7 +4,7 @@ import React, { useState } from 'react';
  * Top menu bar with multiple dropdown menus
  * Similar to traditional desktop application menu bars
  */
-export default function TopMenuBar({ 
+export default function TopMenuBar({
   onComputePath,
   onShowIntersectionCurves,
   onManageProfiles,

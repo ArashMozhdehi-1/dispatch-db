@@ -81,16 +81,16 @@ const resolvers = {
             ls.time_loaded_seconds,
             ls.is_closed,
             ST_AsGeoJSON(ls.geometry) as geometry,
-            ST_Y(ST_StartPoint(ls.geometry)) as start_latitude,
-            ST_X(ST_StartPoint(ls.geometry)) as start_longitude,
-            ST_Y(ST_EndPoint(ls.geometry)) as end_latitude,
-            ST_X(ST_EndPoint(ls.geometry)) as end_longitude,
+            ST_Y(ST_StartPoint(ST_GeometryN(ls.geometry, 1))) as start_latitude,
+            ST_X(ST_StartPoint(ST_GeometryN(ls.geometry, 1))) as start_longitude,
+            ST_Y(ST_EndPoint(ST_GeometryN(ls.geometry, ST_NumGeometries(ls.geometry)))) as end_latitude,
+            ST_X(ST_EndPoint(ST_GeometryN(ls.geometry, ST_NumGeometries(ls.geometry)))) as end_longitude,
             CASE WHEN ls.lane_id LIKE 'trolley_%' THEN true ELSE false END as is_trolley
           FROM lane_segments ls
-          WHERE ST_Y(ST_StartPoint(ls.geometry)) BETWEEN -60 AND -20  -- Filter out bad coordinates
-            AND ST_X(ST_StartPoint(ls.geometry)) BETWEEN 140 AND 155  -- Filter out bad coordinates
-            AND ST_Y(ST_EndPoint(ls.geometry)) BETWEEN -60 AND -20    -- Filter out bad coordinates
-            AND ST_X(ST_EndPoint(ls.geometry)) BETWEEN 140 AND 155    -- Filter out bad coordinates
+          WHERE ST_Y(ST_StartPoint(ST_GeometryN(ls.geometry, 1))) BETWEEN -60 AND -20  -- Filter out bad coordinates
+            AND ST_X(ST_StartPoint(ST_GeometryN(ls.geometry, 1))) BETWEEN 140 AND 155  -- Filter out bad coordinates
+            AND ST_Y(ST_EndPoint(ST_GeometryN(ls.geometry, ST_NumGeometries(ls.geometry)))) BETWEEN -60 AND -20    -- Filter out bad coordinates
+            AND ST_X(ST_EndPoint(ST_GeometryN(ls.geometry, ST_NumGeometries(ls.geometry)))) BETWEEN 140 AND 155    -- Filter out bad coordinates
           ORDER BY ls.road_id, ls.lane_id
           ${limitClause}
         `, params);
@@ -795,6 +795,42 @@ const resolvers = {
       } catch (error) {
         console.error('Error fetching lane conditions:', error);
         throw new Error('Failed to fetch lane conditions');
+      }
+    },
+
+    laneConditionsByRoad: async (_, { roadId }) => {
+      try {
+        const result = await query(`
+          SELECT 
+            lc.condition_id,
+            lc.lane_id,
+            lc.start_measure,
+            lc.end_measure,
+            lc.condition_type,
+            lc.condition_value,
+            lc.effective_start,
+            lc.effective_end
+          FROM lane_conditions lc
+          JOIN lane_segments ls ON lc.lane_id = ls.lane_id
+          WHERE ls.road_id = $1
+            AND lc.effective_start <= NOW()
+            AND lc.effective_end >= NOW()
+          ORDER BY lc.lane_id, lc.start_measure
+        `, [roadId]);
+
+        return result.rows.map(row => ({
+          condition_id: row.condition_id,
+          lane_id: row.lane_id,
+          start_measure: parseFloat(row.start_measure),
+          end_measure: parseFloat(row.end_measure),
+          condition_type: row.condition_type,
+          condition_value: row.condition_value,
+          effective_start: row.effective_start,
+          effective_end: row.effective_end
+        }));
+      } catch (error) {
+        console.error('Error fetching lane conditions by road:', error);
+        throw new Error('Failed to fetch lane conditions by road');
       }
     },
 

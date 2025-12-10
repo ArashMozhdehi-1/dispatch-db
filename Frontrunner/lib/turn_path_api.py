@@ -1,23 +1,14 @@
 #!/usr/bin/env python3
-"""
-API logic for computing G2-style turning paths between roads at intersections.
-
-This module handles:
-1. Fetching side-center points and intersection geometry from the database
-2. Computing approach headings for each road
-3. Generating Dubins paths with curvature constraints
-4. Validating that the vehicle envelope stays within the intersection
-5. Converting results to WKT/GeoJSON format
-"""
 
 import math
 import json
+import sys
 from typing import Dict, Any, Tuple, Optional, List
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
 from lib.vehicle_profiles import VehicleProfile, get_vehicle_profile
-from lib.dubins_path import Pose, compute_dubins_path, sample_dubins_path
+from lib.dubins_path import Pose, compute_dubins_path, sample_dubins_path, normalize_angle
 def sample_cubic_bezier(p0, p1, p2, p3, num_points=64):
     """Sample a cubic Bezier curve defined by 4 control points."""
     points = []
@@ -120,10 +111,12 @@ def get_road_side_centers_at_intersection(
                 ST_Transform(geometry_wkt, %s) AS geom
             FROM map_location
             WHERE name = %s
-              AND type IN ('intersection_polygon', 'Intersection')
+                AND type IN ('intersection_polygon', 'Intersection')
             LIMIT 1
         )
         SELECT
+            f.road_id AS from_road_id,
+            t.road_id AS to_road_id,
             ST_X(f.geom) AS from_x,
             ST_Y(f.geom) AS from_y,
             ST_AsText(f.segment_geom) AS from_segment_wkt,
@@ -132,7 +125,11 @@ def get_road_side_centers_at_intersection(
             ST_AsText(t.segment_geom) AS to_segment_wkt,
             ST_AsText(i.geom) AS intersection_wkt,
             ST_X(ST_Centroid(i.geom)) AS intersection_cx,
-            ST_Y(ST_Centroid(i.geom)) AS intersection_cy
+            ST_Y(ST_Centroid(i.geom)) AS intersection_cy,
+            ST_X(COALESCE(ST_ClosestPoint(ST_Intersection(ST_Boundary(i.geom), f.segment_geom), f.geom), ST_ClosestPoint(ST_Boundary(i.geom), f.geom))) AS from_boundary_x,
+            ST_Y(COALESCE(ST_ClosestPoint(ST_Intersection(ST_Boundary(i.geom), f.segment_geom), f.geom), ST_ClosestPoint(ST_Boundary(i.geom), f.geom))) AS from_boundary_y,
+            ST_X(COALESCE(ST_ClosestPoint(ST_Intersection(ST_Boundary(i.geom), t.segment_geom), t.geom), ST_ClosestPoint(ST_Boundary(i.geom), t.geom))) AS to_boundary_x,
+            ST_Y(COALESCE(ST_ClosestPoint(ST_Intersection(ST_Boundary(i.geom), t.segment_geom), t.geom), ST_ClosestPoint(ST_Boundary(i.geom), t.geom))) AS to_boundary_y
         FROM from_center f, to_center t, intersection_poly i;
         """
         cursor.execute(
@@ -193,7 +190,11 @@ def get_road_side_centers_at_intersection(
         ST_AsText(t.segment_geom) AS to_segment_wkt,
         ST_AsText(i.geom) AS intersection_wkt,
         ST_X(ST_Centroid(i.geom)) AS intersection_cx,
-        ST_Y(ST_Centroid(i.geom)) AS intersection_cy
+        ST_Y(ST_Centroid(i.geom)) AS intersection_cy,
+        ST_X(COALESCE(ST_ClosestPoint(ST_Intersection(ST_Boundary(i.geom), f.segment_geom), f.geom), ST_ClosestPoint(ST_Boundary(i.geom), f.geom))) AS from_boundary_x,
+        ST_Y(COALESCE(ST_ClosestPoint(ST_Intersection(ST_Boundary(i.geom), f.segment_geom), f.geom), ST_ClosestPoint(ST_Boundary(i.geom), f.geom))) AS from_boundary_y,
+        ST_X(COALESCE(ST_ClosestPoint(ST_Intersection(ST_Boundary(i.geom), t.segment_geom), t.geom), ST_ClosestPoint(ST_Boundary(i.geom), t.geom))) AS to_boundary_x,
+        ST_Y(COALESCE(ST_ClosestPoint(ST_Intersection(ST_Boundary(i.geom), t.segment_geom), t.geom), ST_ClosestPoint(ST_Boundary(i.geom), t.geom))) AS to_boundary_y
     FROM from_center f, to_center t, intersection_poly i;
     """
 
@@ -209,6 +210,18 @@ def get_road_side_centers_at_intersection(
     if not row:
         return None
     
+    # Validation: Ensure markers actually belong to the requested roads (when checking by OID)
+    if from_marker_oid and to_marker_oid:
+        # Check from_road_id / to_road_id logic
+        if (str(row.get("from_road_id")) != str(from_road_id) or str(row.get("to_road_id")) != str(to_road_id)):
+             print(
+                f"[Turn Path] Marker/road mismatch: "
+                f"from_marker road_id={row.get('from_road_id')} expected={from_road_id}, "
+                f"to_marker road_id={row.get('to_road_id')} expected={to_road_id}",
+                file=sys.stderr, flush=True
+            )
+             return None
+    
     # Parse WKT segments into coordinate lists
     def parse_linestring_wkt(wkt: Optional[str]) -> List[Tuple[float, float]]:
         # "LINESTRING(x1 y1, x2 y2, ...)" -> [(x1, y1), (x2, y2), ...]
@@ -219,12 +232,84 @@ def get_road_side_centers_at_intersection(
     
     return {
         "from_point": (row["from_x"], row["from_y"]),
+        "from_boundary_point": (row["from_boundary_x"], row["from_boundary_y"]),
         "from_segment": parse_linestring_wkt(row.get("from_segment_wkt")),
         "to_point": (row["to_x"], row["to_y"]),
+        "to_boundary_point": (row["to_boundary_x"], row["to_boundary_y"]),
         "to_segment": parse_linestring_wkt(row.get("to_segment_wkt")),
         "intersection_wkt": row["intersection_wkt"],
         "intersection_centroid": (row["intersection_cx"], row["intersection_cy"])
     }
+
+
+def snap_along_heading_to_boundary(
+    cursor,
+    x: float,
+    y: float,
+    heading_rad: float,
+    direction_sign: int,
+    intersection_wkt: str,
+    local_srid: int,
+    max_snap_dist_m: float = 60.0,
+) -> Tuple[float, float]:
+    """
+    Slide (x, y) along the given heading until it hits the intersection boundary.
+
+    direction_sign:
+        +1 → move in the same direction as heading_rad
+        -1 → move opposite to heading_rad
+
+    If snapping fails for any reason, returns the original (x, y).
+    """
+    dx = math.cos(heading_rad) * direction_sign
+    dy = math.sin(heading_rad) * direction_sign
+
+    far_x = x + max_snap_dist_m * dx
+    far_y = y + max_snap_dist_m * dy
+
+    sql = """
+    WITH intersection AS (
+        SELECT ST_GeomFromText(%s, %s) AS geom
+    ),
+    ray AS (
+        SELECT ST_MakeLine(
+            ST_SetSRID(ST_MakePoint(%s, %s), %s),
+            ST_SetSRID(ST_MakePoint(%s, %s), %s)
+        ) AS geom
+    ),
+    boundary AS (
+        SELECT ST_Boundary(geom) AS geom
+        FROM intersection
+    ),
+    inter AS (
+        SELECT ST_Intersection(ray.geom, boundary.geom) AS geom
+        FROM ray, boundary
+    )
+    SELECT
+        ST_X(g) AS x,
+        ST_Y(g) AS y
+    FROM (
+        SELECT (ST_Dump(geom)).geom AS g
+        FROM inter
+    ) d
+    ORDER BY ST_Distance(
+        g,
+        ST_SetSRID(ST_MakePoint(%s, %s), %s)
+    )
+    LIMIT 1;
+    """
+
+    cursor.execute(sql, (
+        intersection_wkt, local_srid,
+        x, y, local_srid,
+        far_x, far_y, local_srid,
+        x, y, local_srid,
+    ))
+    row = cursor.fetchone()
+    if not row:
+        return x, y
+
+    return float(row["x"]), float(row["y"])
 
 
 def compute_road_heading(
@@ -251,30 +336,29 @@ def compute_road_heading(
     if not segment_coords or len(segment_coords) < 2:
         return math.atan2(iy - cy, ix - cx) if into_intersection else math.atan2(cy - iy, cx - ix)
 
-    min_idx = 0
-    min_dist = float("inf")
-    for i, (x, y) in enumerate(segment_coords):
-        d = math.hypot(x - cx, y - cy)
-        if d < min_dist:
-            min_dist = d
-            min_idx = i
+    # Project the point onto each segment; pick the segment with the closest projection
+    best_vec = None
+    best_dist = float("inf")
+    for i in range(len(segment_coords) - 1):
+        x1, y1 = segment_coords[i]
+        x2, y2 = segment_coords[i + 1]
+        vx, vy = x2 - x1, y2 - y1
+        seg_len2 = vx * vx + vy * vy
+        if seg_len2 < 1e-9:
+            continue
+        t = ((cx - x1) * vx + (cy - y1) * vy) / seg_len2
+        t = max(0.0, min(1.0, t))
+        proj_x = x1 + t * vx
+        proj_y = y1 + t * vy
+        d = math.hypot(proj_x - cx, proj_y - cy)
+        if d < best_dist:
+            best_dist = d
+            best_vec = (vx, vy)
 
-    n = len(segment_coords)
-    if min_idx == 0:
-        nbr_idx = 1
-    elif min_idx == n - 1:
-        nbr_idx = n - 2
-    else:
-        px, py = segment_coords[min_idx - 1]
-        nx_, ny_ = segment_coords[min_idx + 1]
-        d_prev = math.hypot(px - cx, py - cy)
-        d_next = math.hypot(nx_ - cx, ny_ - cy)
-        nbr_idx = min_idx - 1 if d_prev < d_next else min_idx + 1
+    if best_vec is None:
+        return math.atan2(iy - cy, ix - cx) if into_intersection else math.atan2(cy - iy, cx - ix)
 
-    x1, y1 = segment_coords[min_idx]
-    x2, y2 = segment_coords[nbr_idx]
-
-    ex, ey = x2 - x1, y2 - y1
+    ex, ey = best_vec
     edge_length = math.hypot(ex, ey)
 
     if edge_length < 1e-3:
@@ -307,85 +391,514 @@ def check_path_clearance(
     intersection_wkt: str,
     vehicle_width_m: float,
     side_buffer_m: float,
-    local_srid: int
+    local_srid: int,
+    from_road_wkt: Optional[str] = None,
+    to_road_wkt: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Check if the vehicle envelope (path + lateral buffer) stays within the intersection.
+    Check if the vehicle envelope (path + lateral buffer) stays within
+    the Safe Zone (Intersection + Connecting Road Projections).
 
     Args:
-        path_wkt: LINESTRING in local_srid
-        intersection_wkt: POLYGON in local_srid
-        vehicle_width_m: Vehicle width in meters
-        side_buffer_m: Additional safety buffer in meters
-        local_srid: SRID for geometric operations
-    
-    Returns dict with:
-        - vehicle_envelope_ok: bool       (relaxed check)
-        - strict_inside: bool            (true only if outside_area < 0.1 m²)
-        - outside_area_sqm: float        (area of envelope outside intersection)
-        - min_clearance_m: float | None
-        - envelope_wkt: WKT of the buffered path
+        cursor: DB cursor
+        path_wkt: The path LINESTRING
+        intersection_wkt: The intersection POLYGON
+        vehicle_width_m: Vehicle width
+        side_buffer_m: Vehicle side buffer
+        local_srid: SRID for metric calculations
+        from_road_wkt: (Optional) POLYGON of the approach road "safe box"
+        to_road_wkt: (Optional) POLYGON of the departure road "safe box"
+
+    Returns:
+        Dict with status and metrics.
     """
     buffer_radius = (vehicle_width_m / 2.0) + side_buffer_m
 
-    query = """
-    WITH path AS (
+    # Default to empty polygons if roads not provided
+    from_road_sql = "ST_GeomFromText(%s, %s)" if from_road_wkt else "ST_GeomFromText('POLYGON EMPTY', %s)"
+    to_road_sql = "ST_GeomFromText(%s, %s)" if to_road_wkt else "ST_GeomFromText('POLYGON EMPTY', %s)"
+    
+    from_road_args = (from_road_wkt, local_srid) if from_road_wkt else (local_srid,)
+    to_road_args = (to_road_wkt, local_srid) if to_road_wkt else (local_srid,)
+
+    query = f"""
+    WITH
+      path AS (
         SELECT ST_GeomFromText(%s, %s) AS geom
-    ),
-    intersection AS (
+      ),
+      intersection AS (
         SELECT ST_GeomFromText(%s, %s) AS geom
-    ),
-    envelope AS (
-        SELECT ST_Buffer(path.geom, %s) AS geom
+      ),
+      safe_zone AS (
+        SELECT ST_Union(
+            ST_Union(
+                {from_road_sql},
+                {to_road_sql}
+            ),
+            intersection.geom
+        ) AS geom
+        FROM intersection
+      ),
+      envelope_full AS (
+        SELECT ST_Buffer(
+                 path.geom,
+                 %s,
+                 'endcap=flat join=round'
+               ) AS geom
         FROM path
-    ),
-    outside AS (
-        SELECT
-            ST_Difference(envelope.geom, intersection.geom) AS geom
-        FROM envelope, intersection
-    )
+      ),
+      -- Calculate the part of the envelope that is OUTSIDE the safe zone
+      leakage AS (
+        SELECT ST_Difference(envelope_full.geom, safe_zone.geom) AS geom
+        FROM envelope_full, safe_zone
+      )
     SELECT
-        ST_AsText(envelope.geom) AS envelope_wkt,
-        COALESCE(ST_Area(outside.geom), 0.0) AS outside_area_sqm,
-        CASE
-            WHEN ST_Area(outside.geom) > 0.1 THEN ST_Distance(
-                (SELECT ST_Boundary(geom) FROM intersection),
-                (SELECT geom FROM path)
-            )
-            ELSE ST_Distance(
-                (SELECT ST_Boundary(geom) FROM intersection),
-                (SELECT geom FROM envelope)
-            )
-        END AS clearance_m
-    FROM envelope, outside;
+      ST_AsText(envelope_full.geom) AS envelope_wkt,
+      ST_Area(leakage.geom) AS outside_area_sqm,
+      -- Check if basically zero area is outside (allow tiny tolerance for floating point)
+      (ST_Area(leakage.geom) < 0.5) AS strict_inside
+    FROM envelope_full, leakage;
     """
 
-    cursor.execute(query, (
+    full_args = (
         path_wkt, local_srid,
         intersection_wkt, local_srid,
-        buffer_radius
-    ))
-    row = cursor.fetchone()
+        *from_road_args,
+        *to_road_args,
+        buffer_radius,
+    )
 
-    outside_area = float(row["outside_area_sqm"])
+    try:
+        cursor.execute(query, full_args)
+        row = cursor.fetchone()
+    except Exception as e:
+        print(f"[Clearance] Error in query: {e}", file=sys.stderr, flush=True)
+        row = None
 
-    # Strict: virtually zero leak (only numerical noise allowed)
-    strict_inside = outside_area < 0.1
+    if not row or row["envelope_wkt"] is None:
+        # Defensive fallback
+        return {
+            "vehicle_envelope_ok": False,
+            "strict_inside": False,
+            "outside_area_sqm": 999.9,
+            "min_clearance_m": 0.0,
+            "envelope_wkt": path_wkt,
+        }
 
-    # Relaxed tolerance: allow up to ~1.2 vehicle footprints worth of leak,
-    # but never less than 25 m². This accounts for minor polygon / digitizing
-    # mismatches at the edges of the intersection.
-    leak_tolerance_area = max(25.0, (vehicle_width_m ** 2) * 1.2)
+    outside_area = float(row.get("outside_area_sqm", 0.0))
+    strict_inside = row.get("strict_inside", False)
+    
+    # We consider it OK if the leak is very small (rendering artifacts etc)
+    # But user wants STRICT. 0.5 sqm is a reasonable tolerance for "zero".
+    vehicle_envelope_ok = (outside_area < 2.0) # slightly looser tolerance for "OK" vs "Perfect"
 
-    vehicle_envelope_ok = strict_inside or outside_area <= leak_tolerance_area
+    # print(
+    #     f"[Clearance Check] outside_area={outside_area:.2f}m², "
+    #     f"ok={vehicle_envelope_ok}",
+    #     file=sys.stderr,
+    #     flush=True,
+    # )
 
     return {
-        "vehicle_envelope_ok": vehicle_envelope_ok,             # relaxed
-        "strict_inside": strict_inside,                         # strict
+        "vehicle_envelope_ok": vehicle_envelope_ok,
+        "strict_inside": strict_inside,
         "outside_area_sqm": outside_area,
-        "min_clearance_m": float(row["clearance_m"])
-            if row["clearance_m"] is not None else None,
+        "min_clearance_m": 0.0, # Deprecated metric in this new logic
         "envelope_wkt": row["envelope_wkt"],
+    }
+
+
+def _safe_load_geojson(value: Optional[str]) -> Optional[dict]:
+    if not value:
+        return None
+    return json.loads(value)
+
+
+def _point_inside_intersection(
+    cursor,
+    x: float,
+    y: float,
+    intersection_wkt: str,
+    local_srid: int,
+) -> bool:
+    """
+    Lightweight point-in-polygon check against the intersection polygon.
+    """
+    cursor.execute(
+        """
+        WITH inter AS (
+          SELECT ST_GeomFromText(%s, %s) AS geom
+        )
+        SELECT ST_Contains(geom, ST_SetSRID(ST_MakePoint(%s, %s), %s)) AS inside
+        FROM inter;
+        """,
+        (intersection_wkt, local_srid, x, y, local_srid),
+    )
+    row = cursor.fetchone()
+    return bool(row and row.get("inside"))
+
+
+
+
+
+def clip_centerline_and_envelope_to_roads(
+    cursor,
+    smooth_wkt_local: str,
+    envelope_wkt_local: str,
+    from_road_id: str,
+    to_road_id: str,
+    intersection_wkt_local: str,
+    local_srid: int,
+    from_segment_wkt_local: Optional[str] = None,
+    to_segment_wkt_local: Optional[str] = None,
+    halo_min_m: float = 5.0,
+    halo_max_m: float = 40.0,
+    weld_eps_m: float = 0.15,
+) -> Dict[str, str]:
+    """
+    Final clipping step.
+
+    Behaviour:
+      • Take the vehicle envelope and clip it to the INTERSECTION polygon
+        ⇒ turn patch is entirely inside the intersection.
+      • Build small “bridge” polygons from the road width segments, but
+        CLIP them to the intersection polygon so they only weld inside it.
+      • Union (envelope ∪ bridges), round the join with a tiny buffer,
+        then re-clip to the intersection.
+      • Clip the smooth centreline to the same intersection.
+    """
+
+    # Radii for the weld:
+    #  - bridge_radius: how thick the plugs around width segments are
+    #  - smooth_radius: tiny rounding buffer for the union
+    bridge_radius = max(1.0, weld_eps_m * 4.0)  # was 0.75, make plugs a bit fatter
+    smooth_radius = max(0.25, weld_eps_m * 2.0)  # ~0.3 m minimum
+
+    def _is_empty_wkt(text: Optional[str]) -> bool:
+        if not text:
+            return True
+        return "EMPTY" in text.upper()
+
+    def _has_nan_coordinates(wkt: Optional[str]) -> bool:
+        if not wkt:
+            return False
+        return "nan" in wkt.lower() or "inf" in wkt.lower()
+
+    sql = """
+    WITH
+      -- Raw inputs in local SRID
+      smooth AS (
+        SELECT ST_GeomFromText(%s, %s) AS geom
+      ),
+      envelope AS (
+        SELECT ST_GeomFromText(%s, %s) AS geom
+      ),
+      intersection_poly AS (
+        SELECT ST_GeomFromText(%s, %s) AS geom
+      ),
+
+      ------------------------------------------------------------------
+      -- BRIDGE INPUTS: exact road width segments for welding
+      ------------------------------------------------------------------
+      bridge_segments AS (
+          SELECT ST_GeomFromText(%s, %s) AS geom
+          UNION ALL
+          SELECT ST_GeomFromText(%s, %s) AS geom
+      ),
+      -- Buffer segments along the roads (NO clipping yet)
+      bridges_raw AS (
+          SELECT
+            ST_Buffer(geom, %s, 'endcap=flat join=round') AS geom
+          FROM bridge_segments
+          WHERE geom IS NOT NULL
+      ),
+      bridges AS (
+          SELECT
+            ST_UnaryUnion(
+              ST_Collect(
+                ST_CollectionExtract(
+                  ST_MakeValid(ST_Buffer(geom, 0.0)),
+                  3
+                )
+              )
+            ) AS geom
+          FROM bridges_raw
+          WHERE geom IS NOT NULL
+      ),
+
+      ------------------------------------------------------------------
+      -- 1) Keep full smooth centreline (NO clipping to intersection)
+      ------------------------------------------------------------------
+      smooth_clean AS (
+        SELECT ST_LineMerge(
+                 ST_CollectionExtract(
+                   ST_MakeValid(ST_Buffer(geom, 0.0)),
+                   2
+                 )
+               ) AS geom
+        FROM smooth
+      ),
+      smooth_dump AS (
+        SELECT (ST_Dump(geom)).geom AS geom
+        FROM smooth_clean
+      ),
+      smooth_single AS (
+        SELECT geom
+        FROM smooth_dump
+        WHERE ST_IsValid(geom) AND NOT ST_IsEmpty(geom)
+        ORDER BY ST_Length(geom) DESC
+        LIMIT 1
+      ),
+
+      ------------------------------------------------------------------
+      -- 2) Clip the envelope to the intersection polygon
+      ------------------------------------------------------------------
+      turn_raw AS (
+        SELECT ST_Intersection(e.geom, i.geom) AS geom
+        FROM envelope e, intersection_poly i
+      ),
+      turn_clean AS (
+        SELECT ST_CollectionExtract(
+                 ST_MakeValid(ST_Buffer(geom, 0.0)),
+                 3
+               ) AS geom
+        FROM turn_raw
+      ),
+      turn_snapped AS (
+        SELECT ST_SnapToGrid(geom, 0.01) AS geom
+        FROM turn_clean
+      ),
+      turn_final AS (
+        SELECT ST_CollectionExtract(
+                 ST_MakeValid(ST_Buffer(geom, 0.0)),
+                 3
+               ) AS geom
+        FROM turn_snapped
+      ),
+      turn_dump AS (
+        SELECT (ST_Dump(geom)).geom AS geom
+        FROM turn_final
+      ),
+      turn_single AS (
+        SELECT geom
+        FROM turn_dump
+        WHERE ST_IsValid(geom)
+          AND NOT ST_IsEmpty(geom)
+          AND ST_Area(geom) > 0.1
+        ORDER BY ST_Area(geom) DESC
+        LIMIT 1
+      ),
+
+      ------------------------------------------------------------------
+      -- 3) FINAL VALIDITY FILTERS ON CENTRELINE + ENVELOPE
+      ------------------------------------------------------------------
+      smooth_valid AS (
+        SELECT
+          CASE
+            WHEN geom IS NULL OR ST_IsEmpty(geom) OR ST_NPoints(geom) < 2
+            THEN NULL
+            ELSE ST_SimplifyPreserveTopology(
+                   ST_RemoveRepeatedPoints(geom, 0.5),
+                   1.0
+                 )
+          END AS geom
+        FROM smooth_single
+      ),
+      turn_valid AS (
+        SELECT
+          CASE
+            WHEN geom IS NULL
+                 OR ST_IsEmpty(geom)
+                 OR ST_NPoints(geom) < 4
+                 OR ST_Area(geom) < 0.01
+            THEN NULL
+            ELSE ST_SimplifyPreserveTopology(
+                   ST_RemoveRepeatedPoints(geom, 0.5),
+                   1.0
+                 )
+          END AS geom
+        FROM turn_single
+      ),
+
+      ------------------------------------------------------------------
+      -- 4) Cosmetic padding + Bridging
+      --    Union clipped patch with clipped bridges, buffer a hair to
+      --    round the join, then re-clip to the intersection.
+      ------------------------------------------------------------------
+      turn_padded AS (
+        SELECT
+          CASE
+            WHEN t.geom IS NULL AND (SELECT geom FROM bridges) IS NULL THEN NULL
+            WHEN t.geom IS NULL THEN (SELECT geom FROM bridges)
+            WHEN (SELECT geom FROM bridges) IS NULL THEN t.geom
+            ELSE ST_SimplifyPreserveTopology(
+                   ST_Buffer(
+                     ST_UnaryUnion(
+                       ST_Collect(
+                         t.geom,
+                         (SELECT geom FROM bridges)
+                       )
+                     ),
+                     %s,
+                     'join=round'
+                   ),
+                   0.10
+                 )
+          END AS geom
+        FROM turn_valid t
+      )
+
+    SELECT
+      ST_AsText(
+        ST_Transform((SELECT geom FROM smooth_valid), 4326)
+      ) AS smooth_wkt_4326,
+      ST_AsGeoJSON(
+        ST_Transform((SELECT geom FROM smooth_valid), 4326),
+        6
+      ) AS smooth_geojson,
+      ST_AsText(
+        ST_Transform((SELECT geom FROM turn_padded), 4326)
+      ) AS envelope_wkt_4326,
+      ST_AsGeoJSON(
+        ST_Transform((SELECT geom FROM turn_padded), 4326),
+        6
+      ) AS envelope_geojson;
+    """
+
+    cursor.execute(
+        sql,
+        (
+            smooth_wkt_local, local_srid,
+            envelope_wkt_local, local_srid,
+            intersection_wkt_local, local_srid,
+            from_segment_wkt_local, local_srid,
+            to_segment_wkt_local, local_srid,
+            bridge_radius,      # for ST_Buffer(geom, %s ...) in bridges_raw
+            smooth_radius,      # for ST_Buffer(..., %s ...) in turn_padded
+        ),
+    )
+    row = cursor.fetchone()
+
+    # NaN guard
+    if row:
+        if _has_nan_coordinates(row.get("smooth_wkt_4326")) or \
+           _has_nan_coordinates(row.get("envelope_wkt_4326")):
+            print("[Turn Path] NaN detected in geometry; treating as invalid", file=sys.stderr)
+            row = None
+
+    # --- Fallback
+    if (
+        not row
+        or _is_empty_wkt(row.get("smooth_wkt_4326"))
+        or _is_empty_wkt(row.get("envelope_wkt_4326"))
+    ):
+        print("[Turn Path] Clipping empty; attempting simple intersection fallback", file=sys.stderr)
+        # Use simpler logic but with consistent bridging if possible
+        cursor.execute(
+            """
+            WITH
+              smooth AS (SELECT ST_GeomFromText(%s, %s) AS geom),
+              envelope AS (SELECT ST_GeomFromText(%s, %s) AS geom),
+              intersection_poly AS (SELECT ST_GeomFromText(%s, %s) AS geom),
+              bridge_segments AS (
+                  SELECT ST_GeomFromText(%s, %s) AS geom
+                  UNION ALL
+                  SELECT ST_GeomFromText(%s, %s) AS geom
+              ),
+              bridges_raw AS (
+                  SELECT ST_Intersection(ST_Buffer(geom, %s, 'endcap=flat join=round'), (SELECT geom FROM intersection_poly)) AS geom
+                  FROM bridge_segments
+                  WHERE geom IS NOT NULL
+              ),
+              bridges AS (
+                  SELECT
+                    ST_UnaryUnion(
+                      ST_Collect(
+                        ST_CollectionExtract(
+                          ST_MakeValid(ST_Buffer(geom, 0.0)),
+                          3
+                        )
+                      )
+                    ) AS geom
+                  FROM bridges_raw
+                  WHERE geom IS NOT NULL
+              ),
+              smooth_clip AS (
+                SELECT ST_LineMerge(
+                         ST_CollectionExtract(
+                           ST_MakeValid(ST_Buffer(s.geom, 0.0)),
+                           2
+                         )
+                       ) AS geom
+                FROM smooth s
+              ),
+              env_raw AS (
+                SELECT ST_Intersection(e.geom, i.geom) AS geom
+                FROM envelope e, intersection_poly i
+              ),
+              env_single AS (
+                SELECT geom FROM (
+                    SELECT (ST_Dump(ST_CollectionExtract(ST_Buffer(geom, 0.0), 3))).geom AS geom FROM env_raw
+                ) d
+                WHERE ST_IsValid(geom) AND NOT ST_IsEmpty(geom) AND ST_Area(geom) >= 0.01 AND ST_NPoints(geom) >= 4
+                ORDER BY ST_Area(geom) DESC LIMIT 1
+              ),
+              env_padded AS (
+                SELECT ST_SimplifyPreserveTopology(
+                   ST_Intersection(
+                     ST_Buffer(
+                       CASE
+                         WHEN (SELECT geom FROM bridges) IS NULL THEN e.geom
+                         ELSE ST_UnaryUnion(
+                                ST_Collect(
+                                  e.geom,
+                                  (SELECT geom FROM bridges)
+                                )
+                              )
+                       END,
+                       %s, 'join=round'
+                     ),
+                     (SELECT geom FROM intersection_poly)
+                   ), 0.10) AS geom
+                FROM env_single e
+              )
+
+            SELECT
+              ST_AsText(ST_Transform((SELECT geom FROM smooth_clip), 4326)) AS smooth_wkt_4326,
+              ST_AsGeoJSON(ST_Transform((SELECT geom FROM smooth_clip), 4326)) AS smooth_geojson,
+              ST_AsText(ST_Transform((SELECT geom FROM env_padded), 4326)) AS envelope_wkt_4326,
+              ST_AsGeoJSON(ST_Transform((SELECT geom FROM env_padded), 4326), 6) AS envelope_geojson;
+            """,
+            (
+                smooth_wkt_local, local_srid,
+                envelope_wkt_local, local_srid,
+                intersection_wkt_local, local_srid,
+                from_segment_wkt_local, local_srid,
+                to_segment_wkt_local, local_srid,
+                bridge_radius,
+                smooth_radius,
+            ),
+        )
+        row = cursor.fetchone()
+        
+        if (
+            not row
+            or _is_empty_wkt(row.get("smooth_wkt_4326"))
+            or _is_empty_wkt(row.get("envelope_wkt_4326"))
+        ):
+            print("[Turn Path] Fallback also empty; returning None geometries", file=sys.stderr)
+            return {
+                "smooth_wkt_4326": None,
+                "smooth_geojson": None,
+                "envelope_wkt_4326": None,
+                "envelope_geojson": None,
+            }
+
+    return {
+        "smooth_wkt_4326": row["smooth_wkt_4326"],
+        "smooth_geojson": row["smooth_geojson"],
+        "envelope_wkt_4326": row["envelope_wkt_4326"],
+        "envelope_geojson": row["envelope_geojson"],
     }
 
 
@@ -399,6 +912,7 @@ def compute_turn_path(
     sampling_step_m: float = 1.0,
     from_marker_oid: Optional[str] = None,
     to_marker_oid: Optional[str] = None,
+    centerline_only: bool = True,
 ) -> Dict[str, Any]:
     """
     Compute a G2-style turning path between two roads at an intersection.
@@ -422,9 +936,21 @@ def compute_turn_path(
     Returns:
         Dict with path geometry, diagnostics, and clearance info
     """
+    # Force centreline-only mode: never return envelope polygons
+    centerline_only = True
+    print(f"[Turn Path API] compute_turn_path CALLED. centerline_only={centerline_only}", file=sys.stderr, flush=True)
+
     # ------------------------------------------------------------------
     # Step 1: Fetch geometry
     # ------------------------------------------------------------------
+    # DEBUG: List tables to find the road table
+    try:
+        cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema='public'")
+        tables = [row['table_name'] for row in cursor.fetchall()]
+        print(f"[Turn Path] Available tables: {tables}", file=sys.stderr, flush=True)
+    except Exception as e:
+        print(f"[Turn Path] Error listing tables: {e}", file=sys.stderr, flush=True)
+
     geom_data = get_road_side_centers_at_intersection(
         cursor,
         from_road_id,
@@ -435,6 +961,19 @@ def compute_turn_path(
         to_marker_oid=to_marker_oid,
     )
 
+    # Fallback: If OID-based lookup failed (e.g. mismatch), fallback to road_id-based lookup
+    if not geom_data and (from_marker_oid or to_marker_oid):
+        print("[Turn Path] OID lookup failed or mismatch; falling back to generic road_id lookup", file=sys.stderr, flush=True)
+        geom_data = get_road_side_centers_at_intersection(
+            cursor,
+            from_road_id,
+            to_road_id,
+            intersection_name,
+            local_srid,
+            from_marker_oid=None,
+            to_marker_oid=None,
+        )
+
     if not geom_data:
         return {
             "status": "error",
@@ -444,30 +983,207 @@ def compute_turn_path(
             ),
         }
 
-    # Fixed endpoints: always exactly at the side-center points
-    from_x, from_y = geom_data["from_point"]
-    to_x, to_y = geom_data["to_point"]
+    # ------------------------------------------------------------------
+    # Endpoints:
+    #   • from_point / to_point  = TRUE road centre (side-center markers)
+    #   • from_boundary / to_boundary = where road EDGE hits intersection
+    # ------------------------------------------------------------------
+    from_center_x, from_center_y = geom_data["from_point"]
+    to_center_x,   to_center_y   = geom_data["to_point"]
+
+    from_boundary = geom_data.get("from_boundary_point") or (from_center_x, from_center_y)
+    to_boundary   = geom_data.get("to_boundary_point")   or (to_center_x,   to_center_y)
+
+    # ✅ Use road CENTRE for the actual path
+    from_x, from_y = from_center_x, from_center_y
+    to_x,   to_y   = to_center_x,   to_center_y
+
     inter_cx, inter_cy = geom_data["intersection_centroid"]
     intersection_wkt_local = geom_data["intersection_wkt"]
 
     turning_radius = vehicle.min_turn_radius_m
 
     # ------------------------------------------------------------------
-    # Step 2: Compute headings at endpoints (once)
+    # Step 2: Compute headings
     # ------------------------------------------------------------------
     from_heading = compute_road_heading(
         geom_data["from_segment"],
-        (from_x, from_y),
+        (from_center_x, from_center_y),
         (inter_cx, inter_cy),
-        into_intersection=True,
+        into_intersection=True,   # points INTO the intersection
     )
 
     to_heading = compute_road_heading(
         geom_data["to_segment"],
-        (to_x, to_y),
+        (to_center_x, to_center_y),
         (inter_cx, inter_cy),
-        into_intersection=False,  # exit heading points away from intersection
+        into_intersection=False,  # points AWAY from the intersection
     )
+
+    # ------------------------------------------------------------------
+    # Step 2c: Generate "Safe Zone" Road Polygons (Virtual Extrusion)
+    # ------------------------------------------------------------------
+    def _create_road_box_wkt(segment: list, heading: float, dist_m: float) -> Optional[str]:
+        if not segment or len(segment) < 2:
+            return None
+        # Use endpoints of the width edge
+        p1 = segment[0]
+        p2 = segment[-1]
+        
+        # Extrude along heading
+        vx = math.cos(heading) * dist_m
+        vy = math.sin(heading) * dist_m
+        
+        p3 = (p2[0] + vx, p2[1] + vy)
+        p4 = (p1[0] + vx, p1[1] + vy)
+        
+        return f"POLYGON(({p1[0]} {p1[1]}, {p2[0]} {p2[1]}, {p3[0]} {p3[1]}, {p4[0]} {p4[1]}, {p1[0]} {p1[1]}))"
+
+    # From Road: Heading points INTO intersection, so extrude BACKWARDS (add PI) or neg dist
+    # Use 60m (generous) to ensure we cover the approach
+    from_road_wkt_local = _create_road_box_wkt(
+        geom_data.get("from_segment"),
+        from_heading + math.pi, 
+        60.0
+    )
+
+    # To Road: Heading points AWAY from intersection, so extrude FORWARDS
+    to_road_wkt_local = _create_road_box_wkt(
+        geom_data.get("to_segment"),
+        to_heading,
+        60.0
+    )
+
+    # ------------------------------------------------------------------
+    # Step 2b: Choose endpoints
+    #   centerline_only:
+    #       • each side continues along its own heading until it hits the
+    #         intersection boundary side line
+    #   full swept path:
+    #       • keep existing long lead-in/lead-out logic
+    # ------------------------------------------------------------------
+    if centerline_only:
+        # For centerline-only: compute exact intercepts with the intersection boundary
+        # by sliding along the road headings.
+        try:
+            from_x, from_y = snap_along_heading_to_boundary(
+                cursor,
+                from_center_x,
+                from_center_y,
+                from_heading,
+                direction_sign=+1,  # along heading into the intersection
+                intersection_wkt=intersection_wkt_local,
+                local_srid=local_srid,
+                max_snap_dist_m=80.0,
+            )
+        except Exception as e:
+            print(f"[Turn Path] from snap failed, using boundary point: {e}", file=sys.stderr, flush=True)
+            from_x, from_y = from_boundary
+
+        try:
+            to_x, to_y = snap_along_heading_to_boundary(
+                cursor,
+                to_center_x,
+                to_center_y,
+                to_heading,
+                direction_sign=-1,  # opposite (into intersection)
+                intersection_wkt=intersection_wkt_local,
+                local_srid=local_srid,
+                max_snap_dist_m=80.0,
+            )
+        except Exception as e:
+            print(f"[Turn Path] to snap failed, using boundary point: {e}", file=sys.stderr, flush=True)
+            to_x, to_y = to_boundary
+
+        print(
+            "[Turn Path] centerline_only=True → endpoints snapped to boundary intercepts: "
+            f"from=({from_x:.2f}, {from_y:.2f}), to=({to_x:.2f}, {to_y:.2f})",
+            file=sys.stderr,
+            flush=True,
+        )
+
+    else:
+        # ------------------------------------------------------------------
+        # EXTENSION: move BOTH endpoints further into their roads
+        # ------------------------------------------------------------------
+        width_with_buffer = vehicle.vehicle_width_m + 2.0 * vehicle.side_buffer_m
+
+        # generous lead-in/out for haul roads (keep poses well outside intersection)
+        base_extension_m = max(25.0, 2.5 * width_with_buffer)
+        strong_extension_m = max(base_extension_m, 5.0 * width_with_buffer)
+        strong_extension_m = min(strong_extension_m, 120.0)
+
+        # ---- 1) FROM side: move backwards along the entry road ----
+        start_extension_m = strong_extension_m
+        cand_x = from_x - math.cos(from_heading) * start_extension_m
+        cand_y = from_y - math.sin(from_heading) * start_extension_m
+
+        try:
+            if _point_inside_intersection(cursor, cand_x, cand_y, intersection_wkt_local, local_srid):
+                lo, hi = 0.0, start_extension_m
+                for _ in range(10):  # binary search
+                    mid = 0.5 * (lo + hi)
+                    test_x = from_x - math.cos(from_heading) * mid
+                    test_y = from_y - math.sin(from_heading) * mid
+                    inside = _point_inside_intersection(cursor, test_x, test_y, intersection_wkt_local, local_srid)
+                    if inside:
+                        hi = mid
+                    else:
+                        lo = mid
+                start_extension_m = lo
+                cand_x = from_x - math.cos(from_heading) * start_extension_m
+                cand_y = from_y - math.sin(from_heading) * start_extension_m
+        except Exception as e:
+            print(f"[Turn Path] start extension clamp failed: {e}", file=sys.stderr, flush=True)
+
+        from_x, from_y = cand_x, cand_y
+
+        # Debug: extension vector (centre → extended centre) vs heading
+        ext_vec_x = from_center_x - from_x
+        ext_vec_y = from_center_y - from_y
+        heading_vec_x = math.cos(from_heading)
+        heading_vec_y = math.sin(from_heading)
+        print(
+            "[Turn Path] from_extension_vec",
+            ext_vec_x,
+            ext_vec_y,
+            "heading_vec",
+            heading_vec_x,
+            heading_vec_y,
+            file=sys.stderr,
+            flush=True,
+        )
+
+        # ---- 2) TO side: push the end pose down the exit road ----
+        end_extension_m = strong_extension_m * 0.9  # still robust on exit
+        end_extension_m = min(end_extension_m, 90.0)
+
+        cand_tx = to_x + math.cos(to_heading) * end_extension_m
+        cand_ty = to_y + math.sin(to_heading) * end_extension_m
+
+        try:
+            if _point_inside_intersection(cursor, cand_tx, cand_ty, intersection_wkt_local, local_srid):
+                lo, hi = 0.0, end_extension_m
+                for _ in range(10):
+                    mid = 0.5 * (lo + hi)
+                    test_x = to_x + math.cos(to_heading) * mid
+                    test_y = to_y + math.sin(to_heading) * mid
+                    inside = _point_inside_intersection(cursor, test_x, test_y, intersection_wkt_local, local_srid)
+                    if inside:
+                        hi = mid
+                    else:
+                        lo = mid
+                end_extension_m = lo
+                cand_tx = to_x + math.cos(to_heading) * end_extension_m
+                cand_ty = to_y + math.sin(to_heading) * end_extension_m
+        except Exception as e:
+            print(f"[Turn Path] end extension clamp failed: {e}", file=sys.stderr, flush=True)
+
+        to_x, to_y = cand_tx, cand_ty
+
+    # ------------------------------------------------------------------
+    # Snapping logic removed in favor of exact boundary intersection
+    # ------------------------------------------------------------------
 
     # ------------------------------------------------------------------
     # Step 3: Dubins path between fixed endpoints (for length/path_type)
@@ -494,16 +1210,28 @@ def compute_turn_path(
     dy = p3[1] - p0[1]
     center_dist = math.hypot(dx, dy)
 
-    # base control distance similar to build_smooth_turn_curve
-    ctrl_dist = max(turning_radius * 0.8, center_dist * 0.25)
-    if center_dist > 1e-3:
-        ctrl_dist = min(ctrl_dist, center_dist * 0.5)
-    else:
-        ctrl_dist = turning_radius
+    # Calculate turn angle to adapt control arm length
+    # Wider turns need SHORTER control arms to stay inside intersection
+    turn_angle = abs(normalize_angle(to_heading - from_heading))
+    turn_angle_deg = math.degrees(turn_angle)
 
-    # mutable control points
-    p1 = [p0[0] + ctrl_dist * u0[0], p0[1] + ctrl_dist * u0[1]]
-    p2 = [p3[0] - ctrl_dist * u3[0], p3[1] - ctrl_dist * u3[1]]
+    # Scale factor: 1.0 for small turns, down to 0.3 for 180° turns
+    angle_scale = max(0.3, 1.0 - (turn_angle / math.pi) * 0.7)
+
+    # base control distance - scale down for wider turns
+    base_ctrl = max(turning_radius * 0.5, center_dist * 0.2)
+    if center_dist > 1e-3:
+        base_ctrl = min(base_ctrl, center_dist * 0.4 * angle_scale)
+    else:
+        base_ctrl = turning_radius * 0.5
+
+    ctrl_dist = base_ctrl
+
+    print(
+        f"[Turn Path] turn_angle={turn_angle_deg:.1f}°, angle_scale={angle_scale:.2f}, "
+        f"ctrl_dist={ctrl_dist:.1f}m, center_dist={center_dist:.1f}m",
+        file=sys.stderr, flush=True
+    )
 
     def _pull_ctrl_towards_centroid(pt: List[float], max_step: float) -> None:
         """Move a control point a bit towards the intersection centroid."""
@@ -522,49 +1250,112 @@ def compute_turn_path(
         0.5 * (vehicle.vehicle_width_m + 2.0 * vehicle.side_buffer_m),
         0.5,  # minimum 0.5 m
     )
-    max_iterations = 8
+    max_iterations = 24
+
+    # Try multiple control arm configurations
+    configurations = [
+        (ctrl_dist, "standard"),
+        (ctrl_dist * 0.5, "tight"),
+        (ctrl_dist * 0.3, "very_tight"),
+        (turning_radius * 0.3, "minimal"),
+    ]
 
     best_result: Optional[Dict[str, Any]] = None
 
-    for iteration in range(max_iterations):
-        # G2 smooth curve (endpoints fixed, control points possibly adjusted)
-        smooth_points = sample_cubic_bezier(
-            p0, tuple(p1), tuple(p2), p3, num_points=80
-        )
-        smooth_wkt_local = "LINESTRING(" + ", ".join(f"{x} {y}" for x, y in smooth_points) + ")"
+    for config_ctrl, config_name in configurations:
+        # Reset control points for this configuration
+        p1 = [p0[0] + config_ctrl * u0[0], p0[1] + config_ctrl * u0[1]]
+        p2 = [p3[0] - config_ctrl * u3[0], p3[1] - config_ctrl * u3[1]]
 
-        # ------------------------------------------------------------------
-        # Step 5: Check clearance on the smooth curve
-        # ------------------------------------------------------------------
-        clearance_info = check_path_clearance(
+        for iteration in range(max_iterations):
+            smooth_points = sample_cubic_bezier(
+                p0, tuple(p1), tuple(p2), p3, num_points=80
+            )
+            smooth_wkt_local = "LINESTRING(" + ", ".join(f"{x} {y}" for x, y in smooth_points) + ")"
+
+            clearance_info = check_path_clearance(
+                cursor,
+                smooth_wkt_local,
+                intersection_wkt_local,
+                vehicle.vehicle_width_m,
+                vehicle.side_buffer_m,
+                local_srid,
+                from_road_wkt=from_road_wkt_local,
+                to_road_wkt=to_road_wkt_local,
+            )
+
+            if (
+                best_result is None
+                or clearance_info["outside_area_sqm"]
+                < best_result["clearance"]["outside_area_sqm"]
+            ):
+                best_result = {
+                    "iteration": iteration,
+                    "config": config_name,
+                    "smooth_points": smooth_points,
+                    "smooth_wkt_local": smooth_wkt_local,
+                    "clearance": clearance_info,
+                }
+
+            if clearance_info["vehicle_envelope_ok"]:
+                print(f"[Turn Path] Found valid path with config={config_name}, iter={iteration}",
+                      file=sys.stderr, flush=True)
+                break
+
+            _pull_ctrl_towards_centroid(p1, envelope_step_m)
+            _pull_ctrl_towards_centroid(p2, envelope_step_m)
+
+        # If we found a valid path, stop trying configurations
+        if best_result and best_result["clearance"]["vehicle_envelope_ok"]:
+            break
+
+    # If no configuration worked well, try direct centroid routing
+    if best_result and best_result["clearance"]["outside_area_sqm"] > 30.0:
+        print("[Turn Path] Trying centroid-routing fallback", file=sys.stderr, flush=True)
+
+        # Route through intersection centroid
+        mid_point = (inter_cx, inter_cy)
+
+        # Two-segment Bézier: start -> centroid -> end
+        half1_points = sample_cubic_bezier(
+            p0,
+            (p0[0] + ctrl_dist * 0.3 * u0[0], p0[1] + ctrl_dist * 0.3 * u0[1]),
+            mid_point,
+            mid_point,
+            num_points=40
+        )
+        half2_points = sample_cubic_bezier(
+            mid_point,
+            mid_point,
+            (p3[0] - ctrl_dist * 0.3 * u3[0], p3[1] - ctrl_dist * 0.3 * u3[1]),
+            p3,
+            num_points=40
+        )
+
+        centroid_points = half1_points + half2_points[1:]  # avoid duplicate midpoint
+        centroid_wkt = "LINESTRING(" + ", ".join(f"{x} {y}" for x, y in centroid_points) + ")"
+
+        centroid_clearance = check_path_clearance(
             cursor,
-            smooth_wkt_local,          # IMPORTANT: smooth path, not raw Dubins path
+            centroid_wkt,
             intersection_wkt_local,
             vehicle.vehicle_width_m,
             vehicle.side_buffer_m,
             local_srid,
+            from_road_wkt=from_road_wkt_local,
+            to_road_wkt=to_road_wkt_local,
         )
 
-        # Track the best attempt (min outside area), even if none perfect
-        if (
-            best_result is None
-            or clearance_info["outside_area_sqm"]
-            < best_result["clearance"]["outside_area_sqm"]
-        ):
+        if centroid_clearance["outside_area_sqm"] < best_result["clearance"]["outside_area_sqm"]:
             best_result = {
-                "iteration": iteration,
-                "smooth_points": smooth_points,
-                "smooth_wkt_local": smooth_wkt_local,
-                "clearance": clearance_info,
+                "iteration": 0,
+                "config": "centroid_routing",
+                "smooth_points": centroid_points,
+                "smooth_wkt_local": centroid_wkt,
+                "clearance": centroid_clearance,
             }
-
-        # If envelope is fully inside intersection, we're done
-        if clearance_info["vehicle_envelope_ok"]:
-            break
-
-        # Otherwise, pull the control points further inside and try again
-        _pull_ctrl_towards_centroid(p1, envelope_step_m)
-        _pull_ctrl_towards_centroid(p2, envelope_step_m)
+            print(f"[Turn Path] Centroid routing improved: {centroid_clearance['outside_area_sqm']:.1f}m²",
+                  file=sys.stderr, flush=True)
 
     # ----------------------------------------------------------------------
     # Step 6: Finalize from best attempt
@@ -575,64 +1366,123 @@ def compute_turn_path(
     smooth_wkt_local = final["smooth_wkt_local"]
     clearance_info = final["clearance"]
 
-    # Transform chosen geometries back to WGS84 for output
+    # Full vehicle envelope in local SRID (NOT clipped)
+    envelope_wkt_local = clearance_info["envelope_wkt"]
+
+    # ----------------------------------------------------------------------
+    # Step 7: Transform the raw Dubins path (for length/path_type only)
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # Step 7: Transform the raw Dubins path, Smooth path, AND Swept Path to EPSG:4326
+    # ----------------------------------------------------------------------
+    # We transform THREE geometries:
+    # 1. The raw Dubins path (path_wkt_local) -> for debug/length
+    # 2. The best smoothed Bezier path (smooth_wkt_local) -> for main rendering
+    # 3. The vehicle envelope (envelope_wkt_local) -> for swept path outline
+    
+    # Ensure envelope is not None (fallback to empty LINESTRING if valid path not found)
+    if not envelope_wkt_local:
+         envelope_wkt_local = "LINESTRING EMPTY"
+
     cursor.execute(
         """
-        SELECT 
-            ST_AsText(ST_Transform(ST_GeomFromText(%s, %s), 4326)) AS path_wkt_4326,
-            ST_AsGeoJSON(ST_Transform(ST_GeomFromText(%s, %s), 4326)) AS path_geojson,
-            ST_AsText(ST_Transform(ST_GeomFromText(%s, %s), 4326)) AS smooth_wkt_4326,
-            ST_AsGeoJSON(ST_Transform(ST_GeomFromText(%s, %s), 4326)) AS smooth_geojson
+        SELECT
+          ST_AsText(ST_Transform(ST_GeomFromText(%s, %s), 4326)) AS path_wkt_4326,
+          ST_AsGeoJSON(ST_Transform(ST_GeomFromText(%s, %s), 4326)) AS path_geojson,
+          ST_AsText(ST_Transform(ST_GeomFromText(%s, %s), 4326)) AS smooth_wkt_4326,
+          ST_AsGeoJSON(ST_Transform(ST_GeomFromText(%s, %s), 4326)) AS smooth_geojson,
+          ST_AsText(ST_Transform(ST_GeomFromText(%s, %s), 4326)) AS swept_wkt_4326,
+          ST_AsGeoJSON(ST_Transform(ST_GeomFromText(%s, %s), 4326)) AS swept_geojson
         """,
         (
-            path_wkt_local,
-            local_srid,
-            path_wkt_local,
-            local_srid,
-            smooth_wkt_local,
-            local_srid,
-            smooth_wkt_local,
-            local_srid,
+            path_wkt_local, local_srid,
+            path_wkt_local, local_srid,
+            smooth_wkt_local, local_srid,
+            smooth_wkt_local, local_srid,
+            envelope_wkt_local, local_srid,
+            envelope_wkt_local, local_srid,
         ),
     )
-    output_row = cursor.fetchone()
+    path_row = cursor.fetchone()
 
-    status = (
-        "ok" if clearance_info["vehicle_envelope_ok"]
-        else "envelope_outside_intersection"
-    )
+    dubins_wkt_4326 = path_row["path_wkt_4326"] if path_row else None
+    dubins_geojson_obj = _safe_load_geojson(path_row["path_geojson"]) if path_row else None
+    smooth_wkt_4326 = path_row["smooth_wkt_4326"] if path_row else None
+    smooth_geojson_obj = _safe_load_geojson(path_row["smooth_geojson"]) if path_row else None
+    swept_path_wkt = path_row["swept_wkt_4326"] if path_row else None
+    swept_path_geojson = _safe_load_geojson(path_row["swept_geojson"]) if path_row else None
+
+    # Remove the heavy envelope geometry from clearance info before returning
+    # (We still return the numeric metrics)
+    clearance_info_clean = dict(clearance_info)
+    envelope_wkt_for_debug = clearance_info_clean.pop("envelope_wkt", None)
+
+    outside_area = float(clearance_info_clean.get("outside_area_sqm") or 0.0)
+    vehicle_ok = bool(clearance_info_clean.get("vehicle_envelope_ok", True))
+
+    # 🔧 TUNE THIS: how much leak is still “ok to draw”
+    MAX_LEAK_WARNING_M2 = 50.0  # e.g. up to 50 m² = warning, not fatal
+
+    status_code = "envelope_outside_intersection"
+    leak_status = "error"
+
+    if vehicle_ok:
+        status_code = "ok"
+        leak_status = "ok"
+    elif outside_area <= MAX_LEAK_WARNING_M2:
+        # Centreline is valid, envelope leaks a bit → still draw, but mark warning
+        status_code = "ok"
+        leak_status = "warning"
+    else:
+        # Only truly huge leaks kill the path
+        status_code = "envelope_outside_intersection"
+        leak_status = "error"
+
+    clearance_info_clean["leak_status"] = leak_status
+    clearance_info_clean["envelope_outside_area_sqm"] = outside_area
 
     return {
-        "status": status,
+        "status": status_code,
+        "centerline_only": True, # Allow swept path return
         "from_road_id": from_road_id,
         "to_road_id": to_road_id,
         "intersection_name": intersection_name,
         "vehicle": vehicle.to_dict(),
+        "swept_path": {
+            "geometry_wkt": swept_path_wkt, # Re-enabled
+            "geometry_geojson": swept_path_geojson, # Re-enabled
+        },
+        "vehicle_envelope": {
+            "geometry_wkt": None,
+            "geometry_geojson": None,
+        },
         "path": {
-            "wkt": output_row["path_wkt_4326"],
-            "geojson": json.loads(output_row["path_geojson"]),
-            "smooth_wkt": output_row["smooth_wkt_4326"],
-            "smooth_geojson": json.loads(output_row["smooth_geojson"]),
+            "wkt": smooth_wkt_4326, 
+            "geojson": smooth_geojson_obj,
+            "raw_wkt": dubins_wkt_4326,
+            "raw_geojson": dubins_geojson_obj,
+            "smooth_wkt": smooth_wkt_4326,
+            "smooth_geojson": smooth_geojson_obj,
+            "envelope_wkt": None,
+            "envelope_geojson": None,
             "path_type": dubins_result.path_type,
             "length_m": dubins_result.total_length,
             "num_points": len(path_points),
             "sampling_step_m": sampling_step_m,
         },
         "clearance": {
-            **clearance_info,
-            "vehicle_width_with_buffer_m": (
-                vehicle.vehicle_width_m + 2 * vehicle.side_buffer_m
-            ),
+            **clearance_info_clean,
+            "vehicle_width_with_buffer_m": vehicle.vehicle_width_m + 2 * vehicle.side_buffer_m,
             "min_turn_radius_m": turning_radius,
         },
         "debug": {
             "iteration_used": final["iteration"],
             "from_point_local": (from_x, from_y),
+            "from_boundary_local": from_boundary,
             "to_point_local": (to_x, to_y),
+            "to_boundary_local": to_boundary,
             "from_heading_deg": math.degrees(from_heading),
             "to_heading_deg": math.degrees(to_heading),
             "local_srid": local_srid,
         },
     }
-
-

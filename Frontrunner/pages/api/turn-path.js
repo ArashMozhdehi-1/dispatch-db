@@ -86,30 +86,67 @@ export default async function handler(req, res) {
     python.stdin.end();
 
     python.on('close', (code) => {
-      if (code !== 0) {
-        console.error('Python script error:', stderr);
-        try {
-          const errorData = JSON.parse(stdout);
-          return res.status(500).json(errorData);
-        } catch {
+      // Try to parse whatever stdout we got
+      let result;
+      try {
+        result = JSON.parse(stdout);
+      } catch (e) {
+        // Only return 500 if we absolutely cannot parse JSON
+        if (code !== 0) {
+          console.error('Python script error (raw):', stderr);
           return res.status(500).json({
-            error: 'Python script failed',
-            stderr: stderr,
-            stdout: stdout
+            error: 'Python script failed and returned invalid JSON',
+            stderr: stderr
           });
         }
       }
 
-      try {
-        const result = JSON.parse(stdout);
+      // If we have a valid result object
+      if (result) {
+        // --- FORCE CLEANUP OF POLYGONS (Safety net) ---
+        // Even if Python returns them, we strip them here to satisfy the requirement
+        // and handle cases where the Python code might be stale (caching issues).
+        // [MODIFIED] We now ALLOW swept_path to pass through, 
+        // because we want to render the OUTLINE (traces) as lines.
+        // The frontend will ensure it's not a "fat polygon" by using polyline rendering.
+
+        // Log if we have it for debugging
+        if (result.swept_path && result.swept_path.geometry_geojson) {
+          console.log('[API] Swept path geometry received (will be rendered as outline).');
+        }
+        if (result.vehicle_envelope && result.vehicle_envelope.geometry_geojson) {
+          console.warn('[API] Python returned vehicle_envelope polygon - stripping it.');
+          result.vehicle_envelope.geometry_geojson = null;
+          result.vehicle_envelope.geometry_wkt = null;
+        }
+        if (result.path && result.path.envelope_geojson) {
+          result.path.envelope_geojson = null;
+          result.path.envelope_wkt = null;
+        }
+
+        // Ensure the top-level flag matches
+        result.centerline_only = true;
+
+        // Log Python stderr for debugging (shows our print statements)
+        if (stderr.trim().length > 0) {
+          console.log('[API] Python Stderr:', stderr);
+        }
+
+        // Domain-specific status check
+        // "ok" -> 200
+        // "envelope_outside_intersection" -> 200 (handled by frontend logic)
+        // "error" -> 400 (bad request parameters etc)
+        if (result.status === 'error') {
+          return res.status(400).json(result);
+        }
+
+        // Ensure "envelope_outside_intersection" or any other non-error status returns 200
+        // so the frontend receives the payload cleanly.
         return res.status(200).json(result);
-      } catch (e) {
-        console.error('Failed to parse Python output:', stdout);
-        return res.status(500).json({
-          error: 'Invalid response from Python script',
-          message: e.message
-        });
       }
+
+      // Fallback for empty stdout + success code (unlikely)
+      return res.status(500).json({ error: 'No output from Python script' });
     });
 
   } catch (error) {

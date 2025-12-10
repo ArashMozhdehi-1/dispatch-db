@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""
-Dubins path solver for curvature-constrained path planning.
-
-A Dubins path is the shortest path between two poses (x, y, θ) with bounded curvature.
-It consists of at most 3 segments: combinations of Left turn, Right turn, and Straight.
-
-Reference: L. E. Dubins, "On Curves of Minimal Length with a Constraint on Average Curvature,
-and with Prescribed Initial and Terminal Positions and Tangents"
-"""
-
 import math
 from typing import List, Tuple, Optional
 from dataclasses import dataclass
@@ -271,62 +261,67 @@ def compute_dubins_path(start: Pose, goal: Pose, turning_radius: float) -> Dubin
     )
 
 
-def sample_dubins_path(path: DubinsPath, start: Pose, turning_radius: float, step_size: float = 1.0) -> List[Tuple[float, float]]:
+def sample_dubins_path(
+    path: DubinsPath,
+    start: Pose,
+    turning_radius: float,
+    step_size: float = 1.0,
+) -> List[Tuple[float, float]]:
     """
     Sample a Dubins path into a polyline.
-    
+
     Args:
         path: DubinsPath to sample
         start: Starting pose
         turning_radius: Turning radius used for the path
         step_size: Distance between samples (meters)
-    
+
     Returns:
         List of (x, y) points
     """
     points = [(start.x, start.y)]
-    
+
     current_x = start.x
     current_y = start.y
     current_theta = start.theta
-    
+
     for segment in path.segments:
         # Number of samples for this segment
-        num_samples = max(2, int(segment.length / step_size))
+        num_samples = max(2, int(segment.length / step_size)) if step_size > 0 else 2
         seg_step = segment.length / num_samples
-        
+
         if segment.type == SegmentType.STRAIGHT:
             for i in range(1, num_samples + 1):
                 dist = i * seg_step
                 x = current_x + dist * math.cos(current_theta)
                 y = current_y + dist * math.sin(current_theta)
                 points.append((x, y))
-            
-            # Update current pose
+
+            # Move pose to end of straight segment
             current_x += segment.length * math.cos(current_theta)
             current_y += segment.length * math.sin(current_theta)
-            
+
         else:  # LEFT or RIGHT turn
             direction = 1.0 if segment.type == SegmentType.LEFT else -1.0
-            
+
             # Center of turning circle
             cx = current_x - direction * turning_radius * math.sin(current_theta)
             cy = current_y + direction * turning_radius * math.cos(current_theta)
-            
+
             # Sample along the arc
             angle_start = math.atan2(current_y - cy, current_x - cx)
-            total_angle = segment.param  # Already signed
-            
+            total_angle = segment.param  # signed
+
             for i in range(1, num_samples + 1):
                 angle = angle_start + (i / num_samples) * total_angle
                 x = cx + turning_radius * math.cos(angle)
                 y = cy + turning_radius * math.sin(angle)
                 points.append((x, y))
-            
-            # Update current pose
+
+            # Move pose to end of arc
             current_theta = normalize_angle(current_theta + total_angle)
             current_x = cx + turning_radius * math.cos(angle_start + total_angle)
             current_y = cy + turning_radius * math.sin(angle_start + total_angle)
-    
+
     return points
 

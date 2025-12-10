@@ -1,12 +1,16 @@
 import Head from 'next/head';
-import DispatchCesiumMap from '../components/DispatchCesiumMap';
+import dynamic from 'next/dynamic';
+
+const DispatchCesiumMap = dynamic(() => import('../components/DispatchCesiumMap'), {
+  ssr: false,
+});
 
 export default function Home() {
   return (
     <div>
       <Head>
-        <title>Dispatch - Mine Map</title>
-        <meta name="description" content="Dispatch data visualization with Cesium" />
+        <title>Dispatch Map</title>
+        <meta name="description" content="Dispatch Cesium map" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
@@ -15,23 +19,33 @@ export default function Home() {
       </main>
 
       <style jsx global>{`
-        * {
-          box-sizing: border-box;
-          padding: 0;
-          margin: 0;
-        }
+          html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+          }
 
-        html,
-        body {
-          max-width: 100vw;
-          overflow-x: hidden;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-            Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
-        }
-
-        body {
-          background: #000;
-        }
+          /* Hide Next.js Dev Toolbar / Indicators */
+          [data-nextjs-toast],
+          [data-nextjs-dialog-overlay],
+          nextjs-portal,
+          #next-dev-toolbar-container,
+          .nextjs-devtools-floating {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+          }
+          #__next {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+          }
       `}</style>
     </div>
   );
