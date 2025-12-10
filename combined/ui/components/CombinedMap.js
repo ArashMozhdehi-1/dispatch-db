@@ -6,6 +6,7 @@ import TurnPathDialog from './TurnPathDialog';
 import TurnPathStatusBanner from './TurnPathStatusBanner';
 import useTurnPathManager from './useTurnPathManager';
 import useMeasurementTool from './useMeasurementTool';
+import RoadProfileViewer from './RoadProfileViewer';
 
 // Color palette and helpers
 const DISPATCH_LOCATION_COLOR_MAP = {
@@ -1874,6 +1875,13 @@ export default function DispatchCesiumMap() {
                 onComputePath={() => {
                     openTurnDialog();
                 }}
+                onManageProfiles={() => {
+                    const val = window.prompt('Enter Road ID to view profile');
+                    if (val && val.trim().length > 0) {
+                        setSelectedRoadId(val.trim());
+                        setShowProfileViewer(true);
+                    }
+                }}
                 onMeasureDistance={() => handleMeasureChange('distance')}
                 onMeasureArea={() => handleMeasureChange('area')}
             />
@@ -2139,6 +2147,15 @@ export default function DispatchCesiumMap() {
                         </div>
                     </div>
                 </div>
+            )}
+            {showProfileViewer && selectedRoadId && (
+                <RoadProfileViewer
+                    roadId={selectedRoadId}
+                    onClose={() => {
+                        setShowProfileViewer(false);
+                        setSelectedRoadId(null);
+                    }}
+                />
             )}
             <style dangerouslySetInnerHTML={{
                 __html: `

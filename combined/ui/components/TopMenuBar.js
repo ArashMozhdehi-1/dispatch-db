@@ -62,6 +62,13 @@ export default function TopMenuBar({
             onClick={() => handleMenuClick('tools')}
           >
             <MenuItem
+              label="View Profile"
+              onSelect={() => {
+                onManageProfiles?.();
+                closeMenu();
+              }}
+            />
+            <MenuItem
               label="Compute Turn Path"
               onSelect={() => {
                 onComputePath?.();
