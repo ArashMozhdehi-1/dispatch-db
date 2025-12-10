@@ -303,6 +303,7 @@ export default function DispatchCesiumMap() {
     const [roadNetworksExpanded, setRoadNetworksExpanded] = useState(true);
     const [locationTypesExpanded, setLocationTypesExpanded] = useState(true);
     const [baseLayer, setBaseLayer] = useState('night'); // 'night' or 'day'
+    const [sceneMode, setSceneMode] = useState('3d'); // '3d' or '2d'
     const [measurementMode, setMeasurementMode] = useState('none'); // none | distance | area
 
     // Visibility
@@ -823,6 +824,18 @@ export default function DispatchCesiumMap() {
         updateBaseLayer();
         return () => { cancelled = true; };
     }, [baseLayer, mapLoaded]);
+
+    // Scene mode toggle (2D vs 3D)
+    useEffect(() => {
+        if (!mapLoaded || !cesiumViewerRef.current || !window.Cesium) return;
+        const viewer = cesiumViewerRef.current;
+        const Cesium = window.Cesium;
+        if (sceneMode === '2d') {
+            viewer.scene.morphTo2D(0);
+        } else {
+            viewer.scene.morphTo3D(0);
+        }
+    }, [sceneMode, mapLoaded]);
 
     // Load Data (combined API)
     useEffect(() => {
@@ -1887,6 +1900,10 @@ export default function DispatchCesiumMap() {
                 }}
                 onMeasureDistance={() => handleMeasureChange('distance')}
                 onMeasureArea={() => handleMeasureChange('area')}
+                currentBaseLayer={baseLayer}
+                onChangeBaseLayer={setBaseLayer}
+                currentSceneMode={sceneMode}
+                onChangeSceneMode={setSceneMode}
             />
             {turnDialogOpen && (
                 <>

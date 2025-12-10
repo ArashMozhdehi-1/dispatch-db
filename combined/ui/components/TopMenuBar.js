@@ -12,7 +12,11 @@ export default function TopMenuBar({
   showCornerPoints,
   showCenterPoints,
   onMeasureDistance,
-  onMeasureArea
+  onMeasureArea,
+  onChangeBaseLayer,
+  currentBaseLayer,
+  onChangeSceneMode,
+  currentSceneMode
 }) {
   const [openMenu, setOpenMenu] = useState(null);
 
@@ -90,6 +94,45 @@ export default function TopMenuBar({
               }}
             />
           </MenuButton>
+          <MenuButton
+            label="View"
+            isOpen={openMenu === 'view'}
+            onClick={() => handleMenuClick('view')}
+          >
+            <MenuItem
+              label="Map Mode: 3D Globe"
+              checked={currentSceneMode === '3d'}
+              onSelect={() => {
+                onChangeSceneMode?.('3d');
+                closeMenu();
+              }}
+            />
+            <MenuItem
+              label="Map Mode: 2D Map"
+              checked={currentSceneMode === '2d'}
+              onSelect={() => {
+                onChangeSceneMode?.('2d');
+                closeMenu();
+              }}
+            />
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '6px 0' }} />
+            {[
+              { key: 'night', label: 'Base: Night (Dark)' },
+              { key: 'day', label: 'Base: Day (Satellite)' },
+              { key: 'topographic', label: 'Base: Topographic' },
+              { key: 'terrain', label: 'Base: Terrain' },
+            ].map((opt) => (
+              <MenuItem
+                key={opt.key}
+                label={opt.label}
+                checked={currentBaseLayer === opt.key}
+                onSelect={() => {
+                  onChangeBaseLayer?.(opt.key);
+                  closeMenu();
+                }}
+              />
+            ))}
+          </MenuButton>
         </div>
       </div>
 
@@ -154,14 +197,16 @@ function MenuItem({ icon, label, description, checked, onSelect }) {
       style={{
         padding: '12px 16px',
         cursor: 'pointer',
-        transition: 'background-color 0.15s',
+        transition: 'background-color 0.15s, border-color 0.15s',
         display: 'flex',
         alignItems: 'flex-start',
         gap: '12px',
-        fontFamily: `'Inter', 'Segoe UI', Arial, sans-serif`
+        fontFamily: `'Inter', 'Segoe UI', Arial, sans-serif`,
+        borderRadius: '6px',
+        margin: '2px 8px'
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = '#34495e';
+        e.currentTarget.style.backgroundColor = '#3a4b5c';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.backgroundColor = 'transparent';
@@ -171,16 +216,16 @@ function MenuItem({ icon, label, description, checked, onSelect }) {
         <div style={{
           width: '16px',
           height: '16px',
-          border: '2px solid #3498db',
-          borderRadius: '3px',
+          border: checked ? '2px solid #4ECDC4' : '2px solid rgba(255,255,255,0.4)',
+          borderRadius: '4px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: checked ? '#3498db' : 'transparent',
+          backgroundColor: checked ? '#4ECDC4' : 'transparent',
           flexShrink: 0,
           marginTop: '2px'
         }}>
-          {checked && <span style={{ color: 'white', fontSize: '12px' }}>✓</span>}
+          {checked && <span style={{ color: '#0b1a24', fontSize: '12px', fontWeight: 700 }}>✓</span>}
         </div>
       )}
 
