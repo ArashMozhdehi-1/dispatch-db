@@ -3,7 +3,7 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
-  "/api/intersection_center_points": "pages/api/intersection_center_points.js",
   "/api/vehicle-profiles": "pages/api/vehicle-profiles.js",
+  "/api/intersection_center_points": "pages/api/intersection_center_points.js",
   "/api/combined-map-data": "pages/api/combined-map-data.js"
 }
