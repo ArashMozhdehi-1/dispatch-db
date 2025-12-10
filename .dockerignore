@@ -47,3 +47,5 @@ test_*
 
 node_modules/
 Frontrunner/node_modules/
+
+combined/ui/.next/*
