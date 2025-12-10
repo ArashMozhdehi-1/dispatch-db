@@ -2,8 +2,9 @@
   "/_app": "pages/_app.js",
   "/_document": "pages/_document.js",
   "/_error": "pages/_error.js",
-  "/": "pages/index.js",
-  "/api/intersection_center_points": "pages/api/intersection_center_points.js",
   "/api/vehicle-profiles": "pages/api/vehicle-profiles.js",
-  "/api/combined-map-data": "pages/api/combined-map-data.js"
+  "/api/combined-map-data": "pages/api/combined-map-data.js",
+  "/api/intersection_center_points": "pages/api/intersection_center_points.js",
+  "/": "pages/index.js",
+  "/api/lane-conditions": "pages/api/lane-conditions.js"
 }

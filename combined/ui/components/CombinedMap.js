@@ -380,6 +380,9 @@ export default function DispatchCesiumMap() {
             const Cesium = window.Cesium;
             Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkN2JiMWMyMS05YmU0LTQ2MzktODk5Yy0xZjJjMDkyOGJkMzkiLCJpZCI6MTg0NzYsImlhdCI6MTYzOTQzOTU4Mn0.6GMOP-Y9nPwqGPZ0fLCuO-YXK1xVHK0HxxMz4EBqhJk';
 
+            let coordHandler = null;
+            let coordDisplay = null;
+
             const viewer = new Cesium.Viewer(mapContainer.current, {
                 baseLayerPicker: false, geocoder: false, homeButton: false, sceneModePicker: false,
                 navigationHelpButton: false, animation: false, timeline: false, fullscreenButton: false,
@@ -462,7 +465,7 @@ export default function DispatchCesiumMap() {
             }, Cesium.ScreenSpaceEventType.RIGHT_CLICK);
 
             // Coordinates (exact Frontrunner style)
-            const coordDisplay = document.createElement('div');
+            coordDisplay = document.createElement('div');
             coordDisplay.id = 'mouse-coordinates';
             coordDisplay.style.cssText = `
               position: absolute;
@@ -486,7 +489,7 @@ export default function DispatchCesiumMap() {
             `;
             document.body.appendChild(coordDisplay);
 
-            const coordHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+            coordHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
             coordHandler.setInputAction((movement) => {
                 const cartesian = viewer.scene.pickPosition(movement.endPosition);
                 if (Cesium.defined(cartesian)) {

@@ -32,7 +32,7 @@ export default function RoadProfileViewer({ roadId, onClose }) {
         setTotalRoadLength(0); // Will calculate from conditions
       } else {
         setConditions(data.conditions || []);
-        setTotalRoadLength(data.total_road_length || 0);
+        setTotalRoadLength(Number(data.total_road_length || 0));
       }
     } catch (error) {
       console.error('Error fetching conditions:', error);
@@ -46,67 +46,70 @@ export default function RoadProfileViewer({ roadId, onClose }) {
   const calculateElevationAtDistance = (cumulativeDistance, allConditions) => {
     let elevation = REFERENCE_ELEVATION;
     let currentDistance = 0;
-    
+
     // Group conditions by lane and calculate cumulative positions
     const laneGroups = {};
     allConditions.forEach(cond => {
+      const start = Number(cond.start_measure) || 0;
+      const end = Number(cond.end_measure) || 0;
+      const val = Number(cond.condition_value) || 0;
+      const len = Number(cond.lane_length) || 0;
+      const normalized = { ...cond, start_measure: start, end_measure: end, condition_value: val, lane_length: len };
       if (!laneGroups[cond.lane_id]) {
         laneGroups[cond.lane_id] = [];
       }
-      laneGroups[cond.lane_id].push(cond);
+      laneGroups[cond.lane_id].push(normalized);
     });
-    
+
     // Extract segment numbers and sort lanes
     const laneEntries = Object.entries(laneGroups).map(([laneId, conds]) => {
       const match = laneId.match(/road_\d+_(\d+)_/);
       const segNum = match ? parseInt(match[1], 10) : 999;
-      // Get lane_length from first condition (all conditions for same lane have same lane_length)
-      const laneLength = conds[0]?.lane_length || 0;
+      const laneLength = Number(conds[0]?.lane_length) || Math.max(...conds.map(c => Number(c.end_measure) || 0), 0);
       return { laneId, conds, segNum, laneLength };
     }).sort((a, b) => a.segNum - b.segNum);
-    
-    // Calculate cumulative distance for each lane segment
-    for (const { laneId, conds, laneLength } of laneEntries) {
+
+    for (const { conds, laneLength } of laneEntries) {
       const sortedConds = conds.sort((a, b) => a.start_measure - b.start_measure);
       const laneStartDistance = currentDistance;
-      
+
       for (const cond of sortedConds) {
         const condStartDist = laneStartDistance + cond.start_measure;
         const condEndDist = laneStartDistance + cond.end_measure;
-        
-        // If this condition affects the target distance
+        const slope = Number(cond.condition_value) || 0;
+
         if (cumulativeDistance >= condStartDist && cumulativeDistance <= condEndDist) {
           const distInCondition = cumulativeDistance - condStartDist;
-          const slope = parseFloat(cond.condition_value);
           elevation = elevation + (distInCondition * slope / 100);
           return elevation;
         } else if (cumulativeDistance > condEndDist) {
-          // We've passed this condition, add its full contribution
           const condLength = condEndDist - condStartDist;
-          const slope = parseFloat(cond.condition_value);
           elevation = elevation + (condLength * slope / 100);
         }
       }
-      
-      // Move to next lane segment using actual lane length
+
       currentDistance += laneLength;
-      
       if (currentDistance >= cumulativeDistance) break;
     }
-    
+
     return elevation;
   };
 
   const generateProfileData = () => {
     if (!conditions.length && totalRoadLength === 0) return [];
 
-    // Group conditions by lane and calculate cumulative road distances
+    // Group conditions by lane and normalize numbers
     const laneGroups = {};
     conditions.forEach(cond => {
+      const start = Number(cond.start_measure) || 0;
+      const end = Number(cond.end_measure) || 0;
+      const val = Number(cond.condition_value) || 0;
+      const len = Number(cond.lane_length) || 0;
+      const normalized = { ...cond, start_measure: start, end_measure: end, condition_value: val, lane_length: len };
       if (!laneGroups[cond.lane_id]) {
         laneGroups[cond.lane_id] = [];
       }
-      laneGroups[cond.lane_id].push(cond);
+      laneGroups[cond.lane_id].push(normalized);
     });
 
     // Extract segment numbers and sort lanes
@@ -122,8 +125,7 @@ export default function RoadProfileViewer({ roadId, onClose }) {
     
     laneEntries.forEach(({ laneId, conds }) => {
       laneCumulativeDistances.set(laneId, cumulativeDist);
-      // Use actual lane_length from database, not max end_measure
-      const laneLength = conds[0]?.lane_length || 0;
+      const laneLength = Number(conds[0]?.lane_length) || Math.max(...conds.map(c => c.end_measure), 0);
       cumulativeDist += laneLength;
     });
 
@@ -380,10 +382,13 @@ export default function RoadProfileViewer({ roadId, onClose }) {
 
   const profileData = generateProfileData();
 
-  // Use total road length (from API or calculated), ensuring we show the full road
-  const maxDistance = totalRoadLength > 0 
-    ? totalRoadLength 
-    : (profileData.length ? Math.max(...profileData.map(p => p.distance)) : 0);
+  // Distance domain: from lowest road start to highest road end
+  const minDistance = profileData.length
+    ? Math.min(...profileData.map(p => p.distance))
+    : 0;
+  const maxDistance = profileData.length
+    ? Math.max(...profileData.map(p => p.distance))
+    : 0;
 
   // Elevation range based on actual profile, with a fallback band
   const minElevation = profileData.length
@@ -402,10 +407,11 @@ export default function RoadProfileViewer({ roadId, onClose }) {
   const plotHeight = chartHeight - 2 * padding;
 
   const elevationRange = maxElevation - minElevation || 1; // avoid divide by zero
+  const distanceRange = maxDistance - minDistance || 1;
 
   const scaleX = (distance) =>
     padding +
-    (maxDistance === 0 ? 0 : (distance / maxDistance) * plotWidth);
+    ((distance - minDistance) / distanceRange) * plotWidth;
 
   const scaleY = (elevation) =>
     padding +
@@ -497,7 +503,7 @@ export default function RoadProfileViewer({ roadId, onClose }) {
                 );
               })}
               {[0, 0.25, 0.5, 0.75, 1].map(t => {
-                const distance = t * maxDistance;
+                const distance = minDistance + t * distanceRange;
                 return (
                   <line
                     key={`grid-v-${t}`}
@@ -549,7 +555,7 @@ export default function RoadProfileViewer({ roadId, onClose }) {
 
               {/* Distance labels */}
               {[0, 0.25, 0.5, 0.75, 1].map(t => {
-                const distance = t * maxDistance;
+                const distance = minDistance + t * distanceRange;
                 return (
                   <text
                     key={`dist-${t}`}
@@ -639,11 +645,8 @@ export default function RoadProfileViewer({ roadId, onClose }) {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ backgroundColor: 'rgba(52, 152, 219, 0.2)' }}>
-                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid rgba(255, 255, 255, 0.2)' }}>Lane ID</th>
                     <th style={{ padding: '8px', textAlign: 'left', border: '1px solid rgba(255, 255, 255, 0.2)' }}>Road Start (m)</th>
                     <th style={{ padding: '8px', textAlign: 'left', border: '1px solid rgba(255, 255, 255, 0.2)' }}>Road End (m)</th>
-                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid rgba(255, 255, 255, 0.2)' }}>Segment Start (m)</th>
-                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid rgba(255, 255, 255, 0.2)' }}>Segment End (m)</th>
                     <th style={{ padding: '8px', textAlign: 'left', border: '1px solid rgba(255, 255, 255, 0.2)' }}>Slope (%)</th>
                     <th style={{ padding: '8px', textAlign: 'left', border: '1px solid rgba(255, 255, 255, 0.2)' }}>Elevation at Start (m)</th>
                     <th style={{ padding: '8px', textAlign: 'left', border: '1px solid rgba(255, 255, 255, 0.2)' }}>Elevation at End (m)</th>
@@ -654,55 +657,43 @@ export default function RoadProfileViewer({ roadId, onClose }) {
                   {(() => {
                     // Sort by lane segment number first, then by start_measure within each lane
                     const sortedConditions = [...conditions].sort((a, b) => {
-                      // Extract segment numbers from lane_id
-                      const matchA = a.lane_id.match(/road_\d+_(\d+)_/);
-                      const matchB = b.lane_id.match(/road_\d+_(\d+)_/);
+                      const matchA = (a.lane_id || '').match(/road_\d+_(\d+)_/);
+                      const matchB = (b.lane_id || '').match(/road_\d+_(\d+)_/);
                       const segNumA = matchA ? parseInt(matchA[1], 10) : 999;
                       const segNumB = matchB ? parseInt(matchB[1], 10) : 999;
-                      
-                      if (segNumA !== segNumB) {
-                        return segNumA - segNumB;
-                      }
-                      // Within same lane segment, sort by start_measure
-                      if (a.start_measure !== b.start_measure) {
-                        return a.start_measure - b.start_measure;
-                      }
+                      if (segNumA !== segNumB) return segNumA - segNumB;
+                      if (a.start_measure !== b.start_measure) return a.start_measure - b.start_measure;
                       return a.end_measure - b.end_measure;
                     });
                     
-                    // Calculate cumulative road distances for each lane segment
                     const laneCumulativeDistances = new Map();
                     let cumulativeDist = 0;
                     const laneGroups = {};
                     
                     sortedConditions.forEach(cond => {
-                      if (!laneGroups[cond.lane_id]) {
-                        laneGroups[cond.lane_id] = [];
-                      }
+                      if (!laneGroups[cond.lane_id]) laneGroups[cond.lane_id] = [];
                       laneGroups[cond.lane_id].push(cond);
                     });
                     
-                    // Calculate cumulative distance for each lane using actual lane_length
                     Object.keys(laneGroups).sort((a, b) => {
-                      const matchA = a.match(/road_\d+_(\d+)_/);
-                      const matchB = b.match(/road_\d+_(\d+)_/);
+                      const matchA = (a || '').match(/road_\d+_(\d+)_/);
+                      const matchB = (b || '').match(/road_\d+_(\d+)_/);
                       const segNumA = matchA ? parseInt(matchA[1], 10) : 999;
                       const segNumB = matchB ? parseInt(matchB[1], 10) : 999;
                       return segNumA - segNumB;
                     }).forEach(laneId => {
                       if (!laneCumulativeDistances.has(laneId)) {
                         laneCumulativeDistances.set(laneId, cumulativeDist);
-                        // Use actual lane_length from database, not max end_measure
-                        const laneLength = laneGroups[laneId][0]?.lane_length || 0;
+                        const laneLength = Number(laneGroups[laneId][0]?.lane_length) || Math.max(...laneGroups[laneId].map(c => c.end_measure), 0);
                         cumulativeDist += laneLength;
                       }
                     });
                     
                     return sortedConditions.map((cond) => {
                       // Get cumulative road distance for this lane segment
-                      const laneStartDist = laneCumulativeDistances.get(cond.lane_id) || 0;
-                      const roadStartDist = laneStartDist + cond.start_measure;
-                      const roadEndDist = laneStartDist + cond.end_measure;
+                      const laneStartDist = Number(laneCumulativeDistances.get(cond.lane_id)) || 0;
+                      const roadStartDist = laneStartDist + (Number(cond.start_measure) || 0);
+                      const roadEndDist = laneStartDist + (Number(cond.end_measure) || 0);
                       
                       // Calculate elevation at these cumulative road distances
                       const startElevation = calculateElevationAtDistance(roadStartDist, conditions);
@@ -711,10 +702,10 @@ export default function RoadProfileViewer({ roadId, onClose }) {
                     return (
                       <tr key={cond.condition_id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
                         <td style={{ padding: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>{cond.lane_id}</td>
-                        <td style={{ padding: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>{roadStartDist.toFixed(2)}</td>
-                        <td style={{ padding: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>{roadEndDist.toFixed(2)}</td>
-                        <td style={{ padding: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>{cond.start_measure.toFixed(2)}</td>
-                        <td style={{ padding: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>{cond.end_measure.toFixed(2)}</td>
+                        <td style={{ padding: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>{Number(roadStartDist).toFixed(2)}</td>
+                        <td style={{ padding: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>{Number(roadEndDist).toFixed(2)}</td>
+                        <td style={{ padding: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>{Number(cond.start_measure || 0).toFixed(2)}</td>
+                        <td style={{ padding: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>{Number(cond.end_measure || 0).toFixed(2)}</td>
                         <td style={{ padding: '8px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                           {editingId === cond.condition_id ? (
                             <input
